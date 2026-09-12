@@ -11,6 +11,7 @@ Run:
   python examples/run_engagement.py
   python examples/run_engagement.py --skip authz-idor-analysis
   python examples/run_engagement.py --reject H-idor-invoices
+  python examples/run_engagement.py --live-http   # authorized targets only
 """
 
 from __future__ import annotations
@@ -62,6 +63,20 @@ def main(argv: list[str] | None = None) -> int:
         default="engagement-demo",
         help="Id used as SQLite filename prefix",
     )
+    parser.add_argument(
+        "--live-http",
+        action="store_true",
+        help=(
+            "Use HttpTransport against primary_host. "
+            "AUTHORIZED RESEARCH ONLY — host must pass ScopeGuard."
+        ),
+    )
+    parser.add_argument(
+        "--http-scheme",
+        default="https",
+        choices=["https", "http"],
+        help="Scheme for live HTTP (default https)",
+    )
     args = parser.parse_args(argv)
 
     steering = [f"skip:{s}" for s in args.skip] + [f"reject:{r}" for r in args.reject]
@@ -73,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         primary_host=args.host,
         steering=steering,
         engagement_id=args.engagement_id,
+        use_live_http=args.live_http,
+        http_scheme=args.http_scheme,
     )
 
     print("=" * 70)
@@ -81,6 +98,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"scope:     {config.scope_path}")
     print(f"host:      {config.primary_host}")
     print(f"steering:  {config.steering or '(none)'}")
+    transport_name = "HttpTransport" if config.use_live_http else "MockTransport"
+    print(f"transport: {transport_name}")
     print()
 
     orch = EngagementOrchestrator(config)

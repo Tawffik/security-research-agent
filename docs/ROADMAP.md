@@ -2,6 +2,13 @@
 
 ## Status: Phase A started (Orchestrator)
 
+**HttpTransport (opt-in):** `src/agent_core/orchestrator/transport.py`
+- MockTransport = default (tests/demo, no network)
+- HttpTransport = stdlib urllib, timeout + body cap, no auto-redirect, TLS on
+- Live traffic only via `EngagementConfig.use_live_http` / `--live-http`
+- Every fetch still goes through `ScopeGuard.authorize()` + budget in the orchestrator
+
+
 Implemented in-tree:
 - `src/agent_core/orchestrator/engagement.py` — EngagementOrchestrator
 - `examples/run_engagement.py` — CLI (mock transport, no network)
