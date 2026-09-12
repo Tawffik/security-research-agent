@@ -1,0 +1,32 @@
+name: authz-idor-analysis
+purpose: >
+  Reason about object-level and function-level authorization boundaries
+  using the Target Graph's identity/role/object model. Generates
+  HYPOTHESES about authorization boundary violations; does not itself
+  decide a hypothesis is confirmed (that is the VerificationLoop's job).
+trigger_conditions:
+  - "target graph contains identity/role nodes"
+  - "target graph contains resource-ownership edges (object belongs to identity)"
+target_technologies: []   # authorization is technology-agnostic
+vulnerability_classes:
+  - "idor"
+  - "broken_object_level_authorization"
+  - "broken_function_level_authorization"
+  - "tenant_isolation_failure"
+required_inputs:
+  - "target_graph_fragment"
+  - "at_least_two_authenticated_identities"
+allowed_tools:
+  - "authenticated_http_request"
+  - "diff_response_by_identity"
+evidence_requirements:
+  - "every candidate must show the SAME request replayed under two different, legitimately-owned identities with a diffed response"
+dependencies:
+  - "recon-js-surface"
+conflicts: []
+next_skills:
+  - "report-generator"
+cost_estimate: "medium (requires authenticated sessions for 2+ identities)"
+provenance: internal
+trust_score: 1.0
+version: "0.1.0"

@@ -1,0 +1,21 @@
+# Example authorized-scope declaration for ScopeGuard.
+# This is the ONLY place "what am I allowed to touch" is defined.
+# Never let a skill or the model infer scope on its own.
+
+program_name: "acme-demo-2026"
+rate_limit_per_host_per_min: 30
+concurrency_limit_per_host: 2
+
+in_scope:
+  - pattern: "app.acme-demo.test"
+    max_risk_tier: "active_safe"
+    note: "primary web app, safe probing allowed"
+  - pattern: "api.acme-demo.test"
+    max_risk_tier: "active_risky"
+    note: "API layer, program explicitly allows authz/injection testing"
+
+excluded:
+  - pattern: "billing.acme-demo.test"
+    note: "explicitly out of scope per program rules — payment processor"
+  - pattern: "*.internal.acme-demo.test"
+    note: "internal-only subdomains excluded by program"

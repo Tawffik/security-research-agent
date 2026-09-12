@@ -1,0 +1,30 @@
+name: recon-js-surface
+purpose: >
+  Passive extraction of the client-side attack surface from JavaScript
+  bundles: routes, API endpoints, parameter names, feature flags, and
+  auth-flow entry points. Produces a Target Graph fragment, not findings.
+trigger_conditions:
+  - "target serves non-trivial client-side JS bundles"
+  - "target profile technology includes a modern JS framework"
+target_technologies:
+  - "react"
+  - "vue"
+  - "angular"
+  - "nextjs"
+vulnerability_classes: []   # this is a recon skill, not a vuln-class skill
+required_inputs:
+  - "base_url"
+allowed_tools:
+  - "http_get"
+  - "js_bundle_fetch"
+  - "static_js_parser"
+evidence_requirements:
+  - "every discovered endpoint must cite the exact bundle file and byte range it was extracted from"
+dependencies: []
+conflicts: []
+next_skills:
+  - "authz-idor-analysis"
+cost_estimate: "low (passive, no auth required)"
+provenance: internal
+trust_score: 1.0
+version: "0.1.0"

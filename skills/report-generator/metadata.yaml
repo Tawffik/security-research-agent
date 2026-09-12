@@ -1,0 +1,23 @@
+name: report-generator
+purpose: >
+  Convert a CONFIRMED Finding plus its cited Evidence chain into a
+  program-ready bug bounty report: reproduction steps, impact statement,
+  and severity justification. Never invents a claim not backed by an
+  Evidence object.
+trigger_conditions:
+  - "a finding has status CONFIRMED in the Evidence Store"
+target_technologies: []
+vulnerability_classes: []
+required_inputs:
+  - "finding_id"
+allowed_tools:
+  - "evidence_store_read"
+evidence_requirements:
+  - "every sentence in the report's reproduction section must trace to a specific evidence_id"
+dependencies: []
+conflicts: []
+next_skills: []
+cost_estimate: "low"
+provenance: internal
+trust_score: 1.0
+version: "0.1.0"
