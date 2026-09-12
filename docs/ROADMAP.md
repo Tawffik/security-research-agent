@@ -1,5 +1,18 @@
 # Roadmap
 
+## Status: Phase A started (Orchestrator)
+
+Implemented in-tree:
+- `src/agent_core/orchestrator/engagement.py` — EngagementOrchestrator
+- `examples/run_engagement.py` — CLI (mock transport, no network)
+- `tests/test_orchestrator.py`
+
+Phase 1-2 remain the foundation. Phase A is a thin loop on top of them,
+not a rewrite. Real HTTP/browser tooling stays out until a real authorized
+scope file has been exercised for a full engagement.
+
+---
+
 Phase 1-2 (this repo, as of now) are functional and tested. Everything
 below is intentionally NOT built yet — build on the tested foundation
 before adding surface area.
