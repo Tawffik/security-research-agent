@@ -21,7 +21,9 @@ from typing import Any, Optional, Union
 
 from agent_core.content_isolation.sanitizer import wrap_target_content
 from agent_core.evidence.store import EvidencePolarity, EvidenceStore, FindingStatus
+from agent_core.findings.report import EvidenceReport, build_evidence_report
 from agent_core.orchestrator.research_loop import ResearchLoop, ResearchLoopResult
+from agent_core.schemas.research import HypothesisStatus
 from agent_core.scope.guard import Decision as ScopeDecision, RiskTier, ScopeGuard
 from agent_core.verification.loop import (
     ResearcherClaim,
@@ -72,6 +74,9 @@ class ClosedLoopResult:
     referee_reason: str = ""
     summary: str = ""
     limitations: list[str] = field(default_factory=list)
+    stop_reason: str = ""
+    belief_updates: list[str] = field(default_factory=list)
+    report: Optional[EvidenceReport] = None
 
 
 def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
@@ -175,12 +180,24 @@ class ClosedLoopRunner:
         )
         scope_ok = decision in (ScopeDecision.ALLOW, ScopeDecision.REQUIRES_APPROVAL)
         if not scope_ok:
+            stop_reason = "scope_blocked"
+            report = build_evidence_report(
+                engagement_id=self.engagement_id,
+                title="Scope denied",
+                claim="No claim evaluated — host/action blocked by ScopeGuard",
+                status="scope_denied",
+                evidence_ids=[],
+                stop_reason=stop_reason,
+                limitations=limitations,
+            )
             return ClosedLoopResult(
                 plan=plan,
                 scope_allowed=False,
                 summary=f"SCOPE_DENIED by ScopeGuard: {decision.value}",
                 limitations=limitations,
                 referee_reason=f"ScopeGuard returned {decision.value}",
+                stop_reason=stop_reason,
+                report=report,
             )
 
         evidence_ids: list[str] = []
@@ -302,11 +319,53 @@ class ClosedLoopRunner:
         )
         ruling = loop.run(hypothesis_id=hyp_id, target=f"{host}/api/orders/1001")
 
+        final_status = ruling.final_status.value if ruling.final_status else "unknown"
+        belief_updates: list[str] = []
+        # Update beliefs + hypothesis portfolio from referee outcome
+        if ruling.accepted:
+            b = self.research.belief_engine.assert_belief(
+                claim="Cross-identity object access observed under lab scenario",
+                confidence=0.9,
+                supporting=list(evidence_ids),
+                source="closed_loop.referee",
+            )
+            belief_updates.append(f"{b.belief_id}: confidence={b.confidence} (supported)")
+            self.research.hypothesis_engine.update_status(hyp_id, HypothesisStatus.SUPPORTED)
+            stop_reason = "sufficient_evidence"
+        else:
+            b = self.research.belief_engine.assert_belief(
+                claim="Ownership boundary holds under lab scenario (or claim disproved)",
+                confidence=0.85,
+                supporting=list(evidence_ids),
+                source="closed_loop.referee",
+            )
+            belief_updates.append(f"{b.belief_id}: confidence={b.confidence} (negative/rejected path)")
+            self.research.hypothesis_engine.update_status(hyp_id, HypothesisStatus.REJECTED)
+            stop_reason = "hypothesis_disproven"
+
+        claim_text = (
+            "User B can retrieve User A's order object via identifier when ownership should bind access."
+            if scenario.suggests_authz_issue
+            else "Non-owner cannot access owner object; authorization appears enforced."
+        )
+        report = build_evidence_report(
+            engagement_id=self.engagement_id,
+            title="Cross-identity object access on order resource",
+            claim=claim_text,
+            status=final_status,
+            evidence_ids=list(evidence_ids),
+            hypothesis_id=hyp_id,
+            finding_id=ruling.finding_id,
+            stop_reason=stop_reason,
+            belief_updates=belief_updates,
+            limitations=limitations,
+        )
+
         summary = (
             f"scope_ok={scope_ok} scenario={scenario.name} "
             f"evidence={len(evidence_ids)} accepted={ruling.accepted} "
-            f"status={ruling.final_status.value if ruling.final_status else None} "
-            f"finding={ruling.finding_id}"
+            f"status={final_status} finding={ruling.finding_id} "
+            f"stop={stop_reason} report_blocked={report.report_blocked}"
         )
 
         return ClosedLoopResult(
@@ -316,8 +375,11 @@ class ClosedLoopRunner:
             evidence_ids=evidence_ids,
             referee_accepted=ruling.accepted,
             finding_id=ruling.finding_id,
-            final_status=ruling.final_status.value if ruling.final_status else None,
+            final_status=final_status,
             referee_reason=ruling.reason,
             summary=summary,
             limitations=limitations,
+            stop_reason=stop_reason,
+            belief_updates=belief_updates,
+            report=report,
         )
