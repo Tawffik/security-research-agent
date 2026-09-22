@@ -138,3 +138,19 @@ Optimize for smarter research, not more requests.
 | Sprint 10–11 (partial) | AuthorizationAnalyzer, WorkflowMiner/StateMachine offline |
 
 **Hard stop for external dependency:** ingesting production recon from `Tawffik/BugBountyCI`. Until then, use `examples/fixtures/sample_recon.json` or any JSON matching that shape via `RawRecon.from_file`.
+
+---
+
+## 8. Closed-loop lab path (2026-09-22)
+
+| Component | Status |
+|-----------|--------|
+| ClosedLoopRunner | IMPLEMENTED + TESTED |
+| LabScenario IDOR → CONFIRMED | TESTED |
+| LabScenario secure → REJECTED | TESTED |
+| Scope denial on out-of-scope host | TESTED |
+| Live HTTP closed loop | NOT IMPLEMENTED |
+| BugBountyCI real artifact | NOT END_TO_END VERIFIED |
+| LLM researcher/skeptic | NOT IMPLEMENTED (deterministic lab fns only) |
+
+Files: `src/agent_core/orchestrator/closed_loop.py`, `tests/test_closed_loop.py`

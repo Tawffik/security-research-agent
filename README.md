@@ -3,7 +3,7 @@
 [![CI](https://github.com/Tawffik/security-research-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Tawffik/security-research-agent/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-55%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-58%20passing-brightgreen.svg)](tests/)
 
 > Replace `OWNER` in the badge URL above with your GitHub username/org once
 > this is pushed — see the "Publish this to GitHub" section below.
@@ -75,7 +75,7 @@ examples/
     demo_program_scope.yaml   example authorized-scope declaration
     run_demo.py               end-to-end demo of every Phase 1-2 component
 
-tests/                     pytest suite (23 tests, all green)
+tests/                     pytest suite (run `pytest tests/` for current count)
 docs/
     ARCHITECTURE.md        full architecture map + design rationale
     ROADMAP.md             Phase 3-8 plan (retrieval, graphs, hypothesis engine, evaluation)

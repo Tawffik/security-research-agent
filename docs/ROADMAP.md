@@ -1,13 +1,21 @@
 # Roadmap
 
-> **V2 alignment (2026-09):** See `docs/audit/PHASE0_AUDIT.md` for the full
-> gap analysis against the Security Research Agent V2 specification.
-> Sprint 1 delivered: Phase 0 audit + canonical Pydantic schemas under
-> `src/agent_core/schemas/` (Engagement, Target, Opportunity, Unknown,
-> Belief, Hypothesis, Experiment, Decision, Finding). Foundation APIs
-> remain frozen. Next: Recon Adapter + Target Model (Sprint 2).
+> **V2 alignment (2026-09):** Repository is source of truth. See
+> `docs/audit/PHASE0_AUDIT.md`. Status labels: DESIGNED / PARTIAL /
+> IMPLEMENTED / TESTED / INTEGRATED / END_TO_END VERIFIED.
+>
+> **IMPLEMENTED+TESTED (offline):** schemas, ReconResultAdapter (fixture JSON),
+> Opportunity/Unknown/Belief/Hypothesis/Experiment/JEV, ToolRegistry,
+> AuthorizationAnalyzer, WorkflowMiner, ClosedLoopRunner (lab fixture path:
+> plan → ScopeGuard → lab observation → evidence → skeptic → referee → finding).
+>
+> **NOT END_TO_END VERIFIED:** real BugBountyCI artifact ingest, live HTTP
+> research under production scope, LLM provider integration.
+>
+> **Next highest-value slice:** adapt ReconResultAdapter to real BugBountyCI
+> artifact shape + authorized lab HTTP (opt-in) into the same closed loop.
 
-## Status: Phase A started (Orchestrator) + Sprint 1 schemas
+## Status: Offline research loop + closed-loop lab path TESTED
 
 **HttpTransport (opt-in):** `src/agent_core/orchestrator/transport.py`
 - MockTransport = default (tests/demo, no network)
