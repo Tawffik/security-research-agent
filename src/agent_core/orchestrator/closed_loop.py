@@ -21,6 +21,7 @@ from typing import Any, Optional, Union
 
 from agent_core.content_isolation.sanitizer import wrap_target_content
 from agent_core.evidence.store import EvidencePolarity, EvidenceStore, FindingStatus
+from agent_core.findings.poc import MinimizedPoC, PoCMinimizer
 from agent_core.findings.report import EvidenceReport, build_evidence_report
 from agent_core.orchestrator.research_loop import ResearchLoop, ResearchLoopResult
 from agent_core.schemas.research import HypothesisStatus
@@ -81,6 +82,7 @@ class ClosedLoopResult:
     report: Optional[EvidenceReport] = None
     root_cause: Optional[RootCause] = None
     variants: list[VariantCandidate] = field(default_factory=list)
+    poc: Optional[MinimizedPoC] = None
 
 
 def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
@@ -385,13 +387,23 @@ class ClosedLoopRunner:
                 limit=5,
             )
 
+        poc = None
+        if ruling.accepted and ruling.finding_id and evidence_ids:
+            poc = PoCMinimizer(self.engagement_id).minimize(
+                finding_id=ruling.finding_id,
+                observations=list(scenario.observations),
+                evidence_ids=list(evidence_ids),
+                claim=claim_text,
+            )
+
         summary = (
             f"scope_ok={scope_ok} scenario={scenario.name} "
             f"evidence={len(evidence_ids)} accepted={ruling.accepted} "
             f"status={final_status} finding={ruling.finding_id} "
             f"stop={stop_reason} report_blocked={report.report_blocked} "
             f"root_cause={root_cause.root_cause_id if root_cause else None} "
-            f"variants={len(variants)}"
+            f"variants={len(variants)} "
+            f"poc={poc.poc_id if poc else None}"
         )
 
         return ClosedLoopResult(
@@ -410,4 +422,5 @@ class ClosedLoopRunner:
             report=report,
             root_cause=root_cause,
             variants=variants,
+            poc=poc,
         )
