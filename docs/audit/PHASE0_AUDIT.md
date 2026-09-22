@@ -126,3 +126,15 @@ Requests + Tool Calls + Tokens + Time + Risk
 ```
 
 Optimize for smarter research, not more requests.
+
+---
+
+## 7. Progress log
+
+| Commit | Scope |
+|--------|--------|
+| Sprint 1 | Schemas + audit |
+| Sprint 2–6 | Recon adapter, Opportunity, Unknown/Belief, Hypothesis, Experiment, JEV, ToolRegistry, ResearchLoop |
+| Sprint 10–11 (partial) | AuthorizationAnalyzer, WorkflowMiner/StateMachine offline |
+
+**Hard stop for external dependency:** ingesting production recon from `Tawffik/BugBountyCI`. Until then, use `examples/fixtures/sample_recon.json` or any JSON matching that shape via `RawRecon.from_file`.

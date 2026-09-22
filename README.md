@@ -3,7 +3,7 @@
 [![CI](https://github.com/Tawffik/security-research-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Tawffik/security-research-agent/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-53%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-55%20passing-brightgreen.svg)](tests/)
 
 > Replace `OWNER` in the badge URL above with your GitHub username/org once
 > this is pushed — see the "Publish this to GitHub" section below.
