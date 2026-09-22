@@ -1,0 +1,70 @@
+{
+  "recon_id": "recon_fixture_001",
+  "source": "fixture",
+  "program": "acme-demo-2026",
+  "primary_host": "api.acme-demo.test",
+  "hosts": ["api.acme-demo.test", "app.acme-demo.test"],
+  "technologies": ["rest", "jwt", "react"],
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/orders/{id}",
+      "host": "api.acme-demo.test",
+      "auth_required": true,
+      "parameters": ["id"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/orders",
+      "host": "api.acme-demo.test",
+      "auth_required": true,
+      "parameters": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/orders/{id}/refund",
+      "host": "api.acme-demo.test",
+      "auth_required": true,
+      "parameters": ["id", "amount"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/{id}",
+      "host": "api.acme-demo.test",
+      "auth_required": true,
+      "parameters": ["id"]
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices/{id}",
+      "host": "api.acme-demo.test",
+      "auth_required": true,
+      "parameters": ["id"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "host": "api.acme-demo.test",
+      "auth_required": false,
+      "parameters": ["email", "password"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/reset",
+      "host": "api.acme-demo.test",
+      "auth_required": false,
+      "parameters": ["email", "token"]
+    }
+  ],
+  "actors": [
+    {"name": "user_a", "roles": ["customer"], "identity": "user_a@demo.test"},
+    {"name": "user_b", "roles": ["customer"], "identity": "user_b@demo.test"},
+    {"name": "admin", "roles": ["admin"], "identity": "admin@demo.test"}
+  ],
+  "resources": [
+    {"name": "order-1001", "type": "object", "owner": "user_a", "state": "PAID"},
+    {"name": "order-1002", "type": "object", "owner": "user_b", "state": "SHIPPED"},
+    {"name": "invoice-5001", "type": "object", "owner": "user_a", "state": "ISSUED"}
+  ],
+  "notes": "Synthetic recon for offline research-loop testing. Not live traffic."
+}

@@ -1,0 +1,31 @@
+{
+  "summary": "engagement=eng_demo_offline endpoints=7 actors=3 opportunities=8 unknowns=14 hypotheses=4 experiments=4 decision=EXECUTE candidate=experiment_1 top_hypothesis=Ownership bypass: non-owner can access object via identifier",
+  "decision": {
+    "decision_id": "decision_1",
+    "decision": "EXECUTE",
+    "candidate": "experiment_1",
+    "confidence": 0.8600000000000001,
+    "reason_codes": [
+      "HIGH_INFORMATION_GAIN",
+      "LOW_COST",
+      "LOW_RISK",
+      "HYPOTHESIS_DISCRIMINATING"
+    ],
+    "hypothesis_id": "H1",
+    "experiment_id": "experiment_1",
+    "metadata": {}
+  },
+  "hypothesis_ids": [
+    "H1",
+    "H2",
+    "H3",
+    "H4"
+  ],
+  "experiment_ids": [
+    "experiment_1",
+    "experiment_2",
+    "experiment_3",
+    "experiment_4"
+  ],
+  "opportunity_count": 8
+}
