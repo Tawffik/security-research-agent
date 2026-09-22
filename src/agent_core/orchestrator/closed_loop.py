@@ -25,6 +25,8 @@ from agent_core.findings.report import EvidenceReport, build_evidence_report
 from agent_core.orchestrator.research_loop import ResearchLoop, ResearchLoopResult
 from agent_core.schemas.research import HypothesisStatus
 from agent_core.scope.guard import Decision as ScopeDecision, RiskTier, ScopeGuard
+from agent_core.variants.hunter import VariantCandidate, VariantHunter
+from agent_core.variants.root_cause import RootCause, RootCauseEngine
 from agent_core.verification.loop import (
     ResearcherClaim,
     SkepticQuestion,
@@ -77,6 +79,8 @@ class ClosedLoopResult:
     stop_reason: str = ""
     belief_updates: list[str] = field(default_factory=list)
     report: Optional[EvidenceReport] = None
+    root_cause: Optional[RootCause] = None
+    variants: list[VariantCandidate] = field(default_factory=list)
 
 
 def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
@@ -361,11 +365,33 @@ class ClosedLoopRunner:
             limitations=limitations,
         )
 
+        root_cause = None
+        variants: list[VariantCandidate] = []
+        if ruling.accepted and ruling.finding_id:
+            rc_engine = RootCauseEngine(self.engagement_id)
+            root_cause = rc_engine.analyze_confirmed(
+                finding_id=ruling.finding_id,
+                claim=claim_text,
+                evidence_ids=list(evidence_ids),
+                ctx=plan.target_context,
+                scenario_name=scenario.name,
+            )
+            hunter = VariantHunter(self.engagement_id)
+            variants = hunter.find_structural(
+                ctx=plan.target_context,
+                graph=plan.target_graph,
+                root_cause=root_cause,
+                seed_path_substr="orders",
+                limit=5,
+            )
+
         summary = (
             f"scope_ok={scope_ok} scenario={scenario.name} "
             f"evidence={len(evidence_ids)} accepted={ruling.accepted} "
             f"status={final_status} finding={ruling.finding_id} "
-            f"stop={stop_reason} report_blocked={report.report_blocked}"
+            f"stop={stop_reason} report_blocked={report.report_blocked} "
+            f"root_cause={root_cause.root_cause_id if root_cause else None} "
+            f"variants={len(variants)}"
         )
 
         return ClosedLoopResult(
@@ -382,4 +408,6 @@ class ClosedLoopRunner:
             stop_reason=stop_reason,
             belief_updates=belief_updates,
             report=report,
+            root_cause=root_cause,
+            variants=variants,
         )
