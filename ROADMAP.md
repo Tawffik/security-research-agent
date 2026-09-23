@@ -13,3 +13,6 @@
 
 ## Surprise Engine (§43)
 - IMPLEMENTED (lab): unexpected status → candidate hypotheses/unknowns; no auto-exploit
+
+## Memory (§62–63)
+- IMPLEMENTED (lab): EpisodicMemory + WriteGuard; raw target bodies blocked

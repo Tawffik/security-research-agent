@@ -10,7 +10,7 @@ SCOPE = ROOT / "examples" / "demo_program_scope.yaml"
 
 
 def test_idor_lab_produces_status_surprise():
-    closed, _, _, _, surprises = run_closed_then_adaptive(
+    closed, _, _, _, surprises, _mem = run_closed_then_adaptive(
         recon_path=FIXTURE,
         scope_path=SCOPE,
         engagement_id="eng_sur_c",
