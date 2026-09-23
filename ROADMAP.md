@@ -16,3 +16,6 @@
 
 ## Memory (§62–63)
 - IMPLEMENTED (lab): EpisodicMemory + WriteGuard; raw target bodies blocked
+
+## Claim-Evidence + Invariants + Artifacts
+- IMPLEMENTED (lab): claim matrix blocks empty evidence; I-001 ownership check; engagement artifact writer

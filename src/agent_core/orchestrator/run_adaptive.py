@@ -8,6 +8,8 @@ from typing import Optional, Union
 from agent_core.evaluation.action_regret import ActionRegretRecord, ActionRegretTracker
 from agent_core.research.surprise import SurpriseEngine, SurpriseEvent
 from agent_core.memory.episodic import EpisodicMemory, EpisodeMemoryEntry
+from agent_core.evidence.claim_matrix import ClaimEvidenceBuilder, ClaimEvidenceMatrix
+from agent_core.security.invariants import InvariantRegistry, InvariantCheck
 from agent_core.ledger.checkpoint import Checkpoint, CheckpointStore
 from agent_core.orchestrator.adaptive import AdaptiveLoop, AdaptiveStepResult
 from agent_core.orchestrator.closed_loop import ClosedLoopResult, ClosedLoopRunner, LabScenario
@@ -19,7 +21,7 @@ def run_closed_then_adaptive(
     scope_path: Union[str, Path],
     engagement_id: str,
     scenario: Optional[LabScenario] = None,
-) -> tuple[ClosedLoopResult, AdaptiveStepResult, Checkpoint, list[ActionRegretRecord], list[SurpriseEvent], list[EpisodeMemoryEntry]]:
+) -> tuple:
     closed = ClosedLoopRunner(scope_path=scope_path, engagement_id=engagement_id).run(
         recon_path, scenario=scenario
     )
@@ -51,4 +53,22 @@ def run_closed_then_adaptive(
         surprises=surprises,
         episode_lessons=lessons,
     )
-    return closed, adaptive, cp, [r1, r2], surprises, entries
+    claim_text = ""
+    if closed.report is not None:
+        claim_text = closed.report.claim
+    matrix = ClaimEvidenceBuilder(engagement_id).build(
+        claim=claim_text or f"status={closed.final_status}",
+        evidence_ids=list(closed.evidence_ids or []),
+        observation_refs=[f"{o.identity}:{o.status}" for o in (closed.observations or [])],
+        action_summary="lab cross-identity object access",
+    )
+    inv_checks: list[InvariantCheck] = []
+    non_owner = [o for o in (closed.observations or []) if not (o.identity.endswith("_a") or "owner" in o.identity)]
+    if non_owner:
+        inv_checks.append(
+            InvariantRegistry(engagement_id).check_ownership_from_lab(
+                non_owner_status=non_owner[0].status,
+                evidence_ids=list(closed.evidence_ids or []),
+            )
+        )
+    return closed, adaptive, cp, [r1, r2], surprises, entries, matrix, inv_checks
