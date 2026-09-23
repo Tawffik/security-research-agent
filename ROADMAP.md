@@ -10,3 +10,6 @@
 
 ## Action Regret (§60)
 - IMPLEMENTED (lab): expected vs actual information gain; negative evidence scored as useful
+
+## Surprise Engine (§43)
+- IMPLEMENTED (lab): unexpected status → candidate hypotheses/unknowns; no auto-exploit
