@@ -4,3 +4,6 @@
 
 ## Adaptive loop (§92)
 - IMPLEMENTED (lab): after closed-loop, re-rank opportunities; STOP on reject; optional single variant experiment on confirm — no URL spray
+
+## Checkpoints (§66)
+- IMPLEMENTED (lab): snapshot before/after adaptive decision; write JSON; not full replay yet
