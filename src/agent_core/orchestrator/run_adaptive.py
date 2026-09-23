@@ -13,6 +13,9 @@ from agent_core.security.invariants import InvariantRegistry, InvariantCheck
 from agent_core.decisions.stop_conditions import StopPolicy, StopDecision
 from agent_core.findings.severity import assess_authz_finding, SeverityAssessment
 from agent_core.evaluation.replay import replay_from_objects, ReplaySummary
+from agent_core.findings.lifecycle import lifecycle_from_closed_loop, FindingLifecycle
+from agent_core.experiments.differential import compare_lab_observations, DifferentialResult
+from agent_core.experiments.dedup import ExperimentDeduper
 from agent_core.ledger.checkpoint import Checkpoint, CheckpointStore
 from agent_core.orchestrator.adaptive import AdaptiveLoop, AdaptiveStepResult
 from agent_core.orchestrator.closed_loop import ClosedLoopResult, ClosedLoopRunner, LabScenario
@@ -96,6 +99,17 @@ def run_closed_then_adaptive(
         cross_identity=True,
     )
     replay = replay_from_objects(engagement_id=engagement_id, closed=closed, checkpoint=cp)
+    lifecycle = lifecycle_from_closed_loop(closed)
+    differential = compare_lab_observations(closed.observations or [])
+    deduper = ExperimentDeduper()
+    for o in closed.observations or []:
+        deduper.check_and_register(
+            method=o.method,
+            path=o.path,
+            identity=o.identity,
+            hypothesis_id=closed.finding_id or "",
+            action=f"{o.method} {o.path}",
+        )
     return (
         closed,
         adaptive,
@@ -108,4 +122,7 @@ def run_closed_then_adaptive(
         stop_decision,
         severity,
         replay,
+        lifecycle,
+        differential,
+        deduper,
     )

@@ -22,3 +22,6 @@
 
 ## Stop policy + Replay + Severity
 - IMPLEMENTED (lab): unified StopPolicy; artifact/in-memory replay summary; structured severity dimensions
+
+## Lifecycle + Dedup + Differential
+- IMPLEMENTED (lab): finding lifecycle transitions; experiment fingerprint dedup; identity differential compare
