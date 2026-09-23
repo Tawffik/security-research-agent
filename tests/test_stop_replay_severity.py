@@ -26,7 +26,7 @@ def test_pipeline_stop_severity_replay(tmp_path):
         engagement_id="eng_srs",
         scenario=default_idor_lab_scenario(),
     )
-    closed, adaptive, cp, regrets, surprises, mem, matrix, inv, stop, severity, replay = result
+    closed, adaptive, cp, regrets, surprises, mem, matrix, inv, stop, severity, replay, *_rest = result
     assert stop.should_stop is True or adaptive.next_action == "EXECUTE_VARIANT"
     assert severity.level in ("medium", "high", "info")
     assert replay.engagement_id == "eng_srs"
