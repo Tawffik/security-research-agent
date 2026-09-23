@@ -7,3 +7,6 @@
 
 ## Checkpoints (§66)
 - IMPLEMENTED (lab): snapshot before/after adaptive decision; write JSON; not full replay yet
+
+## Action Regret (§60)
+- IMPLEMENTED (lab): expected vs actual information gain; negative evidence scored as useful
