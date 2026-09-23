@@ -21,6 +21,7 @@ from typing import Any, Optional, Union
 
 from agent_core.content_isolation.sanitizer import wrap_target_content
 from agent_core.evidence.store import EvidencePolarity, EvidenceStore, FindingStatus
+from agent_core.evaluation.episode import EpisodeRecorder, ResearchEpisode
 from agent_core.findings.poc import MinimizedPoC, PoCMinimizer
 from agent_core.findings.report import EvidenceReport, build_evidence_report
 from agent_core.orchestrator.research_loop import ResearchLoop, ResearchLoopResult
@@ -83,6 +84,7 @@ class ClosedLoopResult:
     root_cause: Optional[RootCause] = None
     variants: list[VariantCandidate] = field(default_factory=list)
     poc: Optional[MinimizedPoC] = None
+    episode: Optional[ResearchEpisode] = None
 
 
 def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
@@ -196,7 +198,7 @@ class ClosedLoopRunner:
                 stop_reason=stop_reason,
                 limitations=limitations,
             )
-            return ClosedLoopResult(
+            deny_result = ClosedLoopResult(
                 plan=plan,
                 scope_allowed=False,
                 summary=f"SCOPE_DENIED by ScopeGuard: {decision.value}",
@@ -205,6 +207,8 @@ class ClosedLoopRunner:
                 stop_reason=stop_reason,
                 report=report,
             )
+            deny_result.episode = EpisodeRecorder(self.engagement_id).from_closed_loop(deny_result)
+            return deny_result
 
         evidence_ids: list[str] = []
         hyp_id = plan.decision.hypothesis_id or (
@@ -406,7 +410,7 @@ class ClosedLoopRunner:
             f"poc={poc.poc_id if poc else None}"
         )
 
-        return ClosedLoopResult(
+        out = ClosedLoopResult(
             plan=plan,
             scope_allowed=True,
             observations=list(scenario.observations),
@@ -424,3 +428,5 @@ class ClosedLoopRunner:
             variants=variants,
             poc=poc,
         )
+        out.episode = EpisodeRecorder(self.engagement_id).from_closed_loop(out)
+        return out
