@@ -9,7 +9,7 @@ SCOPE = ROOT / "examples" / "demo_program_scope.yaml"
 
 
 def test_confirmed_has_low_regret_relative_to_reject_path_quality():
-    _, _, _, regrets, _sur, _mem, _mx, _inv = run_closed_then_adaptive(
+    a, b, c, regrets, *_rest = run_closed_then_adaptive(
         recon_path=FIXTURE,
         scope_path=SCOPE,
         engagement_id="eng_ar_c",
@@ -23,7 +23,7 @@ def test_confirmed_has_low_regret_relative_to_reject_path_quality():
 
 
 def test_rejected_still_useful_negative_evidence():
-    _, adaptive, _, regrets, _sur, _mem, _mx, _inv = run_closed_then_adaptive(
+    _, adaptive, _, regrets, *_rest = run_closed_then_adaptive(
         recon_path=FIXTURE,
         scope_path=SCOPE,
         engagement_id="eng_ar_r",

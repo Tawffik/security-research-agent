@@ -19,3 +19,6 @@
 
 ## Claim-Evidence + Invariants + Artifacts
 - IMPLEMENTED (lab): claim matrix blocks empty evidence; I-001 ownership check; engagement artifact writer
+
+## Stop policy + Replay + Severity
+- IMPLEMENTED (lab): unified StopPolicy; artifact/in-memory replay summary; structured severity dimensions

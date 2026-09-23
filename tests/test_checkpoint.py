@@ -10,7 +10,7 @@ SCOPE = ROOT / "examples" / "demo_program_scope.yaml"
 
 
 def test_checkpoint_after_confirmed_adaptive(tmp_path):
-    closed, adaptive, cp, _regret, _sur, _mem, _mx, _inv = run_closed_then_adaptive(
+    closed, adaptive, cp, *_rest = run_closed_then_adaptive(
         recon_path=FIXTURE,
         scope_path=SCOPE,
         engagement_id="eng_cp_c",
@@ -26,7 +26,7 @@ def test_checkpoint_after_confirmed_adaptive(tmp_path):
 
 
 def test_checkpoint_after_rejected_stop():
-    closed, adaptive, cp, _regret, _sur, _mem, _mx, _inv = run_closed_then_adaptive(
+    closed, adaptive, cp, *_rest = run_closed_then_adaptive(
         recon_path=FIXTURE,
         scope_path=SCOPE,
         engagement_id="eng_cp_r",

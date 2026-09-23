@@ -33,7 +33,7 @@ def test_write_guard_allows_structured_lesson():
 
 
 def test_pipeline_stores_episodic_not_raw_bodies():
-    closed, _, _, _, _, entries, _mx, _inv = run_closed_then_adaptive(
+    closed, _, _, _, _, entries, *_rest = run_closed_then_adaptive(
         recon_path=FIXTURE,
         scope_path=SCOPE,
         engagement_id="eng_mem",

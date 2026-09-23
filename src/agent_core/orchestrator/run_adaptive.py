@@ -10,6 +10,9 @@ from agent_core.research.surprise import SurpriseEngine, SurpriseEvent
 from agent_core.memory.episodic import EpisodicMemory, EpisodeMemoryEntry
 from agent_core.evidence.claim_matrix import ClaimEvidenceBuilder, ClaimEvidenceMatrix
 from agent_core.security.invariants import InvariantRegistry, InvariantCheck
+from agent_core.decisions.stop_conditions import StopPolicy, StopDecision
+from agent_core.findings.severity import assess_authz_finding, SeverityAssessment
+from agent_core.evaluation.replay import replay_from_objects, ReplaySummary
 from agent_core.ledger.checkpoint import Checkpoint, CheckpointStore
 from agent_core.orchestrator.adaptive import AdaptiveLoop, AdaptiveStepResult
 from agent_core.orchestrator.closed_loop import ClosedLoopResult, ClosedLoopRunner, LabScenario
@@ -71,4 +74,38 @@ def run_closed_then_adaptive(
                 evidence_ids=list(closed.evidence_ids or []),
             )
         )
-    return closed, adaptive, cp, [r1, r2], surprises, entries, matrix, inv_checks
+    mean_reg = None
+    if [r1, r2]:
+        mean_reg = round((r1.regret + r2.regret) / 2, 4)
+    stop_decision = StopPolicy().evaluate(
+        scope_allowed=closed.scope_allowed,
+        referee_accepted=closed.referee_accepted,
+        final_status=closed.final_status or "",
+        evidence_count=len(closed.evidence_ids or []),
+        has_variants=bool(closed.variants),
+        adaptive_stop=adaptive.stop,
+        adaptive_reason=adaptive.stop_reason or "",
+        mean_action_regret=mean_reg,
+    )
+    inv_violated = None
+    if inv_checks:
+        inv_violated = inv_checks[0].holds is False
+    severity = assess_authz_finding(
+        confirmed=bool(closed.referee_accepted),
+        invariant_violated=inv_violated,
+        cross_identity=True,
+    )
+    replay = replay_from_objects(engagement_id=engagement_id, closed=closed, checkpoint=cp)
+    return (
+        closed,
+        adaptive,
+        cp,
+        [r1, r2],
+        surprises,
+        entries,
+        matrix,
+        inv_checks,
+        stop_decision,
+        severity,
+        replay,
+    )

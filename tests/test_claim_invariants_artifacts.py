@@ -18,7 +18,7 @@ def test_claim_matrix_blocks_without_evidence():
 
 
 def test_pipeline_matrix_and_invariant_idor():
-    closed, _, _, _, _, _, matrix, inv = run_closed_then_adaptive(
+    closed, _, _, _, _, _, matrix, inv, *_rest = run_closed_then_adaptive(
         recon_path=FIXTURE,
         scope_path=SCOPE,
         engagement_id="eng_cma",
@@ -31,7 +31,7 @@ def test_pipeline_matrix_and_invariant_idor():
 
 
 def test_invariant_holds_on_secure():
-    closed, _, _, _, _, _, matrix, inv = run_closed_then_adaptive(
+    closed, _, _, _, _, _, matrix, inv, *_rest = run_closed_then_adaptive(
         recon_path=FIXTURE,
         scope_path=SCOPE,
         engagement_id="eng_cma_s",
@@ -42,7 +42,7 @@ def test_invariant_holds_on_secure():
 
 
 def test_write_artifacts(tmp_path):
-    closed, adaptive, cp, regrets, surprises, mem, matrix, inv = run_closed_then_adaptive(
+    closed, adaptive, cp, regrets, surprises, mem, matrix, inv, *_rest = run_closed_then_adaptive(
         recon_path=FIXTURE,
         scope_path=SCOPE,
         engagement_id="eng_art",
