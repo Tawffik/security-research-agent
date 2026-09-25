@@ -226,3 +226,14 @@ class ReconResultAdapter:
                     )
 
         return TargetGraph(engagement_id=self.engagement_id, nodes=nodes, edges=edges, version=1)
+
+
+def adapt_bbci_artifact(engagement_id: str, raw: dict) -> tuple:
+    """Validate/normalize BBCI-like artifact then adapt to TargetContext/Graph."""
+    from agent_core.recon.bbci_contract import normalize_bbci_artifact
+    from agent_core.recon.adapter import RawRecon, ReconResultAdapter
+
+    contract = normalize_bbci_artifact(raw)
+    if not contract.ok:
+        raise ValueError("BBCI contract failed: " + "; ".join(contract.error_messages()))
+    return ReconResultAdapter(engagement_id).adapt(RawRecon(contract.normalized)), contract

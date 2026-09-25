@@ -16,6 +16,7 @@ from agent_core.evaluation.replay import replay_from_objects, ReplaySummary
 from agent_core.findings.lifecycle import lifecycle_from_closed_loop, FindingLifecycle
 from agent_core.experiments.differential import compare_lab_observations, DifferentialResult
 from agent_core.experiments.dedup import ExperimentDeduper
+from agent_core.evaluation.scorecard import build_scorecard, QualityScorecard
 from agent_core.ledger.checkpoint import Checkpoint, CheckpointStore
 from agent_core.orchestrator.adaptive import AdaptiveLoop, AdaptiveStepResult
 from agent_core.orchestrator.closed_loop import ClosedLoopResult, ClosedLoopRunner, LabScenario
@@ -110,6 +111,13 @@ def run_closed_then_adaptive(
             hypothesis_id=closed.finding_id or "",
             action=f"{o.method} {o.path}",
         )
+    scorecard = build_scorecard(
+        engagement_id=engagement_id,
+        closed=closed,
+        adaptive=adaptive,
+        regrets=[r1, r2],
+        matrix=matrix,
+    )
     return (
         closed,
         adaptive,
@@ -125,4 +133,5 @@ def run_closed_then_adaptive(
         lifecycle,
         differential,
         deduper,
+        scorecard,
     )

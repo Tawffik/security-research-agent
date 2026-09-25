@@ -25,3 +25,8 @@
 
 ## Lifecycle + Dedup + Differential
 - IMPLEMENTED (lab): finding lifecycle transitions; experiment fingerprint dedup; identity differential compare
+
+## Day batch: L2 FP labs + BBCI contract + scorecard
+- L2: public resource + shared ACL must not confirm as IDOR
+- BBCI recon contract normalizer (no live CI)
+- QualityScorecard lab aggregation

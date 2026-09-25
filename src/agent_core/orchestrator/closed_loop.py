@@ -143,6 +143,63 @@ def secure_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
     )
 
 
+def public_resource_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """L2 FP trap: both identities get 200 because resource is intentionally public."""
+    return LabScenario(
+        name="lab_public_resource",
+        expected_if_secure="Public catalog is readable by any authenticated user — not IDOR",
+        suggests_authz_issue=False,
+        observations=[
+            LabObservation(
+                identity="user_a",
+                method="GET",
+                path="/api/catalog/item/5",
+                host=host,
+                status=200,
+                body='{"id":5,"visibility":"public","name":"widget"}',
+                notes="public resource baseline",
+            ),
+            LabObservation(
+                identity="user_b",
+                method="GET",
+                path="/api/catalog/item/5",
+                host=host,
+                status=200,
+                body='{"id":5,"visibility":"public","name":"widget"}',
+                notes="same public resource — not ownership bypass",
+            ),
+        ],
+    )
+
+
+def shared_object_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """L2 FP trap: intentional shared ACL — both users legitimately access same object."""
+    return LabScenario(
+        name="lab_shared_acl_object",
+        expected_if_secure="Shared ACL grants both identities access — not horizontal IDOR",
+        suggests_authz_issue=False,
+        observations=[
+            LabObservation(
+                identity="user_a",
+                method="GET",
+                path="/api/docs/shared-9",
+                host=host,
+                status=200,
+                body='{"id":"shared-9","acl":["user_a","user_b"],"title":"team notes"}',
+            ),
+            LabObservation(
+                identity="user_b",
+                method="GET",
+                path="/api/docs/shared-9",
+                host=host,
+                status=200,
+                body='{"id":"shared-9","acl":["user_a","user_b"],"title":"team notes"}',
+            ),
+        ],
+    )
+
+
+
 class ClosedLoopRunner:
     """
     Runs plan + lab observation + evidence + verification under ScopeGuard.
