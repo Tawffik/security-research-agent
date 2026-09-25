@@ -19,6 +19,8 @@ SOURCE (tiered) → CASE → PATTERN → PROCEDURE → STRATEGY
 | PAT-0001, PAT-0002 | pattern | Cross-identity + BOLA object key |
 | PROC-0001, PROC-0002 | procedure | Discriminating experiments |
 | STRAT-0001 | strategy | Prioritize object-keyed APIs |
+| PAT-0003, PROC-0003, STRAT-0002 | pattern/proc/strat | BOLA mutation matrix (APIsec field data) |
+| CASE-0007, PAT-0004 | case/pattern | GraphQL operation authorization |
 
 ## Quality rules
 - No bulk scrape of the internet  
