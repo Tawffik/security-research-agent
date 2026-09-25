@@ -11,3 +11,6 @@ Per Notion V3 source hierarchy. Discovery sources ≠ trusted knowledge until ex
 | SRC-0005 | C — deferred | SecurityCipher / Bug Bytes indexes | Discovery leads only | not trusted knowledge yet |
 
 **Rule:** We do not auto-promote writeups to Skills. Pipeline: Source → Case → Pattern → Procedure → (later) Skill candidate + benchmark.
+
+| SRC-0006 | A — Primary | Profile IDOR→ATO writeup (Notion Top Writeups) | Case extraction | CASE-0006 |
+| SRC-0007 | Human index | Notion Top Writeups + Writeups Library | Discovery map | NOTION-INVENTORY |

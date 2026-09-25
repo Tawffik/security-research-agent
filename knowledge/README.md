@@ -14,6 +14,8 @@ SOURCE (tiered) → CASE → PATTERN → PROCEDURE → STRATEGY
 | SRC-REGISTRY | sources | PortSwigger, OWASP API1, … |
 | CASE-0001 | case | Lab IDOR episode |
 | CASE-0002..0005 | case | PortSwigger + OWASP scenarios (Tier B) |
+| CASE-0006 | case | Profile IDOR→ATO (Tier A writeup + Notion) |
+| NOTION-INVENTORY | sources | Map of workspace writeup library |
 | PAT-0001, PAT-0002 | pattern | Cross-identity + BOLA object key |
 | PROC-0001, PROC-0002 | procedure | Discriminating experiments |
 | STRAT-0001 | strategy | Prioritize object-keyed APIs |
