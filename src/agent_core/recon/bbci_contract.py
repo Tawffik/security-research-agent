@@ -151,3 +151,106 @@ def normalize_bbci_artifact(raw: dict[str, Any]) -> BBCIContractResult:
 
     ok = not any(i.level == "error" for i in issues)
     return BBCIContractResult(ok=ok, normalized=normalized, issues=issues, source_shape=shape)
+
+
+def parse_bbci_live_txt(
+    text: str,
+    *,
+    primary_host: str = "",
+    program_name: str = "",
+) -> BBCIContractResult:
+    """
+    Parse BugBountyCI results/*/live.txt lines into normalized recon.
+
+    Supported line shapes (observed in repo):
+      https://host.path [status] [extra...]
+      http://host.path\\tstatus\\t
+      host.only
+    """
+    import re
+    from urllib.parse import urlparse
+
+    issues: list[ContractIssue] = []
+    urls: list[str] = []
+    tech: list[str] = []
+    host_counts: dict[str, int] = {}
+
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        # tab-separated
+        if "\t" in line:
+            parts = line.split("\t")
+            url = parts[0].strip()
+        else:
+            # "https://x [404] [Cloudflare,...]"
+            m = re.match(r"^(\S+)", line)
+            url = m.group(1) if m else ""
+            bracket = re.findall(r"\[([^\]]+)\]", line)
+            for b in bracket[1:]:  # skip status-like first sometimes
+                for tok in re.split(r"[,/|]", b):
+                    tok = tok.strip()
+                    if tok and not tok.isdigit() and " " not in tok and len(tok) < 40:
+                        if tok.lower() not in ("found", "not", "error", "loading..."):
+                            tech.append(tok)
+
+        if not url:
+            continue
+        if not url.startswith("http"):
+            url = "https://" + url
+        urls.append(url)
+        try:
+            h = urlparse(url).hostname or ""
+            if h:
+                host_counts[h] = host_counts.get(h, 0) + 1
+        except Exception:
+            issues.append(ContractIssue("warning", "bad_url", f"could not parse {url[:80]}"))
+
+    if not primary_host:
+        if program_name and "." in program_name:
+            primary_host = program_name
+        elif host_counts:
+            # prefer registrable-looking host with most entries, else longest suffix match
+            primary_host = sorted(host_counts.items(), key=lambda x: (-x[1], -len(x[0])))[0][0]
+        else:
+            issues.append(ContractIssue("error", "missing_host", "no host derived from live.txt"))
+            return BBCIContractResult(False, issues=issues, source_shape="live_txt")
+
+    endpoints = []
+    for u in urls:
+        try:
+            p = urlparse(u)
+            path = p.path or "/"
+            endpoints.append({"method": "GET", "path": path if path.startswith("/") else f"/{path}", "url": u})
+        except Exception:
+            continue
+
+    # Dedupe endpoints by path keeping first
+    seen = set()
+    dedup_ep = []
+    for e in endpoints:
+        key = (e["method"], e["path"], e.get("url", ""))
+        if key in seen:
+            continue
+        seen.add(key)
+        dedup_ep.append({"method": e["method"], "path": e["path"]})
+
+    normalized = {
+        "primary_host": primary_host,
+        "technologies": list(dict.fromkeys(tech))[:30],
+        "endpoints": dedup_ep[:500],
+        "actors": [],
+        "resources": [],
+        "notes": f"normalized from BBCI live.txt program={program_name or primary_host}",
+        "provenance": {
+            "contract": "bbci_recon_v1",
+            "source_shape": "live_txt",
+            "url_count": len(urls),
+            "unique_hosts": len(host_counts),
+        },
+    }
+    if not dedup_ep:
+        issues.append(ContractIssue("warning", "no_endpoints", "live.txt produced zero endpoints"))
+    ok = not any(i.level == "error" for i in issues)
+    return BBCIContractResult(ok=ok, normalized=normalized, issues=issues, source_shape="live_txt")

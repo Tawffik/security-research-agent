@@ -30,3 +30,7 @@
 - L2: public resource + shared ACL must not confirm as IDOR
 - BBCI recon contract normalizer (no live CI)
 - QualityScorecard lab aggregation
+
+## BBCI live.txt ingest (oneplus sample)
+- parse_bbci_live_txt + fixture examples/fixtures/bbci/oneplus.ch.live.txt
+- No live HTTP to targets; read-only sample from public results path

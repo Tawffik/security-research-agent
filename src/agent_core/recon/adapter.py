@@ -237,3 +237,21 @@ def adapt_bbci_artifact(engagement_id: str, raw: dict) -> tuple:
     if not contract.ok:
         raise ValueError("BBCI contract failed: " + "; ".join(contract.error_messages()))
     return ReconResultAdapter(engagement_id).adapt(RawRecon(contract.normalized)), contract
+
+
+def adapt_bbci_live_txt(
+    engagement_id: str,
+    text: str,
+    *,
+    primary_host: str = "",
+    program_name: str = "",
+) -> tuple:
+    """live.txt text → (TargetContext, TargetGraph, meta), contract."""
+    from agent_core.recon.bbci_contract import parse_bbci_live_txt
+    from agent_core.recon.adapter import RawRecon, ReconResultAdapter
+
+    contract = parse_bbci_live_txt(text, primary_host=primary_host, program_name=program_name)
+    if not contract.ok:
+        raise ValueError("live.txt contract failed: " + "; ".join(contract.error_messages()))
+    adapted = ReconResultAdapter(engagement_id).adapt(RawRecon(contract.normalized))
+    return adapted, contract
