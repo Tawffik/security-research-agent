@@ -31,8 +31,34 @@ class HypothesisEngine:
         ctx: TargetContext,
     ) -> list[Hypothesis]:
         created: list[Hypothesis] = []
-        authz_opps = [o for o in opportunities if o.type == "authorization"]
+        authz_opps = [o for o in opportunities if o.type in ("authorization", "authorization_mutation")]
+        mutation_opps = [o for o in opportunities if o.mutation and o.object_surface]
         state_opps = [o for o in opportunities if o.type == "state_violation"]
+
+        if mutation_opps and len(ctx.actors) >= 2:
+            created.append(
+                self._add(
+                    statement=(
+                        "Action-level object authorization failure: non-owner can mutate "
+                        "(delete/patch) another user's object — not only read it"
+                    ),
+                    primary="Missing ownership check on state-changing object operations",
+                    alternatives=[
+                        AlternativeExplanation(
+                            explanation_id="A_mut_1",
+                            description="Mutation is restricted by role rather than ownership (still may be issue)",
+                            discriminating_observations=["role claim", "admin-only mutate"],
+                        ),
+                        AlternativeExplanation(
+                            explanation_id="A_mut_2",
+                            description="Object is shared ACL allowing both actors to mutate",
+                            discriminating_observations=["ACL lists both", "shared workspace"],
+                        ),
+                    ],
+                    confidence=0.6,
+                    related_opportunity_ids=[o.opportunity_id for o in mutation_opps[:3]],
+                )
+            )
 
         if authz_opps and len(ctx.actors) >= 2:
             created.append(

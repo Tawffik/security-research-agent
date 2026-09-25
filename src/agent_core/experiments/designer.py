@@ -24,7 +24,19 @@ class ExperimentDesigner:
             return cached.model_copy(update={"status": ExperimentStatus.CACHED})
 
         stmt = hypothesis.statement.lower()
-        if "ownership" in stmt or "bypass" in stmt:
+        if any(
+            k in stmt
+            for k in (
+                "mutat",
+                "delete",
+                "patch",
+                "modify object",
+                "action-level",
+                "state-chang",
+            )
+        ):
+            exp = self._mutation_ownership(hypothesis, ctx)
+        elif "ownership" in stmt or "bypass" in stmt or "idor" in stmt or "bola" in stmt:
             exp = self._ownership_diff(hypothesis, ctx)
         elif "role boundary" in stmt or "function-level" in stmt:
             exp = self._role_diff(hypothesis, ctx)
@@ -69,6 +81,44 @@ class ExperimentDesigner:
             cost=0.2,
             information_gain=0.9,
             tool_names=["authenticated_http_request", "diff_response_by_identity"],
+            skill_names=["authz-idor-analysis"],
+        )
+
+    def _mutation_ownership(self, h: Hypothesis, ctx: TargetContext) -> Experiment:
+        """PROC-0003: single cross-identity mutate — prove side effect, not status only."""
+        target_path = "DELETE /api/orders/{id}"
+        for ep in ctx.endpoints:
+            if ep.method.upper() in ("DELETE", "PATCH", "PUT") and (
+                "{id}" in ep.path or "id" in (ep.parameters or [])
+            ):
+                target_path = f"{ep.method} {ep.path}"
+                break
+        return self._make(
+            hypothesis_id=h.hypothesis_id,
+            description=(
+                f"Action-level object authz: as non-owner, attempt one mutating call "
+                f"({target_path}) on owner's object; verify side effect (state change), "
+                f"not HTTP status alone (PAT-0003 / PROC-0003)"
+            ),
+            expected_observation=(
+                "Non-owner mutate denied AND owner object unchanged; "
+                "or mutate succeeds with object altered (finding path)"
+            ),
+            discriminator="before/after object state under two identities",
+            required_evidence=[
+                "identity_owner_baseline_state",
+                "identity_attacker_mutate_request",
+                "post_state_or_absence",
+                "ownership_proof",
+            ],
+            stop_condition=(
+                "scope_violation OR risk_blocks_destructive OR "
+                "side_effect_proven OR solid_denial_with_unchanged_state"
+            ),
+            risk=0.55,
+            cost=0.35,
+            information_gain=0.92,
+            tool_names=["authenticated_http_request", "observe_object_state"],
             skill_names=["authz-idor-analysis"],
         )
 
