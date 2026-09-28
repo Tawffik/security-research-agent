@@ -19,6 +19,10 @@ from agent_core.decisions.jev import JEV
 from agent_core.experiments.designer import ExperimentDesigner
 from agent_core.knowledge.retrieve import KnowledgeRetriever
 from agent_core.orchestrator.closed_loop import ClosedLoopResult
+from agent_core.orchestrator.experiment_alignment import (
+    CoverageGap,
+    prefer_gap_covering_candidates,
+)
 from agent_core.schemas.research import Decision, DecisionAction, Experiment, Opportunity
 from agent_core.target.opportunity import OpportunityEngine
 
@@ -28,11 +32,13 @@ class AdaptiveStepResult:
     prior_outcome: str
     stop: bool
     stop_reason: str
-    next_action: str  # STOP | EXECUTE_VARIANT
+    next_action: str  # STOP | EXECUTE_VARIANT | EXECUTE_FOLLOWUP
     decision: Optional[Decision] = None
     next_experiment: Optional[Experiment] = None
     reranked_opportunities: list[Opportunity] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    coverage_gap: Optional[dict[str, Any]] = None
+    selection_reason: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -44,6 +50,8 @@ class AdaptiveStepResult:
             "next_experiment_id": self.next_experiment.experiment_id if self.next_experiment else None,
             "reranked_opportunity_ids": [o.opportunity_id for o in self.reranked_opportunities[:5]],
             "notes": list(self.notes),
+            "coverage_gap": self.coverage_gap,
+            "selection_reason": self.selection_reason,
         }
 
 
@@ -71,14 +79,21 @@ class AdaptiveLoop:
 
         if sufficiency in ("insufficient", "ambiguous") and closed.scope_allowed:
             notes.append(
-                f"M6: experiment {sufficiency} — not a finding; seeking follow-up if available"
+                f"M6.6: experiment {sufficiency} — not a finding; gap-aware follow-up"
+            )
+            gap_dict = align.get("coverage_gap") or {}
+            gap = CoverageGap(
+                prior_experiment_id=gap_dict.get("prior_experiment_id") or current_exp_id,
+                missing_step_ids=list(gap_dict.get("missing_step_ids") or []),
+                ambiguous_step_ids=list(gap_dict.get("ambiguous_step_ids") or []),
+                missing_roles=list(gap_dict.get("missing_roles") or []),
+                ambiguous_roles=list(gap_dict.get("ambiguous_roles") or []),
             )
             hyps = list(plan.hypotheses or [])
             retrieval = getattr(self, "_retrieval", None)
             experiments = self.designer.design_portfolio(
                 hyps, plan.target_context, retrieval=retrieval
             )
-            # Exclude already-tried experiment IDs (anti-loop)
             candidates = [
                 e
                 for e in experiments
@@ -92,9 +107,22 @@ class AdaptiveLoop:
                     next_action="STOP",
                     reranked_opportunities=ranked,
                     notes=notes + ["no valid follow-up experiment after coverage gap"],
+                    coverage_gap=gap.to_dict(),
+                    selection_reason="no_untried_candidates",
                 )
+            covering, other = prefer_gap_covering_candidates(candidates, gap)
+            # Prefer covering for JEV; if none, fallback to all candidates
+            jev_pool = covering if covering else candidates
+            selection_reason = (
+                f"covers missing/ambiguous roles {gap.target_roles}"
+                if covering
+                else "no_gap_covering_candidate_fallback"
+            )
+            notes.append(
+                f"gap_roles={gap.target_roles} covering={len(covering)} other={len(other)}"
+            )
             decision = self.jev.choose(
-                candidates, hyps, budget_remaining_ratio=0.8
+                jev_pool, hyps, budget_remaining_ratio=0.8
             )
             if decision.decision == DecisionAction.STOP or not decision.candidate:
                 return AdaptiveStepResult(
@@ -105,10 +133,12 @@ class AdaptiveLoop:
                     decision=decision,
                     reranked_opportunities=ranked,
                     notes=notes,
+                    coverage_gap=gap.to_dict(),
+                    selection_reason=selection_reason + "|jev_stop",
                 )
             next_exp = next(
-                (e for e in candidates if e.experiment_id == decision.candidate),
-                candidates[0],
+                (e for e in jev_pool if e.experiment_id == decision.candidate),
+                jev_pool[0],
             )
             if next_exp.experiment_id == current_exp_id:
                 return AdaptiveStepResult(
@@ -120,10 +150,12 @@ class AdaptiveLoop:
                     next_experiment=next_exp,
                     reranked_opportunities=ranked,
                     notes=notes + ["refused to re-select same experiment"],
+                    coverage_gap=gap.to_dict(),
+                    selection_reason="same_experiment_blocked",
                 )
             notes.append(
-                f"M6 follow-up next_experiment_id={next_exp.experiment_id} "
-                f"hypothesis_id={next_exp.hypothesis_id}"
+                f"M6.6 follow-up next_experiment_id={next_exp.experiment_id} "
+                f"hypothesis_id={next_exp.hypothesis_id} reason={selection_reason}"
             )
             return AdaptiveStepResult(
                 prior_outcome=f"coverage_{sufficiency}",
@@ -134,6 +166,8 @@ class AdaptiveLoop:
                 next_experiment=next_exp,
                 reranked_opportunities=ranked,
                 notes=notes,
+                coverage_gap=gap.to_dict(),
+                selection_reason=selection_reason,
             )
 
 

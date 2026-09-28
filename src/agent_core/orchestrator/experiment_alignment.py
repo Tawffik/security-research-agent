@@ -22,6 +22,89 @@ class EvidenceRequirementStatus:
     reason: str = ""
 
 
+
+@dataclass
+class CoverageGap:
+    """Decision-oriented summary of what coverage is still needed (M6.6)."""
+
+    prior_experiment_id: Optional[str] = None
+    missing_step_ids: list[str] = field(default_factory=list)
+    ambiguous_step_ids: list[str] = field(default_factory=list)
+    missing_roles: list[str] = field(default_factory=list)
+    ambiguous_roles: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "prior_experiment_id": self.prior_experiment_id,
+            "missing_step_ids": list(self.missing_step_ids),
+            "ambiguous_step_ids": list(self.ambiguous_step_ids),
+            "missing_roles": list(self.missing_roles),
+            "ambiguous_roles": list(self.ambiguous_roles),
+        }
+
+    @property
+    def target_roles(self) -> list[str]:
+        """Roles that still need coverage (missing first, then ambiguous)."""
+        out: list[str] = []
+        for r in self.missing_roles + self.ambiguous_roles:
+            if r and r not in out:
+                out.append(r)
+        return out
+
+
+def derive_coverage_gap(
+    experiment: Optional[Experiment],
+    coverage: list,
+    *,
+    prior_experiment_id: Optional[str] = None,
+) -> CoverageGap:
+    gap = CoverageGap(
+        prior_experiment_id=prior_experiment_id
+        or (experiment.experiment_id if experiment else None)
+    )
+    for c in coverage:
+        role = c.role if isinstance(getattr(c, "role", None), str) else str(getattr(c, "role", ""))
+        status = getattr(c, "status", "")
+        sid = getattr(c, "step_id", "")
+        if status == "missing":
+            if sid:
+                gap.missing_step_ids.append(sid)
+            if role and role not in gap.missing_roles:
+                gap.missing_roles.append(role)
+        elif status == "ambiguous":
+            if sid:
+                gap.ambiguous_step_ids.append(sid)
+            if role and role not in gap.ambiguous_roles:
+                gap.ambiguous_roles.append(role)
+    return gap
+
+
+def experiment_addresses_gap(experiment: Experiment, gap: CoverageGap) -> bool:
+    """True if experiment.steps include any target role from the gap."""
+    if not gap.target_roles:
+        return False
+    roles = set()
+    for s in getattr(experiment, "steps", None) or []:
+        r = s.role.value if hasattr(s.role, "value") else str(s.role)
+        roles.add(r)
+    return bool(roles.intersection(gap.target_roles))
+
+
+def prefer_gap_covering_candidates(
+    candidates: list[Experiment],
+    gap: CoverageGap,
+) -> tuple[list[Experiment], list[Experiment]]:
+    """Split into (covering, other). Prefer covering for JEV input order."""
+    covering: list[Experiment] = []
+    other: list[Experiment] = []
+    for e in candidates:
+        if experiment_addresses_gap(e, gap):
+            covering.append(e)
+        else:
+            other.append(e)
+    return covering, other
+
+
 @dataclass
 class ExperimentAlignment:
     experiment_id: Optional[str]
@@ -38,6 +121,7 @@ class ExperimentAlignment:
     baseline_ref: Optional[str] = None
     challenge_ref: Optional[str] = None
     experiment_sufficiency: str = "sufficient"  # sufficient | insufficient | ambiguous
+    coverage_gap: Optional[CoverageGap] = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -60,6 +144,7 @@ class ExperimentAlignment:
             "baseline_ref": self.baseline_ref,
             "challenge_ref": self.challenge_ref,
             "experiment_sufficiency": self.experiment_sufficiency,
+            "coverage_gap": self.coverage_gap.to_dict() if self.coverage_gap else None,
             "all_required_satisfied": all(
                 r.status == "satisfied" for r in self.required_evidence
             )
@@ -264,8 +349,15 @@ def align_experiment_to_scenario(
             notes.append(f"pair:{pair_note}")
 
     sufficiency = compute_experiment_sufficiency(experiment, coverage)
+    gap = None
     if sufficiency != "sufficient":
         notes.append(f"experiment_sufficiency={sufficiency}")
+        gap = derive_coverage_gap(
+            experiment,
+            coverage,
+            prior_experiment_id=exp_id,
+        )
+        notes.append(f"coverage_gap_roles={gap.target_roles}")
 
     return ExperimentAlignment(
         experiment_id=exp_id,
@@ -282,6 +374,7 @@ def align_experiment_to_scenario(
         baseline_ref=_obs_ref(base) if base else None,
         challenge_ref=_obs_ref(chal) if chal else None,
         experiment_sufficiency=sufficiency,
+        coverage_gap=gap,
     )
 
 
