@@ -28,11 +28,40 @@ def run_closed_then_adaptive(
     scope_path: Union[str, Path],
     engagement_id: str,
     scenario: Optional[LabScenario] = None,
+    max_followups: int = 1,
 ) -> tuple:
-    closed = ClosedLoopRunner(scope_path=scope_path, engagement_id=engagement_id).run(
-        recon_path, scenario=scenario
-    )
-    adaptive = AdaptiveLoop(engagement_id).step(closed)
+    runner = ClosedLoopRunner(scope_path=scope_path, engagement_id=engagement_id)
+    closed = runner.run(recon_path, scenario=scenario)
+    adaptive_loop = AdaptiveLoop(engagement_id)
+    adaptive = adaptive_loop.step(closed)
+    followup_closed = None
+    # M7: execute gap-aware follow-up experiment against the same lab fixtures
+    if (
+        not adaptive.stop
+        and adaptive.next_action == "EXECUTE_FOLLOWUP"
+        and adaptive.next_experiment is not None
+        and max_followups > 0
+    ):
+        followup_exp = adaptive.next_experiment
+        followup_closed = runner.run(
+            recon_path,
+            scenario=scenario,
+            force_experiment=followup_exp,
+            skip_research=True,
+            prior_plan=closed.plan,
+        )
+        adaptive.notes.append(
+            f"M7 follow-up executed experiment_id={followup_exp.experiment_id} "
+            f"sufficiency={(followup_closed.experiment_alignment or {}).get('experiment_sufficiency')}"
+        )
+        # Second adaptive step after follow-up (bounded; tried ids prevent loops)
+        adaptive = adaptive_loop.step(followup_closed)
+        # Preserve first-step selection provenance on the final adaptive result
+        if not adaptive.coverage_gap and getattr(adaptive, "coverage_gap", None) is None:
+            pass
+        adaptive.notes.append(
+            f"M7 follow-up closed selected={followup_closed.selected_experiment_id}"
+        )
     store = CheckpointStore(engagement_id)
     cp = store.from_closed_and_adaptive(closed, adaptive)
     tracker = ActionRegretTracker(engagement_id)

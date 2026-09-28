@@ -234,12 +234,22 @@ class ClosedLoopRunner:
         self,
         recon_path: Union[str, Path],
         scenario: Optional[LabScenario] = None,
+        force_experiment=None,
+        skip_research: bool = False,
+        prior_plan=None,
     ) -> ClosedLoopResult:
-        plan = self.research.run_from_recon_file(recon_path)
+        """
+        force_experiment: bind this Experiment for alignment (M7 follow-up).
+        skip_research + prior_plan: re-evaluate fixtures under a new experiment without re-planning.
+        """
+        if skip_research and prior_plan is not None:
+            plan = prior_plan
+        else:
+            plan = self.research.run_from_recon_file(recon_path)
         host = plan.target_context.primary_host or "api.acme-demo.test"
         scenario = scenario or default_idor_lab_scenario(host)
 
-        selected_experiment = resolve_selected_experiment(plan)
+        selected_experiment = force_experiment or resolve_selected_experiment(plan)
         hyp_id_early = (
             (plan.decision.hypothesis_id if plan.decision else None)
             or (plan.hypotheses[0].hypothesis_id if plan.hypotheses else None)

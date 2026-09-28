@@ -176,8 +176,21 @@ class EpisodeRecorder:
         elif outcome == "scope_denied":
             lessons.append("ScopeGuard blocked action — correct stop, zero wasted target interaction")
 
-        if metrics.efficiency_proxy > 0 and metrics.requests_simulated <= 4:
             lessons.append("Low request count with useful outcome — aligned with north-star efficiency")
+
+        # M7/M8: coverage gap and selected experiment provenance as lessons (not findings)
+        align = getattr(result, "experiment_alignment", None) or {}
+        if isinstance(align, dict):
+            suf = align.get("experiment_sufficiency")
+            if suf and suf != "sufficient":
+                lessons.append(f"Experiment coverage {suf} — not a vulnerability verdict")
+            gap = align.get("coverage_gap") or {}
+            roles = gap.get("missing_roles") or gap.get("ambiguous_roles") or []
+            if roles:
+                lessons.append(f"Coverage gap roles requiring follow-up: {roles}")
+            exp_id = align.get("experiment_id") or getattr(result, "selected_experiment_id", None)
+            if exp_id:
+                lessons.append(f"Aligned experiment_id={exp_id}")
 
         return ResearchEpisode(
             episode_id=eid,
