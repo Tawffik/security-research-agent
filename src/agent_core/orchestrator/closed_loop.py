@@ -28,6 +28,7 @@ from agent_core.orchestrator.experiment_alignment import (
 from agent_core.evaluation.episode import EpisodeRecorder, ResearchEpisode
 from agent_core.knowledge.candidates import KnowledgeCandidateFactory
 from agent_core.schemas.observation import Observation, from_lab_observation
+from agent_core.knowledge.case_extract import extract_case_from_episode
 from agent_core.findings.poc import MinimizedPoC, PoCMinimizer
 from agent_core.findings.report import EvidenceReport, build_evidence_report
 from agent_core.orchestrator.research_loop import ResearchLoop, ResearchLoopResult
@@ -97,6 +98,7 @@ class ClosedLoopResult:
     episode: Optional[ResearchEpisode] = None
     knowledge_candidates: list = field(default_factory=list)
     normalized_observations: list = field(default_factory=list)
+    structured_case: object = None  # episode → case candidate (untrusted)
 
 
 def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
@@ -584,4 +586,10 @@ class ClosedLoopRunner:
         out.knowledge_candidates = KnowledgeCandidateFactory(self.engagement_id).from_closed_loop(
             out, episode_id=getattr(out.episode, "episode_id", "")
         )
+        try:
+            out.structured_case = extract_case_from_episode(
+                out, case_id=f"CASE-EP-{self.engagement_id}"
+            )
+        except Exception:
+            out.structured_case = None
         return out
