@@ -11,9 +11,40 @@ from __future__ import annotations
 from typing import Optional
 
 from agent_core.knowledge.retrieve import RetrievalResult
-from agent_core.schemas.research import Experiment, ExperimentStatus, Hypothesis
+from agent_core.schemas.research import (
+    Experiment,
+    ExperimentStatus,
+    ExperimentStep,
+    ExperimentStepRole,
+    Hypothesis,
+)
 from agent_core.schemas.target import TargetContext
 
+
+
+def _role_from_step_text(text: str) -> ExperimentStepRole:
+    low = text.lower()
+    if any(x in low for x in ("as owner", "own object key", "baseline:", "actor's own", "a mutates a")):
+        return ExperimentStepRole.BASELINE
+    if any(x in low for x in ("non-owner", "non owned", "substitute key", "as b ", "b mutates", "challenge")):
+        return ExperimentStepRole.CHALLENGE
+    if any(x in low for x in ("compare", "discriminator:", "diff")):
+        return ExperimentStepRole.COMPARE
+    return ExperimentStepRole.OBSERVE
+
+
+def steps_from_procedure(proc_id: str, step_texts: list[str]) -> list[ExperimentStep]:
+    out: list[ExperimentStep] = []
+    for i, text in enumerate(step_texts, start=1):
+        out.append(
+            ExperimentStep(
+                step_id=f"{proc_id}-S{i:02d}",
+                order=i,
+                role=_role_from_step_text(text),
+                text=text,
+            )
+        )
+    return out
 
 class ExperimentDesigner:
     def __init__(self, engagement_id: str):
@@ -109,6 +140,10 @@ class ExperimentDesigner:
 
         proc = procs[0]
         self.last_procedure_ids = [p.record_id for p in procs[:3]]
+        structured_steps = steps_from_procedure(
+            proc.record_id, list(proc.experiment_steps or [])
+        )
+
         steps = list(proc.experiment_steps) if proc.experiment_steps else [
             "Owner baseline request",
             "Non-owner same object request",
@@ -164,6 +199,7 @@ class ExperimentDesigner:
             information_gain=0.93,
             tool_names=["authenticated_http_request", "diff_response_by_identity"],
             skill_names=["authz-idor-analysis"],
+            steps=structured_steps,
         )
 
     def _pick_path(self, ctx: TargetContext, mutation: bool = False) -> str:

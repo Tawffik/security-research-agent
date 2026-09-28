@@ -34,6 +34,9 @@ class ExperimentAlignment:
     stop_condition: str = ""
     stop_condition_status: str = "indeterminate"  # satisfied | not_satisfied | indeterminate
     interpretation_notes: list[str] = field(default_factory=list)
+    step_coverage: list = field(default_factory=list)
+    baseline_ref: Optional[str] = None
+    challenge_ref: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -50,6 +53,11 @@ class ExperimentAlignment:
             "stop_condition": self.stop_condition,
             "stop_condition_status": self.stop_condition_status,
             "interpretation_notes": list(self.interpretation_notes),
+            "step_coverage": [
+                s.to_dict() if hasattr(s, "to_dict") else s for s in self.step_coverage
+            ],
+            "baseline_ref": self.baseline_ref,
+            "challenge_ref": self.challenge_ref,
             "all_required_satisfied": all(
                 r.status == "satisfied" for r in self.required_evidence
             )
@@ -243,6 +251,16 @@ def align_experiment_to_scenario(
     if experiment:
         notes.append(f"intent={experiment.description[:120]}")
 
+    coverage = cover_steps(experiment, scenario)
+    base, chal = baseline_challenge_pair(scenario)
+
+    # When structured steps exist and baseline+challenge covered, refine discriminator via pair
+    if coverage and base is not None and chal is not None:
+        pair_outcome, pair_note = interpret_discriminator_pair(disc, base, chal, scenario)
+        if pair_outcome != "indeterminate":
+            outcome, note = pair_outcome, pair_note
+            notes.append(f"pair:{pair_note}")
+
     return ExperimentAlignment(
         experiment_id=exp_id,
         hypothesis_id=hyp_id,
@@ -254,7 +272,32 @@ def align_experiment_to_scenario(
         stop_condition=stop,
         stop_condition_status=stop_status,
         interpretation_notes=notes,
+        step_coverage=coverage,
+        baseline_ref=_obs_ref(base) if base else None,
+        challenge_ref=_obs_ref(chal) if chal else None,
     )
+
+
+def interpret_discriminator_pair(discriminator, baseline_obs, challenge_obs, scenario) -> tuple[str, str]:
+    """Pair-aware discriminator using explicit baseline/challenge observations."""
+    if baseline_obs is None or challenge_obs is None:
+        return "indeterminate", "pair incomplete"
+    d = (discriminator or "").lower()
+    b_st, c_st = baseline_obs.status, challenge_obs.status
+    if any(t in d for t in ("403", "404", "denied", "blocked")):
+        if c_st in (401, 403, 404) and b_st == 200:
+            return "supports", "challenge denied while baseline allowed"
+        if c_st == 200 and b_st == 200:
+            return "contradicts", "challenge allowed same as baseline (denial expected)"
+        return "ambiguous", "pair denial expectation unresolved"
+    # differential / procedure default
+    if b_st != c_st or (baseline_obs.body != challenge_obs.body):
+        if getattr(scenario, "suggests_authz_issue", False) and c_st == 200:
+            return "supports", "baseline vs challenge differential consistent with issue path"
+        if not getattr(scenario, "suggests_authz_issue", False) and c_st in (401, 403, 404):
+            return "supports", "baseline vs challenge differential consistent with secure path"
+        return "ambiguous", "differential present"
+    return "indeterminate", "no differential in pair"
 
 
 def resolve_selected_experiment(plan) -> Optional[Experiment]:
@@ -269,3 +312,96 @@ def resolve_selected_experiment(plan) -> Optional[Experiment]:
             if e.experiment_id == eid:
                 return e
     return experiments[0]
+
+
+# --- M5 structured step coverage -------------------------------------------------
+
+@dataclass
+class StepCoverage:
+    step_id: str
+    role: str
+    status: str  # covered | missing | ambiguous
+    observation_refs: list[str] = field(default_factory=list)
+    text: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "step_id": self.step_id,
+            "role": self.role,
+            "status": self.status,
+            "observation_refs": list(self.observation_refs),
+            "text": self.text,
+        }
+
+
+def _obs_ref(o) -> str:
+    return f"{getattr(o, 'role', '') or 'unset'}:{o.identity}:{o.method}:{o.path}:{o.status}"
+
+
+def cover_steps(experiment: Optional[Experiment], scenario) -> list[StepCoverage]:
+    if not experiment or not getattr(experiment, "steps", None):
+        return []
+    observations = list(getattr(scenario, "observations", []) or [])
+    by_role: dict[str, list] = {}
+    for o in observations:
+        role = (getattr(o, "role", None) or "").lower()
+        if role:
+            by_role.setdefault(role, []).append(o)
+
+    out: list[StepCoverage] = []
+    for step in experiment.steps:
+        role = step.role.value if hasattr(step.role, "value") else str(step.role)
+        refs: list[str] = []
+        status = "missing"
+
+        if role in ("baseline", "challenge"):
+            matched = by_role.get(role, [])
+            if len(matched) == 1:
+                status = "covered"
+                refs = [_obs_ref(matched[0])]
+            elif len(matched) > 1:
+                status = "ambiguous"
+                refs = [_obs_ref(m) for m in matched]
+            else:
+                status = "missing"
+        elif role == "compare":
+            b = by_role.get("baseline", [])
+            c = by_role.get("challenge", [])
+            if len(b) == 1 and len(c) == 1:
+                status = "covered"
+                refs = [_obs_ref(b[0]), _obs_ref(c[0])]
+            elif b or c:
+                status = "ambiguous"
+                refs = [_obs_ref(x) for x in b + c]
+            else:
+                status = "missing"
+        else:  # observe
+            if observations:
+                status = "covered"
+                refs = [_obs_ref(o) for o in observations]
+            else:
+                status = "missing"
+
+        out.append(
+            StepCoverage(
+                step_id=step.step_id,
+                role=role,
+                status=status,
+                observation_refs=refs,
+                text=step.text,
+            )
+        )
+    return out
+
+
+def baseline_challenge_pair(scenario) -> tuple[Optional[Any], Optional[Any]]:
+    """Explicit role-based pair — does not use list index."""
+    baseline = None
+    challenge = None
+    for o in getattr(scenario, "observations", []) or []:
+        role = (getattr(o, "role", None) or "").lower()
+        if role == "baseline" and baseline is None:
+            baseline = o
+        elif role == "challenge" and challenge is None:
+            challenge = o
+    return baseline, challenge

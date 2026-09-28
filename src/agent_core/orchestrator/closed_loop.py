@@ -52,6 +52,8 @@ class LabObservation:
     status: int
     body: str
     notes: str = ""
+    # M5: fixture-side role metadata (not inferred from list index)
+    role: str = ""  # baseline | challenge | "" (unset)
 
 
 @dataclass
@@ -108,7 +110,7 @@ def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
                 status=200,
                 body='{"id":1001,"owner":"user_a","amount":42.00,"status":"PAID"}',
                 notes="owner access",
-            ),
+                role="baseline"),
             LabObservation(
                 identity="user_b",
                 method="GET",
@@ -117,7 +119,7 @@ def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
                 status=200,
                 body='{"id":1001,"owner":"user_a","amount":42.00,"status":"PAID"}',
                 notes="non-owner received owner object body",
-            ),
+                role="challenge"),
         ],
     )
 
@@ -136,7 +138,7 @@ def secure_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
                 host=host,
                 status=200,
                 body='{"id":1001,"owner":"user_a"}',
-            ),
+                role="baseline"),
             LabObservation(
                 identity="user_b",
                 method="GET",
@@ -144,7 +146,7 @@ def secure_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
                 host=host,
                 status=403,
                 body='{"error":"forbidden"}',
-            ),
+                role="challenge"),
         ],
     )
 
@@ -164,7 +166,7 @@ def public_resource_lab_scenario(host: str = "api.acme-demo.test") -> LabScenari
                 status=200,
                 body='{"id":5,"visibility":"public","name":"widget"}',
                 notes="public resource baseline",
-            ),
+                role="baseline"),
             LabObservation(
                 identity="user_b",
                 method="GET",
@@ -173,7 +175,7 @@ def public_resource_lab_scenario(host: str = "api.acme-demo.test") -> LabScenari
                 status=200,
                 body='{"id":5,"visibility":"public","name":"widget"}',
                 notes="same public resource — not ownership bypass",
-            ),
+                role="challenge"),
         ],
     )
 
@@ -192,7 +194,7 @@ def shared_object_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
                 host=host,
                 status=200,
                 body='{"id":"shared-9","acl":["user_a","user_b"],"title":"team notes"}',
-            ),
+                role="baseline"),
             LabObservation(
                 identity="user_b",
                 method="GET",
@@ -200,7 +202,7 @@ def shared_object_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
                 host=host,
                 status=200,
                 body='{"id":"shared-9","acl":["user_a","user_b"],"title":"team notes"}',
-            ),
+                role="challenge"),
         ],
     )
 

@@ -90,7 +90,24 @@ class Hypothesis(BaseModel):
     parent_hypothesis_id: Optional[str] = None
 
 
+class ExperimentStepRole(str, Enum):
+    BASELINE = "baseline"
+    CHALLENGE = "challenge"
+    COMPARE = "compare"
+    OBSERVE = "observe"
+
+
+class ExperimentStep(BaseModel):
+    """Minimal structured step (M5). No tool/HTTP execution payload."""
+
+    step_id: str
+    order: int
+    role: ExperimentStepRole = ExperimentStepRole.OBSERVE
+    text: str = ""
+
+
 class ExperimentStatus(str, Enum):
+
     PLANNED = "planned"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -114,6 +131,7 @@ class Experiment(BaseModel):
     status: ExperimentStatus = ExperimentStatus.PLANNED
     tool_names: list[str] = Field(default_factory=list)
     skill_names: list[str] = Field(default_factory=list)
+    steps: list[ExperimentStep] = Field(default_factory=list)
 
 
 class DecisionAction(str, Enum):
