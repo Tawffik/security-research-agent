@@ -124,3 +124,39 @@ def test_g_store_does_not_write_knowledge_md(tmp_path):
     assert path.exists()
     # knowledge corpus files untouched
     assert (ROOT / "knowledge" / "procedures").is_dir()
+
+
+def test_skill_candidate_rejects_false_positive():
+    from agent_core.knowledge.candidates import promote_to_skill_candidate
+
+    c = KnowledgeCandidate(
+        candidate_id="KC-fp",
+        kind=CandidateKind.POSITIVE,
+        status=CandidateStatus.VALIDATED,
+        summary="x",
+        episode_id="e",
+        engagement_id="e",
+        evidence_ids=["1"],
+        universal_claim=False,
+    )
+    sk = promote_to_skill_candidate(c, benchmark_false_positive=True, benchmark_true_positive=True)
+    assert sk.status == "rejected"
+
+
+def test_skill_candidate_positive_needs_tp():
+    from agent_core.knowledge.candidates import promote_to_skill_candidate
+
+    c = KnowledgeCandidate(
+        candidate_id="KC-tp",
+        kind=CandidateKind.POSITIVE,
+        status=CandidateStatus.VALIDATED,
+        summary="x",
+        episode_id="e",
+        engagement_id="e",
+        evidence_ids=["1"],
+        universal_claim=False,
+    )
+    sk = promote_to_skill_candidate(c, benchmark_false_positive=False, benchmark_true_positive=False)
+    assert sk.status == "pending_benchmark"
+    sk2 = promote_to_skill_candidate(c, benchmark_false_positive=False, benchmark_true_positive=True)
+    assert sk2.status == "approved_for_review"

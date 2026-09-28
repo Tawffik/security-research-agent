@@ -264,3 +264,64 @@ class PromotionGate:
         candidate.status = CandidateStatus.PROMOTED
         candidate.promotion_reason = reason
         return candidate
+
+
+@dataclass
+class SkillCandidate:
+    """Benchmark-gated skill candidate — still not a runtime skill file."""
+
+    skill_candidate_id: str
+    from_candidate_id: str
+    status: str = "pending_benchmark"  # pending_benchmark | rejected | approved_for_review
+    benchmark_case_ids: list[str] = field(default_factory=list)
+    reason: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def promote_to_skill_candidate(
+    candidate: KnowledgeCandidate,
+    *,
+    benchmark_false_positive: bool,
+    benchmark_true_positive: bool = False,
+) -> SkillCandidate:
+    """
+    Benchmark gate: never approve skill candidate on FP.
+    Positive knowledge needs TP signal; negative/procedure can go to review without TP.
+    """
+    sid = f"SKC-{candidate.candidate_id}"
+    if candidate.universal_claim:
+        return SkillCandidate(
+            skill_candidate_id=sid,
+            from_candidate_id=candidate.candidate_id,
+            status="rejected",
+            reason="universal_claim_forbidden",
+        )
+    if benchmark_false_positive:
+        return SkillCandidate(
+            skill_candidate_id=sid,
+            from_candidate_id=candidate.candidate_id,
+            status="rejected",
+            reason="benchmark_false_positive",
+        )
+    if candidate.kind == CandidateKind.POSITIVE and not benchmark_true_positive:
+        return SkillCandidate(
+            skill_candidate_id=sid,
+            from_candidate_id=candidate.candidate_id,
+            status="pending_benchmark",
+            reason="positive_requires_true_positive_benchmark",
+        )
+    if candidate.status not in (CandidateStatus.VALIDATED, CandidateStatus.PROMOTED):
+        return SkillCandidate(
+            skill_candidate_id=sid,
+            from_candidate_id=candidate.candidate_id,
+            status="pending_benchmark",
+            reason="candidate_not_validated",
+        )
+    return SkillCandidate(
+        skill_candidate_id=sid,
+        from_candidate_id=candidate.candidate_id,
+        status="approved_for_review",
+        reason="benchmark_gate_passed_human_review_still_required",
+    )
