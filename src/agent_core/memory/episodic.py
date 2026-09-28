@@ -118,9 +118,17 @@ class EpisodicMemory:
                 added.append(e)
 
         if adaptive is not None:
+            gap = getattr(adaptive, "coverage_gap", None) or {}
+            sel = getattr(adaptive, "selection_reason", "") or ""
+            gap_roles = (gap.get("missing_roles") or []) + (gap.get("ambiguous_roles") or [])
+            gap_note = f" gap_roles={gap_roles}" if gap_roles else ""
+            sel_note = f" selection={sel}" if sel else ""
             e = self.try_add(
                 kind="adaptive",
-                summary=f"Adaptive: stop={adaptive.stop} action={adaptive.next_action} reason={adaptive.stop_reason}",
+                summary=(
+                    f"Adaptive: stop={adaptive.stop} action={adaptive.next_action} "
+                    f"reason={adaptive.stop_reason}{gap_note}{sel_note}"
+                ),
                 evidence_ids=evidence,
                 provenance="adaptive_loop",
                 confidence=0.65,
