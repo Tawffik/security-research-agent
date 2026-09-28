@@ -160,3 +160,17 @@ def test_fingerprint_stable():
     a = fingerprint_pattern(security_property="ssrf", abstraction="server side url fetch")
     b = fingerprint_pattern(security_property="ssrf", abstraction="server side url fetch")
     assert a == b
+
+
+def test_knowledge_engine_extraction_benchmark():
+    from agent_core.evaluation.benchmark import score_knowledge_extraction
+
+    case = extract_case_from_text(
+        "## Hypothesis\nIDOR missing ownership\n## Observation\n200 for non-owner\n",
+        case_id="CASE-BM",
+        source_id="S",
+    )
+    sc = score_knowledge_extraction(case, expected_property="authorization")
+    assert sc.extraction_property_ok
+    assert sc.overgeneralization_avoided
+    assert sc.notes.startswith("knowledge_engine")

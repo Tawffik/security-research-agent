@@ -144,3 +144,31 @@ def attach_benchmark_to_candidates(result: ClosedLoopResult, score: BenchmarkSco
     }
     for c in getattr(result, "knowledge_candidates", None) or []:
         c.benchmark_snapshot = dict(snap)
+
+
+@dataclass
+class KnowledgeEngineScore:
+    """Offline scores for knowledge expansion quality (not agent oracle leak)."""
+
+    extraction_property_ok: bool = False
+    unknowns_preserved: bool = False
+    cases_not_merged: bool = False
+    overgeneralization_avoided: bool = False
+    notes: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def score_knowledge_extraction(case, *, expected_property: str = "") -> KnowledgeEngineScore:
+    """Evaluate extractor quality without affecting research agent decisions."""
+    score = KnowledgeEngineScore()
+    if expected_property and getattr(case, "security_property", "") == expected_property:
+        score.extraction_property_ok = True
+    if getattr(case, "unknowns", None) is not None:
+        score.unknowns_preserved = True
+    # Overgeneralization check: abstraction-like fields must not claim always/never
+    blob = f"{getattr(case, 'hypothesis', '')} {getattr(case, 'root_cause', '')}".lower()
+    score.overgeneralization_avoided = "always vulnerable" not in blob and "never vulnerable" not in blob
+    score.notes = "knowledge_engine_benchmark_offline"
+    return score
