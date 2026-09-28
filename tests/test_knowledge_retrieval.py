@@ -92,7 +92,7 @@ def test_hypothesis_includes_knowledge_provenance_and_alts():
     )
     eng = HypothesisEngine("eng_m1")
     hyps = eng.generate_from_unknowns([], opps, ctx, retrieval=ret)
-    authz_hyps = [h for h in hyps if "Ownership" in h.statement or "mutat" in h.statement.lower()]
+    authz_hyps = [h for h in hyps if "Ownership" in h.statement or "mutat" in h.statement.lower() or "PAT-" in h.statement or "authorization failure" in h.statement.lower()]
     assert authz_hyps
     # Provenance visible in statement
     assert any("knowledge:" in h.statement for h in authz_hyps)
@@ -119,7 +119,7 @@ def test_experiment_is_procedure_driven_when_knowledge_present():
     )
     eng = HypothesisEngine("eng_m1")
     hyps = eng.generate_from_unknowns([], opps, ctx, retrieval=ret)
-    ownership = next(h for h in hyps if "Ownership bypass" in h.statement)
+    ownership = next(h for h in hyps if "Ownership bypass" in h.statement or "PAT-" in h.statement or "authorization failure" in h.statement.lower())
     designer = ExperimentDesigner("eng_m1")
     # Without retrieval — baseline template path
     exp_plain = designer.design(ownership, ctx, retrieval=None)

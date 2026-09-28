@@ -30,8 +30,9 @@ class ExperimentDesigner:
         retrieval: Optional[RetrievalResult] = None,
     ) -> Experiment:
         self.last_retrieval = retrieval
-        key = f"{hypothesis.hypothesis_id}:{hypothesis.statement[:40]}"
-        if key in self._cache and retrieval is None:
+        mode = "k" if (retrieval and retrieval.procedures) else "f"
+        key = f"{hypothesis.hypothesis_id}:{mode}:{hypothesis.statement[:40]}"
+        if key in self._cache:
             cached = self._cache[key]
             return cached.model_copy(update={"status": ExperimentStatus.CACHED})
 
@@ -87,31 +88,49 @@ class ExperimentDesigner:
         retrieval: RetrievalResult,
     ) -> Experiment:
         stmt = h.statement.lower()
-        # Choose mutation procedure if hypothesis is mutation-oriented
         procs = list(retrieval.procedures)
+
+        # Prefer procedure referenced by pattern id in hypothesis statement
+        for pat_id in retrieval.pattern_ids:
+            if pat_id.lower() in stmt:
+                matched = [
+                    p for p in procs
+                    if pat_id.upper() in (p.raw_excerpt or "").upper()
+                    or any(pat_id.upper() == r.upper() for r in p.related_ids)
+                ]
+                if matched:
+                    procs = matched + [p for p in procs if p not in matched]
+                break
+
         if any(k in stmt for k in ("mutat", "delete", "patch", "action-level")):
-            mut = [p for p in procs if "mutation" in p.tags or "0003" in p.record_id]
+            mut = [p for p in procs if "mutation" in [t.lower() for t in p.tags] or "0003" in p.record_id]
             if mut:
                 procs = mut + [p for p in procs if p not in mut]
 
         proc = procs[0]
         self.last_procedure_ids = [p.record_id for p in procs[:3]]
-        steps = proc.experiment_steps or [
+        steps = list(proc.experiment_steps) if proc.experiment_steps else [
             "Owner baseline request",
             "Non-owner same object request",
             "Compare status and sensitive fields",
         ]
-        evidence = proc.evidence_required or [
+        evidence = list(proc.evidence_required) if proc.evidence_required else [
             "identity_a_request",
             "identity_b_request",
             "response_diff",
             "ownership_proof",
         ]
-        stops = proc.stop_conditions or [
+        stops = list(proc.stop_conditions) if proc.stop_conditions else [
             "scope_violation",
             "evidence_sufficient",
             "equivalent experiment cached",
         ]
+        # Knowledge-conditioned: require procedure-listed evidence, not only defaults
+        if proc.evidence_required:
+            evidence = list(proc.evidence_required)[:8]
+        if proc.stop_conditions:
+            stops = list(proc.stop_conditions)[:4]
+
         target_path = self._pick_path(ctx, mutation="mutat" in stmt or "delete" in stmt)
         pattern_note = (
             f" patterns={','.join(retrieval.pattern_ids[:2])}"
@@ -123,10 +142,12 @@ class ExperimentDesigner:
             + " → ".join(steps[:4])
             + f" on {target_path}."
             + f" Provenance: {proc.path}.{pattern_note}"
+            + f" EvidenceReq={','.join(evidence[:4])}"
         )
         discriminator = (
-            f"procedure:{proc.record_id}|"
+            f"procedure:{proc.record_id}|steps:{len(steps)}|"
             + (steps[1] if len(steps) > 1 else steps[0])
+            + f"|evidence:{','.join(evidence[:3])}"
         )
         return self._make(
             hypothesis_id=h.hypothesis_id,
