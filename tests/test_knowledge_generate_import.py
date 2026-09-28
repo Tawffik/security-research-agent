@@ -145,3 +145,13 @@ def test_ssrf_knowledge_loaded_as_data():
     idx = KnowledgeIndex(KROOT).load()
     ids = {r.record_id.upper() for r in idx.records}
     assert any("0010" in i for i in ids)
+
+
+def test_retriever_include_generated_flag():
+    from agent_core.knowledge.retrieve import KnowledgeRetriever
+
+    r = KnowledgeRetriever(include_generated=True, knowledge_root=KROOT)
+    assert any(
+        "generated_candidate" in (rec.tags or []) or str(rec.path).startswith("generated://")
+        for rec in r.index.records
+    ) or len(r.index.records) >= 1

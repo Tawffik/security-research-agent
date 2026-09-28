@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -100,8 +102,27 @@ def _score_record(rec: KnowledgeRecord, query: KnowledgeQuery) -> float:
 
 
 class KnowledgeRetriever:
-    def __init__(self, index: Optional[KnowledgeIndex] = None):
-        self.index = index or KnowledgeIndex().load()
+    def __init__(
+        self,
+        index: Optional[KnowledgeIndex] = None,
+        *,
+        include_generated: bool = False,
+        knowledge_root: Optional[Path] = None,
+    ):
+        if index is not None:
+            self.index = index
+        elif include_generated:
+            from agent_core.knowledge.index import _default_knowledge_root
+            from agent_core.knowledge.registry import KnowledgeRegistry
+
+            reg = KnowledgeRegistry(knowledge_root or _default_knowledge_root())
+            self.index = reg.load_with_generated()
+        else:
+            self.index = (
+                KnowledgeIndex(knowledge_root).load()
+                if knowledge_root
+                else KnowledgeIndex().load()
+            )
 
     def retrieve(self, query: KnowledgeQuery) -> RetrievalResult:
         if not query.signals and not query.tags_any and not query.tags_prefer and not query.domain:
