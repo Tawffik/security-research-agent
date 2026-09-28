@@ -314,9 +314,13 @@ class ClosedLoopRunner:
             rendered = wrapped.render_for_model() if hasattr(wrapped, "render_for_model") else str(wrapped)
 
             polarity = EvidencePolarity.NEUTRAL
-            if scenario.suggests_authz_issue and obs.identity != "user_a" and obs.status == 200:
+            # Prefer explicit observation role when present (M11); fall back to identity heuristic
+            is_challenge = (getattr(obs, "role", "") or "") == "challenge" or (
+                not getattr(obs, "role", None) and obs.identity != "user_a"
+            )
+            if scenario.suggests_authz_issue and is_challenge and obs.status == 200:
                 polarity = EvidencePolarity.POSITIVE  # supports candidate issue
-            elif not scenario.suggests_authz_issue and obs.identity != "user_a" and obs.status in (401, 403, 404):
+            elif not scenario.suggests_authz_issue and is_challenge and obs.status in (401, 403, 404):
                 polarity = EvidencePolarity.NEGATIVE  # ownership enforced
             # Experiment-aware adjustment: incomplete required evidence → down-weight to NEUTRAL
             if alignment.required_evidence and not all(
