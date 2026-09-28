@@ -34,3 +34,20 @@ def test_compiler_does_not_write_skills():
     c = KnowledgeCompiler(ROOT / "knowledge")
     assert c.assert_no_auto_skill_write() is True
     assert not hasattr(c, "write_skill")
+
+
+def test_run_pipeline_stages():
+    report = KnowledgeCompiler(ROOT / "knowledge").run_pipeline()
+    assert report.extracted >= 1
+    assert report.normalized >= 1
+    assert report.classified
+    assert "case" in report.classified or "procedure" in report.classified or "pattern" in report.classified
+    assert report.lineage_edges >= 1
+    # no auto skill write
+    assert KnowledgeCompiler(ROOT / "knowledge").assert_no_auto_skill_write()
+
+
+def test_normalized_units_preserve_kind_and_property():
+    units = KnowledgeCompiler(ROOT / "knowledge").normalize()
+    assert all(u.unit_id and u.kind for u in units)
+    assert all(u.security_property for u in units)

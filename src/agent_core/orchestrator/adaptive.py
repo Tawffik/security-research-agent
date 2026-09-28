@@ -121,6 +121,10 @@ class AdaptiveLoop:
             notes.append(
                 f"gap_roles={gap.target_roles} covering={len(covering)} other={len(other)}"
             )
+            # Contextual retrieval signal (ranking only — not execution permission)
+            notes.append(
+                f"retrieval_context evidence_gap_roles={gap.target_roles}"
+            )
             decision = self.jev.choose(
                 jev_pool, hyps, budget_remaining_ratio=0.8
             )

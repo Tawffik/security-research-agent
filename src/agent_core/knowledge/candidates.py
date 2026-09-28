@@ -49,6 +49,7 @@ class KnowledgeCandidate:
     created_at: str = ""
     rejection_reason: str = ""
     promotion_reason: str = ""
+    benchmark_snapshot: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -304,6 +305,13 @@ def promote_to_skill_candidate(
             from_candidate_id=candidate.candidate_id,
             status="rejected",
             reason="benchmark_false_positive",
+        )
+    if candidate.kind == CandidateKind.POSITIVE and not candidate.benchmark_snapshot and not benchmark_true_positive:
+        return SkillCandidate(
+            skill_candidate_id=sid,
+            from_candidate_id=candidate.candidate_id,
+            status="pending_benchmark",
+            reason="benchmark_snapshot_required",
         )
     if candidate.kind == CandidateKind.POSITIVE and not benchmark_true_positive:
         return SkillCandidate(

@@ -129,3 +129,18 @@ def run_lab_benchmark(
         result = runner.run(recon_path, scenario=scenario)
         scores.append(evaluate_closed_result(case, result))
     return BenchmarkReport(scores=scores)
+
+
+def attach_benchmark_to_candidates(result: ClosedLoopResult, score: BenchmarkScore) -> None:
+    """Persist benchmark outcome onto knowledge candidates (does not change agent prior decisions)."""
+    snap = {
+        "case_id": score.case_id,
+        "ground_truth_hidden_from_agent": True,
+        "agent_outcome": score.agent_outcome,
+        "true_positive": score.true_positive,
+        "true_negative": score.true_negative,
+        "false_positive": score.false_positive,
+        "false_negative": score.false_negative,
+    }
+    for c in getattr(result, "knowledge_candidates", None) or []:
+        c.benchmark_snapshot = dict(snap)

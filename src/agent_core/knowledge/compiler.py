@@ -1,13 +1,14 @@
 """
-Knowledge Compiler (M10) — Source registry + lineage, not generic RAG.
+Knowledge Compiler — Source registry, lineage, normalize/classify/cluster.
 
-Pipeline intent:
-  Source → Case → Pattern → Procedure → Strategy → (candidate skill only)
+Pipeline implemented offline on curated corpus:
+  SOURCE → EXTRACT → NORMALIZE → CLASSIFY → CLUSTER
+  (GENERATE new MD / PROMOTE skills are explicit and NOT automatic)
 
 Does NOT:
   - scrape the web
-  - auto-promote to skills/
-  - write trusted knowledge MD without explicit review
+  - auto-write knowledge/*.md
+  - auto-promote skills/
 """
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ class SourceEntry:
 class LineageEdge:
     parent_id: str
     child_id: str
-    relation: str  # derived_from | references | extracts
+    relation: str
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -64,10 +65,53 @@ class LineageGraph:
         return list(dict.fromkeys(out))
 
     def lineage_for(self, record_id: str) -> list[str]:
-        """Ordered lineage tip → root where available."""
         chain = [record_id]
         chain.extend(self.ancestors(record_id))
         return chain
+
+
+@dataclass
+class NormalizedUnit:
+    unit_id: str
+    kind: str
+    title: str
+    domain: str
+    security_property: str
+    technologies: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    source_ids: list[str] = field(default_factory=list)
+    related_ids: list[str] = field(default_factory=list)
+    experiment_steps: list[str] = field(default_factory=list)
+    evidence_required: list[str] = field(default_factory=list)
+    abstraction: str = ""
+    path: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class CompileReport:
+    sources: int = 0
+    extracted: int = 0
+    normalized: int = 0
+    classified: dict[str, int] = field(default_factory=dict)
+    clustered: int = 0
+    units: list[NormalizedUnit] = field(default_factory=list)
+    lineage_edges: int = 0
+    deduped: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "sources": self.sources,
+            "extracted": self.extracted,
+            "normalized": self.normalized,
+            "classified": dict(self.classified),
+            "clustered": self.clustered,
+            "lineage_edges": self.lineage_edges,
+            "deduped": self.deduped,
+            "unit_ids": [u.unit_id for u in self.units],
+        }
 
 
 def parse_source_registry(path: Path) -> list[SourceEntry]:
@@ -75,7 +119,6 @@ def parse_source_registry(path: Path) -> list[SourceEntry]:
         return []
     text = path.read_text(encoding="utf-8")
     entries: list[SourceEntry] = []
-    # Table rows: | SRC-xxxx | tier | name | role | status |
     for line in text.splitlines():
         if not line.strip().startswith("| SRC-"):
             continue
@@ -83,9 +126,7 @@ def parse_source_registry(path: Path) -> list[SourceEntry]:
         if len(parts) < 5:
             continue
         sid, tier, name, role, status = parts[0], parts[1], parts[2], parts[3], parts[4]
-        linked = re.findall(r"(CASE|PAT|PROC|STRAT)-\d{4}", status + " " + role + " " + name)
-        # Also scan whole line for linked ids
-        linked += re.findall(r"(CASE|PAT|PROC|STRAT)-\d{4}", line)
+        linked = re.findall(r"(CASE|PAT|PROC|STRAT)-\d{4}", line)
         linked = list(dict.fromkeys(linked))
         entries.append(
             SourceEntry(
@@ -100,9 +141,16 @@ def parse_source_registry(path: Path) -> list[SourceEntry]:
     return entries
 
 
-class KnowledgeCompiler:
-    """Build lineage from curated sources + knowledge records."""
+def _tech_from_record(r: KnowledgeRecord) -> list[str]:
+    techs: list[str] = []
+    blob = f"{r.raw_excerpt} {' '.join(r.tags)} {r.title}".lower()
+    for token in ("graphql", "rest", "jwt", "oauth", "websocket", "grpc", "soap"):
+        if token in blob:
+            techs.append(token)
+    return list(dict.fromkeys(techs))
 
+
+class KnowledgeCompiler:
     def __init__(self, knowledge_root: Optional[Path] = None):
         self.root = knowledge_root or Path(__file__).resolve().parents[3] / "knowledge"
         self.index = KnowledgeIndex(self.root)
@@ -118,14 +166,11 @@ class KnowledgeCompiler:
                 edges.append(LineageEdge(parent_id=src.source_id, child_id=lid, relation="extracts"))
 
         for r in records:
-            # related_ids in record
             for rel in r.related_ids or []:
                 edges.append(LineageEdge(parent_id=rel, child_id=r.record_id, relation="references"))
-            # provenance / raw excerpt SRC-xxxx
             blob = f"{r.raw_excerpt} {r.path} {r.provenance}"
             for sid in re.findall(r"SRC-\d{4}", str(blob)):
                 edges.append(LineageEdge(parent_id=sid, child_id=r.record_id, relation="derived_from"))
-            # case → pattern → procedure heuristics from record_id prefixes in related
             if r.kind == "procedure":
                 for rel in r.related_ids or []:
                     if rel.startswith("PAT-"):
@@ -139,19 +184,78 @@ class KnowledgeCompiler:
                             LineageEdge(parent_id=rel, child_id=r.record_id, relation="generalizes")
                         )
 
-        # dedupe edges
-        seen = set()
+        seen: set[tuple[str, str, str]] = set()
         unique: list[LineageEdge] = []
         for e in edges:
             key = (e.parent_id, e.child_id, e.relation)
             if key not in seen:
                 seen.add(key)
                 unique.append(e)
-
         return LineageGraph(sources=sources, edges=unique, records_by_id=by_id)
 
+    def extract(self) -> list[KnowledgeRecord]:
+        return list(self.index.load().records)
+
+    def normalize(self, records: Optional[list[KnowledgeRecord]] = None) -> list[NormalizedUnit]:
+        records = records if records is not None else self.extract()
+        graph = self.compile()
+        units: list[NormalizedUnit] = []
+        seen_ids: set[str] = set()
+        for r in records:
+            if r.record_id in seen_ids:
+                continue
+            seen_ids.add(r.record_id)
+            src_ids = [
+                e.parent_id
+                for e in graph.edges
+                if e.child_id == r.record_id and e.parent_id.startswith("SRC-")
+            ]
+            units.append(
+                NormalizedUnit(
+                    unit_id=r.record_id,
+                    kind=r.kind,
+                    title=r.title,
+                    domain=r.domain or "authorization",
+                    security_property=r.security_property or "authorization",
+                    technologies=_tech_from_record(r),
+                    tags=list(r.tags or []),
+                    source_ids=src_ids,
+                    related_ids=list(r.related_ids or []),
+                    experiment_steps=list(r.experiment_steps or []),
+                    evidence_required=list(r.evidence_required or []),
+                    abstraction=r.abstraction or "",
+                    path=r.path,
+                )
+            )
+        return units
+
+    def classify_counts(self, units: list[NormalizedUnit]) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for u in units:
+            counts[u.kind] = counts.get(u.kind, 0) + 1
+        return counts
+
+    def cluster_by_property(self, units: list[NormalizedUnit]) -> dict[str, list[str]]:
+        clusters: dict[str, list[str]] = {}
+        for u in units:
+            key = u.security_property or "unknown"
+            clusters.setdefault(key, []).append(u.unit_id)
+        return clusters
+
+    def run_pipeline(self) -> CompileReport:
+        graph = self.compile()
+        records = self.extract()
+        units = self.normalize(records)
+        return CompileReport(
+            sources=len(graph.sources),
+            extracted=len(records),
+            normalized=len(units),
+            classified=self.classify_counts(units),
+            clustered=len(self.cluster_by_property(units)),
+            units=units,
+            lineage_edges=len(graph.edges),
+            deduped=max(0, len(records) - len(units)),
+        )
+
     def assert_no_auto_skill_write(self) -> bool:
-        """Compiler never writes skills/ — safety check for tests."""
-        skills = self.root.parent / "skills"
-        # We only assert this module has no write API to skills — always True by design
         return not hasattr(self, "write_skill")

@@ -67,3 +67,18 @@ def build_authz_query(
         require_domain_match=False,  # many records tag authorization without strict domain field
         extra_competing_explanations=list(AUTHZ_DEFAULT_COMPETING),
     )
+
+
+def build_authz_query_with_gap(
+    ctx: TargetContext,
+    opportunities: list[Opportunity],
+    *,
+    missing_roles: list[str] | None = None,
+    limit: int = 5,
+) -> KnowledgeQuery:
+    """Contextual retrieval: include evidence-gap roles as ranking signals."""
+    q = build_authz_query(ctx, opportunities, limit=limit)
+    for role in missing_roles or []:
+        q.signals.append(f"evidence_gap:{role}")
+        q.tags_prefer.append(role)
+    return q

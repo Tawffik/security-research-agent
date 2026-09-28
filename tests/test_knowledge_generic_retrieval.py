@@ -194,3 +194,20 @@ def test_authz_query_includes_technology_signals():
     q = build_authz_query(ctx, [])
     assert any(s.startswith("tech:") for s in q.signals)
     assert "jwt" in q.tags_prefer or "graphql" in q.tags_prefer
+
+
+def test_authz_query_with_gap_signals():
+    from agent_core.knowledge.domains.authorization import build_authz_query_with_gap
+    from agent_core.schemas.target import TargetContext, Actor, ActorType, Endpoint
+
+    ctx = TargetContext(
+        engagement_id="e",
+        primary_host="api.example.test",
+        actors=[
+            Actor(actor_id="a", name="a", actor_type=ActorType.USER),
+            Actor(actor_id="b", name="b", actor_type=ActorType.USER),
+        ],
+        endpoints=[Endpoint(endpoint_id="e1", method="GET", path="/api/orders/{id}")],
+    )
+    q = build_authz_query_with_gap(ctx, [], missing_roles=["challenge"])
+    assert any(s == "evidence_gap:challenge" for s in q.signals)

@@ -37,3 +37,12 @@ def test_ground_truth_only_in_evaluator():
     score = evaluate_closed_result(case, result)
     assert score.notes.startswith("ground_truth hidden")
     assert not hasattr(result, "ground_truth")
+
+
+def test_adversarial_oracle_not_on_closed_result_fields():
+    result = ClosedLoopRunner(scope_path=SCOPE, engagement_id="bm_adv").run(
+        FIXTURE, scenario=default_idor_lab_scenario()
+    )
+    dumped = str(result.__dict__)
+    assert "ground_truth" not in dumped
+    assert "vulnerable" not in (result.experiment_alignment or {})

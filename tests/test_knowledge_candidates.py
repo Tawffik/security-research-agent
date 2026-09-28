@@ -160,3 +160,22 @@ def test_skill_candidate_positive_needs_tp():
     assert sk.status == "pending_benchmark"
     sk2 = promote_to_skill_candidate(c, benchmark_false_positive=False, benchmark_true_positive=True)
     assert sk2.status == "approved_for_review"
+
+
+def test_benchmark_snapshot_on_candidate_after_attach():
+    from agent_core.evaluation.benchmark import (
+        BenchmarkCase,
+        evaluate_closed_result,
+        attach_benchmark_to_candidates,
+    )
+
+    result = ClosedLoopRunner(scope_path=SCOPE, engagement_id="eng_bm_snap").run(
+        FIXTURE, scenario=default_idor_lab_scenario()
+    )
+    score = evaluate_closed_result(
+        BenchmarkCase("bm", "default_idor", "vulnerable", "confirmed"), result
+    )
+    attach_benchmark_to_candidates(result, score)
+    if result.knowledge_candidates:
+        assert result.knowledge_candidates[0].benchmark_snapshot.get("case_id") == "bm"
+        assert result.knowledge_candidates[0].benchmark_snapshot.get("ground_truth_hidden_from_agent") is True

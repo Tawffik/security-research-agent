@@ -337,10 +337,11 @@ class ClosedLoopRunner:
             ):
                 polarity = EvidencePolarity.NEUTRAL
 
+            role = getattr(obs, "role", "") or ""
             ev = self.evidence.record(
                 target=f"{obs.host}{obs.path}",
                 action=f"{obs.method} as {obs.identity}",
-                input_data=f"identity={obs.identity}",
+                input_data=f"identity={obs.identity}|role={role}",
                 expected=scenario.expected_if_secure,
                 observed=f"status={obs.status} body={rendered[:500]}",
                 polarity=polarity,
