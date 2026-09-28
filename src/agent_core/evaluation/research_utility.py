@@ -21,6 +21,9 @@ from agent_core.orchestrator.closed_loop import (
     public_resource_lab_scenario,
     secure_lab_scenario,
     shared_object_lab_scenario,
+    hard_authz_lab_scenario,
+    business_logic_coupon_lab_scenario,
+    hard_ssrf_lab_scenario,
 )
 
 
@@ -57,6 +60,8 @@ class InfluenceTrace:
     referee_accepted: bool = False
     evidence_count: int = 0
     n_experiments_designed: int = 0
+    knowledge_procedure_blocked: bool = False
+    influence_class: str = ""  # useful_influence | influenced_no_utility_gain | retrieved_no_decision_effect | harmful_influence | none
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -76,6 +81,8 @@ class UtilityMetrics:
     knowledge_changed_experiment: bool = False
     retrieval_had_effect: bool = False
     irrelevant_contamination: bool = False
+    knowledge_procedure_blocked: bool = False
+    influence_class: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -98,7 +105,20 @@ def _scenario(name: str) -> LabScenario:
         return public_resource_lab_scenario()
     if name == "shared":
         return shared_object_lab_scenario()
+    if name == "hard_authz":
+        return hard_authz_lab_scenario()
+    if name == "business_logic":
+        return business_logic_coupon_lab_scenario()
+    if name == "hard_ssrf":
+        return hard_ssrf_lab_scenario()
     raise ValueError(name)
+
+
+HARD_SCENARIOS = [
+    ScenarioSpec("hard_authz", "hard_authz", "vulnerable", "confirmed"),
+    ScenarioSpec("business_logic", "business_logic", "vulnerable", "confirmed"),
+    ScenarioSpec("hard_ssrf", "hard_ssrf", "vulnerable", "confirmed"),
+]
 
 
 def _irrelevant_record() -> KnowledgeRecord:
@@ -244,6 +264,30 @@ def run_condition(
     fn = gt == "vulnerable" and outcome != "confirmed"
 
     hyp_knowledge = trace.hyp_mode == "knowledge_driven"
+    blocked = bool(getattr(result, "knowledge_procedure_required_blocked", False))
+    trace.knowledge_procedure_blocked = blocked
+
+    # Influence classification (A/B interpretive labels for evaluator)
+    if condition == KnowledgeCondition.NONE:
+        ic = "none"
+    elif not kid:
+        ic = "retrieved_no_decision_effect" if not (hyp_knowledge or knowledge_driven_exp) else "influenced_no_utility_gain"
+    elif fp:
+        ic = "harmful_influence"
+    elif hyp_knowledge or knowledge_driven_exp:
+        if tp and condition in (
+            KnowledgeCondition.CURATED,
+            KnowledgeCondition.CURATED_PLUS_GENERATED,
+        ):
+            ic = "useful_influence"
+        elif not tp and not tn:
+            ic = "influenced_no_utility_gain"
+        else:
+            ic = "useful_influence" if (tp or tn) else "influenced_no_utility_gain"
+    else:
+        ic = "retrieved_no_decision_effect"
+    trace.influence_class = ic
+
     metrics = UtilityMetrics(
         condition=condition.value,
         scenario_id=scenario.scenario_id,
@@ -260,6 +304,8 @@ def run_condition(
             and outcome == "confirmed"
             and gt != "vulnerable"
         ),
+        knowledge_procedure_blocked=blocked,
+        influence_class=ic,
     )
     return trace, metrics, result
 

@@ -73,6 +73,9 @@ class LabScenario:
     expected_if_secure: str
     # If True, observations are consistent with a possible ownership bypass.
     suggests_authz_issue: bool = False
+    # Hard-scenario: confirm only if selected experiment is knowledge/procedure-driven
+    requires_knowledge_procedure: bool = False
+    methodology: str = "authorization"
 
 
 @dataclass
@@ -91,6 +94,10 @@ class ClosedLoopResult:
     belief_updates: list[str] = field(default_factory=list)
     selected_experiment_id: Optional[str] = None
     experiment_alignment: Optional[dict] = None
+    budget_exhausted: bool = False
+    knowledge_procedure_required_blocked: bool = False
+    max_experiments_budget: Optional[int] = None
+    experiments_designed: int = 0
     report: Optional[EvidenceReport] = None
     root_cause: Optional[RootCause] = None
     variants: list[VariantCandidate] = field(default_factory=list)
@@ -214,6 +221,79 @@ def shared_object_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
 
 
 
+def hard_authz_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """
+    Hard authz: same leak signals as IDOR, but confirmation requires
+    knowledge/procedure-driven experiment selection (baseline without knowledge → incomplete).
+    """
+    return LabScenario(
+        name="lab_hard_authz_requires_procedure",
+        expected_if_secure="Non-owner denied",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="authorization",
+        observations=[
+            LabObservation(
+                identity="user_a", method="GET", path="/api/orders/1001", host=host,
+                status=200, body='{"id":1001,"owner":"user_a","secret":"s"}', notes="owner",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="user_b", method="GET", path="/api/orders/1001", host=host,
+                status=200, body='{"id":1001,"owner":"user_a","secret":"s"}', notes="leak",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def business_logic_coupon_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Coupon replay: second redemption still accepted — business invariant break."""
+    return LabScenario(
+        name="lab_business_logic_coupon_replay",
+        expected_if_secure="Second redemption rejected",
+        suggests_authz_issue=True,  # treated as issue path for lab referee
+        requires_knowledge_procedure=True,
+        methodology="business_logic",
+        observations=[
+            LabObservation(
+                identity="user_a", method="POST", path="/api/checkout", host=host,
+                status=200, body='{"order":1,"coupon":"SAVE10","applied":true}',
+                notes="first redeem", role="baseline",
+            ),
+            LabObservation(
+                identity="user_a", method="POST", path="/api/checkout", host=host,
+                status=200, body='{"order":2,"coupon":"SAVE10","applied":true}',
+                notes="replay accepted", role="challenge",
+            ),
+        ],
+    )
+
+
+def hard_ssrf_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """SSRF-like: challenge fetch returns metadata markers; requires knowledge procedure."""
+    return LabScenario(
+        name="lab_hard_ssrf_metadata",
+        expected_if_secure="No internal metadata body",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="ssrf",
+        observations=[
+            LabObservation(
+                identity="svc", method="POST", path="/api/fetch", host=host,
+                status=200, body='{"url":"https://example.com","ok":true}',
+                notes="public url", role="baseline",
+            ),
+            LabObservation(
+                identity="svc", method="POST", path="/api/fetch", host=host,
+                status=200, body='{"url":"http://169.254.169.254/","body":"meta"}',
+                notes="metadata", role="challenge",
+            ),
+        ],
+    )
+
+
+
 class ClosedLoopRunner:
     """
     Runs plan + lab observation + evidence + verification under ScopeGuard.
@@ -228,6 +308,7 @@ class ClosedLoopRunner:
         engagement_id: str = "eng_closed_loop",
         data_dir: Optional[Path] = None,
         knowledge_retriever=None,
+        max_experiments_budget: Optional[int] = None,
     ):
         self.engagement_id = engagement_id
         self.scope_path = Path(scope_path)
@@ -239,6 +320,7 @@ class ClosedLoopRunner:
             engagement_id=engagement_id,
             knowledge_retriever=knowledge_retriever,
         )
+        self.max_experiments_budget = max_experiments_budget
 
     def run(
         self,
@@ -466,6 +548,27 @@ class ClosedLoopRunner:
         )
         ruling = loop.run(hypothesis_id=hyp_id, target=f"{host}/api/orders/1001")
 
+        # Hard-scenario gate: require procedure-driven experiment for confirmation
+        knowledge_driven = bool(
+            getattr(self.research.experiment_designer, "last_procedure_ids", None)
+        ) or bool(
+            selected_experiment
+            and (
+                "procedure:" in (getattr(selected_experiment, "discriminator", "") or "")
+                or getattr(selected_experiment, "steps", None)
+            )
+        )
+        knowledge_blocked = False
+        if getattr(scenario, "requires_knowledge_procedure", False) and not knowledge_driven:
+            knowledge_blocked = True
+            # Force incomplete — discriminating procedure not selected (baseline insufficiency)
+            class _Forced:
+                accepted = False
+                final_status = type("S", (), {"value": "incomplete"})()
+                finding_id = None
+                reason = "knowledge_procedure_required_not_selected"
+            ruling = _Forced()  # type: ignore
+
         final_status = ruling.final_status.value if ruling.final_status else "unknown"
         belief_updates: list[str] = []
         # Update beliefs + hypothesis portfolio from referee outcome
@@ -565,6 +668,9 @@ class ClosedLoopRunner:
             variants=variants,
             poc=poc,
             selected_experiment_id=alignment.experiment_id,
+            knowledge_procedure_required_blocked=knowledge_blocked,
+            experiments_designed=len(plan.experiments or []),
+            max_experiments_budget=getattr(self, "max_experiments_budget", None),
             experiment_alignment=alignment.to_dict(),
         )
         # M11: normalize lab observations (not findings)
