@@ -125,6 +125,11 @@ class AdaptiveLoop:
 
             top_variant = closed.variants[0]
             next_exp = experiments[0]
+            # M4: keep identity for closed-loop resolve_selected_experiment compatibility
+            notes.append(
+                f"M4 provenance next_experiment_id={next_exp.experiment_id} "
+                f"hypothesis_id={next_exp.hypothesis_id}"
+            )
             for e in experiments:
                 desc = (e.description or "").lower()
                 if any(
@@ -147,7 +152,7 @@ class AdaptiveLoop:
                     stop_reason="jev_stop",
                     next_action="STOP",
                     decision=decision,
-                    next_experiment=next_exp,
+                    next_experiment=next_exp,  # provenance: experiment_id + hypothesis_id on Experiment
                     reranked_opportunities=ranked,
                     notes=notes,
                 )
@@ -162,7 +167,7 @@ class AdaptiveLoop:
                 stop_reason="",
                 next_action="EXECUTE_VARIANT",
                 decision=decision,
-                next_experiment=next_exp,
+                next_experiment=next_exp,  # provenance: experiment_id + hypothesis_id on Experiment
                 reranked_opportunities=ranked,
                 notes=notes,
             )

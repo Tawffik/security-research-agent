@@ -21,6 +21,10 @@ from typing import Any, Optional, Union
 
 from agent_core.content_isolation.sanitizer import wrap_target_content
 from agent_core.evidence.store import EvidencePolarity, EvidenceStore, FindingStatus
+from agent_core.orchestrator.experiment_alignment import (
+    align_experiment_to_scenario,
+    resolve_selected_experiment,
+)
 from agent_core.evaluation.episode import EpisodeRecorder, ResearchEpisode
 from agent_core.findings.poc import MinimizedPoC, PoCMinimizer
 from agent_core.findings.report import EvidenceReport, build_evidence_report
@@ -80,6 +84,8 @@ class ClosedLoopResult:
     limitations: list[str] = field(default_factory=list)
     stop_reason: str = ""
     belief_updates: list[str] = field(default_factory=list)
+    selected_experiment_id: Optional[str] = None
+    experiment_alignment: Optional[dict] = None
     report: Optional[EvidenceReport] = None
     root_cause: Optional[RootCause] = None
     variants: list[VariantCandidate] = field(default_factory=list)
@@ -231,6 +237,17 @@ class ClosedLoopRunner:
         host = plan.target_context.primary_host or "api.acme-demo.test"
         scenario = scenario or default_idor_lab_scenario(host)
 
+        selected_experiment = resolve_selected_experiment(plan)
+        hyp_id_early = (
+            (plan.decision.hypothesis_id if plan.decision else None)
+            or (plan.hypotheses[0].hypothesis_id if plan.hypotheses else None)
+        )
+        alignment = align_experiment_to_scenario(
+            selected_experiment,
+            scenario,
+            hypothesis_id=hyp_id_early,
+        )
+
         limitations = [
             "Observations are LabScenario fixtures, not live HTTP",
             "Not BugBountyCI production artifact integration",
@@ -268,7 +285,7 @@ class ClosedLoopRunner:
             return deny_result
 
         evidence_ids: list[str] = []
-        hyp_id = plan.decision.hypothesis_id or (
+        hyp_id = alignment.hypothesis_id or plan.decision.hypothesis_id or (
             plan.hypotheses[0].hypothesis_id if plan.hypotheses else "H1"
         )
 
@@ -285,6 +302,20 @@ class ClosedLoopRunner:
                 polarity = EvidencePolarity.POSITIVE  # supports candidate issue
             elif not scenario.suggests_authz_issue and obs.identity != "user_a" and obs.status in (401, 403, 404):
                 polarity = EvidencePolarity.NEGATIVE  # ownership enforced
+            # Experiment-aware adjustment: incomplete required evidence → down-weight to NEUTRAL
+            if alignment.required_evidence and not all(
+                r.status == "satisfied" for r in alignment.required_evidence
+            ):
+                if polarity == EvidencePolarity.POSITIVE and any(
+                    r.status == "missing" for r in alignment.required_evidence
+                ):
+                    polarity = EvidencePolarity.NEUTRAL
+            # Discriminator contradicts scenario issue path → prefer NEUTRAL for non-owner 200
+            if (
+                alignment.discriminator_outcome == "contradicts"
+                and polarity == EvidencePolarity.POSITIVE
+            ):
+                polarity = EvidencePolarity.NEUTRAL
 
             ev = self.evidence.record(
                 target=f"{obs.host}{obs.path}",
@@ -294,10 +325,32 @@ class ClosedLoopRunner:
                 observed=f"status={obs.status} body={rendered[:500]}",
                 polarity=polarity,
                 confidence=0.85,
-                source="closed_loop.lab_scenario",
+                source=(f"closed_loop.lab_scenario|exp={alignment.experiment_id}|hyp={alignment.hypothesis_id}|sc={scenario.name}"),
                 related_hypothesis=hyp_id,
             )
             evidence_ids.append(ev.evidence_id)
+
+        # M4: experiment alignment metadata as NEUTRAL evidence (not a finding)
+        align_blob = alignment.to_dict()
+        ev_align = self.evidence.record(
+            target=f"{host}/experiment_alignment",
+            action=f"align experiment {alignment.experiment_id}",
+            input_data=str(align_blob),
+            expected=alignment.discriminator or "n/a",
+            observed=(
+                f"discriminator_outcome={alignment.discriminator_outcome};"
+                f"stop={alignment.stop_condition_status};"
+                f"req={[(r.requirement, r.status) for r in alignment.required_evidence]}"
+            ),
+            polarity=EvidencePolarity.NEUTRAL,
+            confidence=0.9,
+            related_hypothesis=alignment.hypothesis_id or hyp_id_early,
+            source=(
+                f"closed_loop.experiment_alignment|exp={alignment.experiment_id}"
+                f"|hyp={alignment.hypothesis_id}|sc={scenario.name}"
+            ),
+        )
+        evidence_ids.append(ev_align.evidence_id)
 
         # Differential summary evidence
         if len(scenario.observations) >= 2:
@@ -484,6 +537,8 @@ class ClosedLoopRunner:
             root_cause=root_cause,
             variants=variants,
             poc=poc,
+            selected_experiment_id=alignment.experiment_id,
+            experiment_alignment=alignment.to_dict(),
         )
         out.episode = EpisodeRecorder(self.engagement_id).from_closed_loop(out)
         return out
