@@ -110,12 +110,14 @@ def parse_knowledge_markdown(path: Path, kind: str) -> Optional[KnowledgeRecord]
             record_id = i
             break
 
-    domain = "authorization"
+    domain = "unknown"
     dm = re.search(r"\*\*Domain:\*\*\s*(\S+)", text, re.I)
     if dm:
         domain = dm.group(1).strip().lower()
     elif "authorization" in text.lower() or "bola" in text.lower() or "idor" in text.lower():
         domain = "authorization"
+    elif "graphql" in text.lower():
+        domain = "authorization"  # GraphQL authz cases remain authorization family
 
     sec = _section(text, "Security property", "security property")
     if not sec:
