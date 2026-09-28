@@ -26,6 +26,7 @@ from agent_core.orchestrator.experiment_alignment import (
     resolve_selected_experiment,
 )
 from agent_core.evaluation.episode import EpisodeRecorder, ResearchEpisode
+from agent_core.knowledge.candidates import KnowledgeCandidateFactory
 from agent_core.findings.poc import MinimizedPoC, PoCMinimizer
 from agent_core.findings.report import EvidenceReport, build_evidence_report
 from agent_core.orchestrator.research_loop import ResearchLoop, ResearchLoopResult
@@ -93,6 +94,7 @@ class ClosedLoopResult:
     variants: list[VariantCandidate] = field(default_factory=list)
     poc: Optional[MinimizedPoC] = None
     episode: Optional[ResearchEpisode] = None
+    knowledge_candidates: list = field(default_factory=list)
 
 
 def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
@@ -553,4 +555,7 @@ class ClosedLoopRunner:
             experiment_alignment=alignment.to_dict(),
         )
         out.episode = EpisodeRecorder(self.engagement_id).from_closed_loop(out)
+        out.knowledge_candidates = KnowledgeCandidateFactory(self.engagement_id).from_closed_loop(
+            out, episode_id=getattr(out.episode, "episode_id", "")
+        )
         return out

@@ -29,6 +29,7 @@ def run_closed_then_adaptive(
     engagement_id: str,
     scenario: Optional[LabScenario] = None,
     max_followups: int = 1,
+    followup_scenario: Optional[LabScenario] = None,
 ) -> tuple:
     runner = ClosedLoopRunner(scope_path=scope_path, engagement_id=engagement_id)
     closed = runner.run(recon_path, scenario=scenario)
@@ -43,9 +44,11 @@ def run_closed_then_adaptive(
         and max_followups > 0
     ):
         followup_exp = adaptive.next_experiment
+        # Explicit alternate fixtures only — never fabricate observations
+        fu_scenario = followup_scenario if followup_scenario is not None else scenario
         followup_closed = runner.run(
             recon_path,
-            scenario=scenario,
+            scenario=fu_scenario,
             force_experiment=followup_exp,
             skip_research=True,
             prior_plan=closed.plan,

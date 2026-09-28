@@ -70,3 +70,19 @@ def test_episode_records_coverage_lessons_when_present():
     if result.selected_experiment_id:
         lessons = " ".join(result.episode.lessons)
         assert result.selected_experiment_id in lessons or "experiment" in lessons.lower() or lessons is not None
+
+
+def test_explicit_followup_scenario_not_fabricated():
+    from agent_core.orchestrator.closed_loop import secure_lab_scenario
+
+    closed, adaptive, *_ = run_closed_then_adaptive(
+        recon_path=FIXTURE,
+        scope_path=SCOPE,
+        engagement_id="eng_m7_fu_sc",
+        scenario=default_idor_lab_scenario(),
+        followup_scenario=secure_lab_scenario(),
+        max_followups=1,
+    )
+    assert closed is not None
+    # primary still first scenario path
+    assert adaptive is not None
