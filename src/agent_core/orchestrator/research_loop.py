@@ -41,7 +41,11 @@ class ResearchLoopResult:
 
 
 class ResearchLoop:
-    def __init__(self, engagement_id: str = "eng_offline_001"):
+    def __init__(
+        self,
+        engagement_id: str = "eng_offline_001",
+        knowledge_retriever: Optional[KnowledgeRetriever] = None,
+    ):
         self.engagement_id = engagement_id
         self.adapter = ReconResultAdapter(engagement_id)
         self.opportunity_engine = OpportunityEngine(engagement_id)
@@ -49,7 +53,7 @@ class ResearchLoop:
         self.belief_engine = BeliefEngine(engagement_id)
         self.hypothesis_engine = HypothesisEngine(engagement_id)
         self.experiment_designer = ExperimentDesigner(engagement_id)
-        self.knowledge_retriever = KnowledgeRetriever()
+        self.knowledge_retriever = knowledge_retriever or KnowledgeRetriever()
         self.jev = JEV(engagement_id)
         self.last_retrieval = None
 

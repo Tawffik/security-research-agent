@@ -227,6 +227,7 @@ class ClosedLoopRunner:
         scope_path: Union[str, Path],
         engagement_id: str = "eng_closed_loop",
         data_dir: Optional[Path] = None,
+        knowledge_retriever=None,
     ):
         self.engagement_id = engagement_id
         self.scope_path = Path(scope_path)
@@ -234,7 +235,10 @@ class ClosedLoopRunner:
         self.data_dir = Path(data_dir) if data_dir else Path(tempfile.mkdtemp(prefix="sra_loop_"))
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.evidence = EvidenceStore.open(self.data_dir / f"{engagement_id}_evidence.db")
-        self.research = ResearchLoop(engagement_id=engagement_id)
+        self.research = ResearchLoop(
+            engagement_id=engagement_id,
+            knowledge_retriever=knowledge_retriever,
+        )
 
     def run(
         self,
