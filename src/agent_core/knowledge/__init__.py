@@ -3,6 +3,7 @@
 from agent_core.knowledge.index import KnowledgeIndex, KnowledgeRecord
 from agent_core.knowledge.query import KnowledgeQuery
 from agent_core.knowledge.retrieve import KnowledgeRetriever, RetrievalResult
+from agent_core.knowledge.compiler import KnowledgeCompiler, LineageGraph, SourceEntry
 from agent_core.knowledge.candidates import (
     KnowledgeCandidate,
     KnowledgeCandidateFactory,
@@ -24,4 +25,7 @@ __all__ = [
     "PromotionGate",
     "CandidateStatus",
     "CandidateKind",
+    "KnowledgeCompiler",
+    "LineageGraph",
+    "SourceEntry",
 ]

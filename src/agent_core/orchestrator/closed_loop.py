@@ -27,6 +27,7 @@ from agent_core.orchestrator.experiment_alignment import (
 )
 from agent_core.evaluation.episode import EpisodeRecorder, ResearchEpisode
 from agent_core.knowledge.candidates import KnowledgeCandidateFactory
+from agent_core.schemas.observation import Observation, from_lab_observation
 from agent_core.findings.poc import MinimizedPoC, PoCMinimizer
 from agent_core.findings.report import EvidenceReport, build_evidence_report
 from agent_core.orchestrator.research_loop import ResearchLoop, ResearchLoopResult
@@ -95,6 +96,7 @@ class ClosedLoopResult:
     poc: Optional[MinimizedPoC] = None
     episode: Optional[ResearchEpisode] = None
     knowledge_candidates: list = field(default_factory=list)
+    normalized_observations: list = field(default_factory=list)
 
 
 def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
@@ -554,6 +556,25 @@ class ClosedLoopRunner:
             selected_experiment_id=alignment.experiment_id,
             experiment_alignment=alignment.to_dict(),
         )
+        # M11: normalize lab observations (not findings)
+        base_lab = None
+        for i, lo in enumerate(out.observations or []):
+            if getattr(lo, "role", "") == "baseline":
+                base_lab = lo
+                break
+            if i == 0:
+                base_lab = lo
+        out.normalized_observations = [
+            from_lab_observation(
+                lo,
+                engagement_id=self.engagement_id,
+                experiment_id=out.selected_experiment_id or "",
+                hypothesis_id=alignment.hypothesis_id if alignment else "",
+                index=i,
+                baseline=base_lab if getattr(lo, "role", "") == "challenge" else None,
+            )
+            for i, lo in enumerate(out.observations or [])
+        ]
         out.episode = EpisodeRecorder(self.engagement_id).from_closed_loop(out)
         out.knowledge_candidates = KnowledgeCandidateFactory(self.engagement_id).from_closed_loop(
             out, episode_id=getattr(out.episode, "episode_id", "")
