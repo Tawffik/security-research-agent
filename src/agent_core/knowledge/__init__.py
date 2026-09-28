@@ -1,0 +1,11 @@
+"""Knowledge runtime: curated MD → index → contextual retrieval (not RAG/vector DB)."""
+
+from agent_core.knowledge.index import KnowledgeIndex, KnowledgeRecord
+from agent_core.knowledge.retrieve import KnowledgeRetriever, RetrievalResult
+
+__all__ = [
+    "KnowledgeIndex",
+    "KnowledgeRecord",
+    "KnowledgeRetriever",
+    "RetrievalResult",
+]

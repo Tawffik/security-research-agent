@@ -17,6 +17,7 @@ from typing import Any, Optional
 
 from agent_core.decisions.jev import JEV
 from agent_core.experiments.designer import ExperimentDesigner
+from agent_core.knowledge.retrieve import KnowledgeRetriever
 from agent_core.orchestrator.closed_loop import ClosedLoopResult
 from agent_core.schemas.research import Decision, DecisionAction, Experiment, Opportunity
 from agent_core.target.opportunity import OpportunityEngine
@@ -107,11 +108,11 @@ class AdaptiveLoop:
                 )
 
             hyps = list(plan.hypotheses or [])
-            experiments = self.designer.design_portfolio(hyps, plan.target_context)
+            experiments = self.designer.design_portfolio(hyps, plan.target_context, retrieval=getattr(self, '_retrieval', None))
             if not experiments:
                 # design from first hypothesis even if status not open
                 if hyps:
-                    experiments = [self.designer.design(hyps[0], plan.target_context)]
+                    experiments = [self.designer.design(hyps[0], plan.target_context, retrieval=getattr(self, '_retrieval', None))]
             if not experiments:
                 return AdaptiveStepResult(
                     prior_outcome="confirmed",

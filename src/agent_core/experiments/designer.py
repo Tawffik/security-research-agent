@@ -2,11 +2,15 @@
 Experiment Designer (V2 §15–16).
 
 Produces the minimum discriminating experiment for a hypothesis.
-No live execution — designs only.
+M1: when KnowledgeRetriever provides a procedure, experiment steps/discriminator
+come from that procedure (provenance-bearing), not only keyword templates.
 """
 
 from __future__ import annotations
 
+from typing import Optional
+
+from agent_core.knowledge.retrieve import RetrievalResult
 from agent_core.schemas.research import Experiment, ExperimentStatus, Hypothesis
 from agent_core.schemas.target import TargetContext
 
@@ -16,14 +20,30 @@ class ExperimentDesigner:
         self.engagement_id = engagement_id
         self._counter = 0
         self._cache: dict[str, Experiment] = {}
+        self.last_retrieval: Optional[RetrievalResult] = None
+        self.last_procedure_ids: list[str] = []
 
-    def design(self, hypothesis: Hypothesis, ctx: TargetContext) -> Experiment:
+    def design(
+        self,
+        hypothesis: Hypothesis,
+        ctx: TargetContext,
+        retrieval: Optional[RetrievalResult] = None,
+    ) -> Experiment:
+        self.last_retrieval = retrieval
         key = f"{hypothesis.hypothesis_id}:{hypothesis.statement[:40]}"
-        if key in self._cache:
+        if key in self._cache and retrieval is None:
             cached = self._cache[key]
             return cached.model_copy(update={"status": ExperimentStatus.CACHED})
 
+        # Prefer procedure-driven design when knowledge hit exists
+        if retrieval and retrieval.procedures:
+            exp = self._from_procedure(hypothesis, ctx, retrieval)
+            self._cache[key] = exp
+            return exp
+
         stmt = hypothesis.statement.lower()
+        # Secondary path: still classify by hypothesis content for non-knowledge cases
+        # (state/role) — not a new "if idor" knowledge substitute when retrieval is empty.
         if any(
             k in stmt
             for k in (
@@ -36,7 +56,7 @@ class ExperimentDesigner:
             )
         ):
             exp = self._mutation_ownership(hypothesis, ctx)
-        elif "ownership" in stmt or "bypass" in stmt or "idor" in stmt or "bola" in stmt:
+        elif "ownership" in stmt or "bypass" in stmt:
             exp = self._ownership_diff(hypothesis, ctx)
         elif "role boundary" in stmt or "function-level" in stmt:
             exp = self._role_diff(hypothesis, ctx)
@@ -49,24 +69,99 @@ class ExperimentDesigner:
         return exp
 
     def design_portfolio(
-        self, hypotheses: list[Hypothesis], ctx: TargetContext
+        self,
+        hypotheses: list[Hypothesis],
+        ctx: TargetContext,
+        retrieval: Optional[RetrievalResult] = None,
     ) -> list[Experiment]:
-        return [self.design(h, ctx) for h in hypotheses if h.status.value == "open"]
+        return [
+            self.design(h, ctx, retrieval=retrieval)
+            for h in hypotheses
+            if h.status.value == "open"
+        ]
+
+    def _from_procedure(
+        self,
+        h: Hypothesis,
+        ctx: TargetContext,
+        retrieval: RetrievalResult,
+    ) -> Experiment:
+        stmt = h.statement.lower()
+        # Choose mutation procedure if hypothesis is mutation-oriented
+        procs = list(retrieval.procedures)
+        if any(k in stmt for k in ("mutat", "delete", "patch", "action-level")):
+            mut = [p for p in procs if "mutation" in p.tags or "0003" in p.record_id]
+            if mut:
+                procs = mut + [p for p in procs if p not in mut]
+
+        proc = procs[0]
+        self.last_procedure_ids = [p.record_id for p in procs[:3]]
+        steps = proc.experiment_steps or [
+            "Owner baseline request",
+            "Non-owner same object request",
+            "Compare status and sensitive fields",
+        ]
+        evidence = proc.evidence_required or [
+            "identity_a_request",
+            "identity_b_request",
+            "response_diff",
+            "ownership_proof",
+        ]
+        stops = proc.stop_conditions or [
+            "scope_violation",
+            "evidence_sufficient",
+            "equivalent experiment cached",
+        ]
+        target_path = self._pick_path(ctx, mutation="mutat" in stmt or "delete" in stmt)
+        pattern_note = (
+            f" patterns={','.join(retrieval.pattern_ids[:2])}"
+            if retrieval.pattern_ids
+            else ""
+        )
+        description = (
+            f"Procedure-driven experiment [{proc.record_id}]: "
+            + " → ".join(steps[:4])
+            + f" on {target_path}."
+            + f" Provenance: {proc.path}.{pattern_note}"
+        )
+        discriminator = (
+            f"procedure:{proc.record_id}|"
+            + (steps[1] if len(steps) > 1 else steps[0])
+        )
+        return self._make(
+            hypothesis_id=h.hypothesis_id,
+            description=description,
+            expected_observation=(
+                "Non-owner denied or lacks private owner-bound fields; "
+                "or private fields present under non-owner (violation path)"
+            ),
+            discriminator=discriminator,
+            required_evidence=evidence[:8],
+            stop_condition=" OR ".join(stops[:4]),
+            risk=0.3 if "mutat" not in stmt else 0.55,
+            cost=0.25 if "mutat" not in stmt else 0.35,
+            information_gain=0.93,
+            tool_names=["authenticated_http_request", "diff_response_by_identity"],
+            skill_names=["authz-idor-analysis"],
+        )
+
+    def _pick_path(self, ctx: TargetContext, mutation: bool = False) -> str:
+        for ep in ctx.endpoints:
+            if mutation and ep.method.upper() in ("DELETE", "PATCH", "PUT"):
+                if "{id}" in ep.path or "id" in (ep.parameters or []):
+                    return f"{ep.method} {ep.path}"
+        for ep in ctx.endpoints:
+            if "{id}" in ep.path or "order" in ep.path.lower():
+                return f"{ep.method} {ep.path}"
+        return "GET /api/orders/{id}"
 
     def _ownership_diff(self, h: Hypothesis, ctx: TargetContext) -> Experiment:
-        owners = [r for r in ctx.resources if r.owner_actor_id]
-        actors = ctx.actors
-        target_path = "/api/orders/{id}"
-        for ep in ctx.endpoints:
-            if "{id}" in ep.path and "order" in ep.path.lower():
-                target_path = f"{ep.method} {ep.path}"
-                break
-        res_name = owners[0].name if owners else "object-id"
+        target_path = self._pick_path(ctx, mutation=False)
         return self._make(
             hypothesis_id=h.hypothesis_id,
             description=(
-                f"Cross-identity access: request {target_path} for {res_name} "
-                f"as owner, then replay as non-owner; compare status and body ownership markers"
+                f"Cross-identity access: request {target_path} as owner, then replay as non-owner; "
+                f"compare status and body ownership markers"
             ),
             expected_observation="Non-owner receives 403/404; owner receives 200 with resource",
             discriminator="status code + ownership field under two authenticated identities",
@@ -76,7 +171,10 @@ class ExperimentDesigner:
                 "response_diff",
                 "ownership_proof",
             ],
-            stop_condition="scope_violation OR destructive_mutation OR both identities return identical authorized content with shared ACL",
+            stop_condition=(
+                "scope_violation OR destructive_mutation OR "
+                "both identities return identical authorized content with shared ACL"
+            ),
             risk=0.25,
             cost=0.2,
             information_gain=0.9,
@@ -85,20 +183,13 @@ class ExperimentDesigner:
         )
 
     def _mutation_ownership(self, h: Hypothesis, ctx: TargetContext) -> Experiment:
-        """PROC-0003: single cross-identity mutate — prove side effect, not status only."""
-        target_path = "DELETE /api/orders/{id}"
-        for ep in ctx.endpoints:
-            if ep.method.upper() in ("DELETE", "PATCH", "PUT") and (
-                "{id}" in ep.path or "id" in (ep.parameters or [])
-            ):
-                target_path = f"{ep.method} {ep.path}"
-                break
+        target_path = self._pick_path(ctx, mutation=True)
         return self._make(
             hypothesis_id=h.hypothesis_id,
             description=(
                 f"Action-level object authz: as non-owner, attempt one mutating call "
                 f"({target_path}) on owner's object; verify side effect (state change), "
-                f"not HTTP status alone (PAT-0003 / PROC-0003)"
+                f"not HTTP status alone"
             ),
             expected_observation=(
                 "Non-owner mutate denied AND owner object unchanged; "
@@ -155,23 +246,22 @@ class ExperimentDesigner:
     def _generic_observe(self, h: Hypothesis) -> Experiment:
         return self._make(
             hypothesis_id=h.hypothesis_id,
-            description=f"Passive observation supporting or rejecting: {h.statement[:80]}",
-            expected_observation="Evidence consistent with primary explanation or an alternative",
-            discriminator="qualitative match to alternatives",
-            required_evidence=["observation_log"],
-            stop_condition="low_information_gain",
-            risk=0.1,
-            cost=0.1,
-            information_gain=0.3,
-            tool_names=[],
+            description=f"Observe endpoint behavior for hypothesis: {h.statement[:80]}",
+            expected_observation="Record status and body markers",
+            discriminator="baseline observation only",
+            required_evidence=["response"],
+            stop_condition="scope_violation",
+            risk=0.2,
+            cost=0.15,
+            information_gain=0.4,
+            tool_names=["authenticated_http_request"],
             skill_names=[],
         )
 
-    def _make(self, hypothesis_id: str, **kwargs) -> Experiment:
+    def _make(self, **kwargs) -> Experiment:
         self._counter += 1
         return Experiment(
-            experiment_id=f"experiment_{self._counter}",
-            hypothesis_id=hypothesis_id,
+            experiment_id=f"exp_{self._counter}",
             status=ExperimentStatus.PLANNED,
             **kwargs,
         )

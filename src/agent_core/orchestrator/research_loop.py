@@ -18,6 +18,7 @@ from agent_core.beliefs.engine import BeliefEngine, UnknownEngine
 from agent_core.decisions.jev import JEV
 from agent_core.experiments.designer import ExperimentDesigner
 from agent_core.hypotheses.engine import HypothesisEngine
+from agent_core.knowledge.retrieve import KnowledgeRetriever
 from agent_core.recon.adapter import RawRecon, ReconResultAdapter
 from agent_core.schemas.research import Decision, Experiment, Hypothesis, Opportunity
 from agent_core.schemas.target import TargetContext, TargetGraph
@@ -48,7 +49,9 @@ class ResearchLoop:
         self.belief_engine = BeliefEngine(engagement_id)
         self.hypothesis_engine = HypothesisEngine(engagement_id)
         self.experiment_designer = ExperimentDesigner(engagement_id)
+        self.knowledge_retriever = KnowledgeRetriever()
         self.jev = JEV(engagement_id)
+        self.last_retrieval = None
 
     def run_from_recon_file(self, path: Union[str, Path]) -> ResearchLoopResult:
         recon = RawRecon.from_file(path)
@@ -71,8 +74,14 @@ class ResearchLoop:
                 source="recon_structure",
             )
 
-        hypotheses = self.hypothesis_engine.generate_from_unknowns(unknowns, opportunities, ctx)
-        experiments = self.experiment_designer.design_portfolio(hypotheses, ctx)
+        retrieval = self.knowledge_retriever.retrieve_for_authz(ctx, opportunities)
+        self.last_retrieval = retrieval
+        hypotheses = self.hypothesis_engine.generate_from_unknowns(
+            unknowns, opportunities, ctx, retrieval=retrieval
+        )
+        experiments = self.experiment_designer.design_portfolio(
+            hypotheses, ctx, retrieval=retrieval
+        )
         decision = self.jev.choose(experiments, hypotheses, budget_remaining_ratio=1.0)
 
         top_h = hypotheses[0].statement if hypotheses else "none"
@@ -82,7 +91,9 @@ class ResearchLoop:
             f"opportunities={len(opportunities)} unknowns={len(unknowns)} "
             f"hypotheses={len(hypotheses)} experiments={len(experiments)} "
             f"decision={decision.decision.value} candidate={decision.candidate} "
-            f"top_hypothesis={top_h[:60]}"
+            f"top_hypothesis={top_h[:60]} "
+            f"knowledge_patterns={retrieval.pattern_ids[:3]} "
+            f"knowledge_procedures={retrieval.procedure_ids[:3]}"
         )
 
         return ResearchLoopResult(

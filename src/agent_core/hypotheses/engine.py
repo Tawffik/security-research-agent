@@ -6,7 +6,9 @@ Maintains a portfolio of competing hypotheses with alternative explanations.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
+
+from agent_core.knowledge.retrieve import RetrievalResult
 
 from agent_core.schemas.research import (
     AlternativeExplanation,
@@ -23,13 +25,17 @@ class HypothesisEngine:
         self.engagement_id = engagement_id
         self._portfolio: dict[str, Hypothesis] = {}
         self._counter = 0
+        self.last_retrieval: Optional[RetrievalResult] = None
+        self.knowledge_refs_by_hyp: dict[str, dict] = {}
 
     def generate_from_unknowns(
         self,
         unknowns: list[Unknown],
         opportunities: list[Opportunity],
         ctx: TargetContext,
+        retrieval: Optional[RetrievalResult] = None,
     ) -> list[Hypothesis]:
+        self.last_retrieval = retrieval
         created: list[Hypothesis] = []
         authz_opps = [o for o in opportunities if o.type in ("authorization", "authorization_mutation")]
         mutation_opps = [o for o in opportunities if o.mutation and o.object_surface]
@@ -41,6 +47,12 @@ class HypothesisEngine:
                     statement=(
                         "Action-level object authorization failure: non-owner can mutate "
                         "(delete/patch) another user's object — not only read it"
+                        + (
+                            f" [knowledge: patterns={','.join(retrieval.pattern_ids[:3])} "
+                            f"procedures={','.join(retrieval.procedure_ids[:3])}]"
+                            if retrieval and (retrieval.pattern_ids or retrieval.procedure_ids)
+                            else ""
+                        )
                     ),
                     primary="Missing ownership check on state-changing object operations",
                     alternatives=[
@@ -63,7 +75,15 @@ class HypothesisEngine:
         if authz_opps and len(ctx.actors) >= 2:
             created.append(
                 self._add(
-                    statement="Ownership bypass: non-owner can access object via identifier mutation",
+                    statement=(
+                        "Ownership bypass: non-owner can access object via identifier mutation"
+                        + (
+                            f" [knowledge: patterns={','.join(retrieval.pattern_ids[:3])} "
+                            f"procedures={','.join(retrieval.procedure_ids[:3])}]"
+                            if retrieval and (retrieval.pattern_ids or retrieval.procedure_ids)
+                            else ""
+                        )
+                    ),
                     primary="Missing server-side ownership check",
                     alternatives=[
                         AlternativeExplanation(
@@ -121,6 +141,33 @@ class HypothesisEngine:
                 )
             )
 
+        # Merge knowledge-derived alternatives into authz hypotheses
+        k_alts = self._knowledge_alts(retrieval)
+        if k_alts and retrieval:
+            enriched = []
+            for h in created:
+                if "ownership" in h.statement.lower() or "mutat" in h.statement.lower() or "knowledge:" in h.statement:
+                    primary = h.primary_explanation
+                    if retrieval.patterns:
+                        primary = (
+                            f"{retrieval.patterns[0].record_id}: "
+                            f"{(retrieval.patterns[0].abstraction or primary)[:180]}"
+                        )
+                    h = h.model_copy(
+                        update={
+                            "alternatives": k_alts + list(h.alternatives),
+                            "primary_explanation": primary,
+                        }
+                    )
+                    self.knowledge_refs_by_hyp[h.hypothesis_id] = {
+                        "pattern_ids": list(retrieval.pattern_ids),
+                        "procedure_ids": list(retrieval.procedure_ids),
+                        "signals": list(retrieval.query_signals),
+                    }
+                    self._portfolio[h.hypothesis_id] = h
+                enriched.append(h)
+            created = enriched
+
         # Always keep a low-confidence "intended behavior" branch for skepticism
         created.append(
             self._add(
@@ -155,6 +202,19 @@ class HypothesisEngine:
         )
         self._portfolio[hid] = h
         return h
+
+
+    def _knowledge_alts(self, retrieval: Optional[RetrievalResult]) -> list[AlternativeExplanation]:
+        if not retrieval or not retrieval.competing_explanations:
+            return []
+        return [
+            AlternativeExplanation(
+                explanation_id=f"K{i}",
+                description=text,
+                discriminating_observations=["knowledge_derived"],
+            )
+            for i, text in enumerate(retrieval.competing_explanations[:6], start=1)
+        ]
 
     def portfolio(self) -> list[Hypothesis]:
         return sorted(self._portfolio.values(), key=lambda h: h.confidence, reverse=True)
