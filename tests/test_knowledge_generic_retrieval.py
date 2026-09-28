@@ -211,3 +211,22 @@ def test_authz_query_with_gap_signals():
     )
     q = build_authz_query_with_gap(ctx, [], missing_roles=["challenge"])
     assert any(s == "evidence_gap:challenge" for s in q.signals)
+
+
+def test_different_context_changes_query_signals():
+    from agent_core.knowledge.domains.authorization import build_authz_query
+    from agent_core.schemas.target import TargetContext, Actor, ActorType, Endpoint
+
+    base = dict(
+        engagement_id="e",
+        actors=[
+            Actor(actor_id="a", name="a", actor_type=ActorType.USER),
+            Actor(actor_id="b", name="b", actor_type=ActorType.USER),
+        ],
+        endpoints=[Endpoint(endpoint_id="e1", method="GET", path="/api/orders/{id}")],
+    )
+    ctx_jwt = TargetContext(primary_host="api.a.test", technologies=["jwt"], **base)
+    ctx_gql = TargetContext(primary_host="api.b.test", technologies=["graphql"], **base)
+    q1 = build_authz_query(ctx_jwt, [])
+    q2 = build_authz_query(ctx_gql, [])
+    assert q1.signals != q2.signals or q1.tags_prefer != q2.tags_prefer

@@ -3,7 +3,9 @@
 from agent_core.knowledge.index import KnowledgeIndex, KnowledgeRecord
 from agent_core.knowledge.query import KnowledgeQuery
 from agent_core.knowledge.retrieve import KnowledgeRetriever, RetrievalResult
-from agent_core.knowledge.compiler import KnowledgeCompiler, LineageGraph, SourceEntry
+from agent_core.knowledge.compiler import KnowledgeCompiler, LineageGraph, SourceEntry, GeneratedArtifact, run_full_pipeline
+from agent_core.knowledge.curated_import import CuratedKnowledgeImporter
+from agent_core.knowledge.registry import KnowledgeRegistry
 from agent_core.knowledge.candidates import (
     KnowledgeCandidate,
     KnowledgeCandidateFactory,
@@ -28,4 +30,8 @@ __all__ = [
     "KnowledgeCompiler",
     "LineageGraph",
     "SourceEntry",
+    "GeneratedArtifact",
+    "run_full_pipeline",
+    "CuratedKnowledgeImporter",
+    "KnowledgeRegistry",
 ]
