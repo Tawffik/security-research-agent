@@ -37,6 +37,7 @@ class ExperimentAlignment:
     step_coverage: list = field(default_factory=list)
     baseline_ref: Optional[str] = None
     challenge_ref: Optional[str] = None
+    experiment_sufficiency: str = "sufficient"  # sufficient | insufficient | ambiguous
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -58,6 +59,7 @@ class ExperimentAlignment:
             ],
             "baseline_ref": self.baseline_ref,
             "challenge_ref": self.challenge_ref,
+            "experiment_sufficiency": self.experiment_sufficiency,
             "all_required_satisfied": all(
                 r.status == "satisfied" for r in self.required_evidence
             )
@@ -261,6 +263,10 @@ def align_experiment_to_scenario(
             outcome, note = pair_outcome, pair_note
             notes.append(f"pair:{pair_note}")
 
+    sufficiency = compute_experiment_sufficiency(experiment, coverage)
+    if sufficiency != "sufficient":
+        notes.append(f"experiment_sufficiency={sufficiency}")
+
     return ExperimentAlignment(
         experiment_id=exp_id,
         hypothesis_id=hyp_id,
@@ -275,6 +281,7 @@ def align_experiment_to_scenario(
         step_coverage=coverage,
         baseline_ref=_obs_ref(base) if base else None,
         challenge_ref=_obs_ref(chal) if chal else None,
+        experiment_sufficiency=sufficiency,
     )
 
 
@@ -337,6 +344,46 @@ class StepCoverage:
 def _obs_ref(o) -> str:
     return f"{getattr(o, 'role', '') or 'unset'}:{o.identity}:{o.method}:{o.path}:{o.status}"
 
+
+
+
+def compute_experiment_sufficiency(
+    experiment: Optional[Experiment],
+    coverage: list,
+) -> str:
+    """
+    sufficient | insufficient | ambiguous
+
+    Only discriminator-relevant roles (baseline, challenge, compare) are mandatory
+    when those steps exist on the experiment. observe steps are optional.
+    """
+    if not experiment or not getattr(experiment, "steps", None):
+        return "sufficient"  # no structured steps → M4 path; not marked insufficient
+
+    relevant = [
+        c
+        for c in coverage
+        if (c.role if not hasattr(c, "role") else c.role) in ("baseline", "challenge", "compare")
+        or (getattr(c, "role", None) in ("baseline", "challenge", "compare"))
+    ]
+    # normalize
+    statuses = []
+    for c in coverage:
+        role = c.role if isinstance(c.role, str) else getattr(c, "role", "")
+        if role in ("baseline", "challenge", "compare"):
+            statuses.append(getattr(c, "status", "missing"))
+
+    if not statuses:
+        # only observe steps or empty → sufficient (nothing required)
+        return "sufficient"
+    # Missing dominates ambiguity: incomplete experiment first
+    if any(s == "missing" for s in statuses):
+        return "insufficient"
+    if any(s == "ambiguous" for s in statuses):
+        return "ambiguous"
+    if all(s == "covered" for s in statuses):
+        return "sufficient"
+    return "ambiguous"
 
 def cover_steps(experiment: Optional[Experiment], scenario) -> list[StepCoverage]:
     if not experiment or not getattr(experiment, "steps", None):

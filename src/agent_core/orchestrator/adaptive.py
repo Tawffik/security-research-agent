@@ -53,12 +53,89 @@ class AdaptiveLoop:
         self.jev = JEV(engagement_id)
         self.designer = ExperimentDesigner(engagement_id)
         self.opp_engine = OpportunityEngine(engagement_id)
+        self.tried_experiment_ids: set[str] = set()
 
     def step(self, closed: ClosedLoopResult) -> AdaptiveStepResult:
         notes: list[str] = []
         plan = closed.plan
         ranked = list(self.opp_engine.rank(plan.target_context, plan.target_graph))
         notes.append(f"re-ranked {len(ranked)} opportunities")
+
+        # M6: coverage-driven sufficiency (not a vulnerability verdict)
+        align = closed.experiment_alignment or {}
+        sufficiency = align.get("experiment_sufficiency") or "sufficient"
+        current_exp_id = closed.selected_experiment_id or align.get("experiment_id")
+        if current_exp_id:
+            self.tried_experiment_ids.add(current_exp_id)
+        notes.append(f"experiment_sufficiency={sufficiency}")
+
+        if sufficiency in ("insufficient", "ambiguous") and closed.scope_allowed:
+            notes.append(
+                f"M6: experiment {sufficiency} — not a finding; seeking follow-up if available"
+            )
+            hyps = list(plan.hypotheses or [])
+            retrieval = getattr(self, "_retrieval", None)
+            experiments = self.designer.design_portfolio(
+                hyps, plan.target_context, retrieval=retrieval
+            )
+            # Exclude already-tried experiment IDs (anti-loop)
+            candidates = [
+                e
+                for e in experiments
+                if e.experiment_id not in self.tried_experiment_ids
+            ]
+            if not candidates:
+                return AdaptiveStepResult(
+                    prior_outcome=f"coverage_{sufficiency}",
+                    stop=True,
+                    stop_reason=f"coverage_{sufficiency}_no_followup",
+                    next_action="STOP",
+                    reranked_opportunities=ranked,
+                    notes=notes + ["no valid follow-up experiment after coverage gap"],
+                )
+            decision = self.jev.choose(
+                candidates, hyps, budget_remaining_ratio=0.8
+            )
+            if decision.decision == DecisionAction.STOP or not decision.candidate:
+                return AdaptiveStepResult(
+                    prior_outcome=f"coverage_{sufficiency}",
+                    stop=True,
+                    stop_reason=f"coverage_{sufficiency}_jev_stop",
+                    next_action="STOP",
+                    decision=decision,
+                    reranked_opportunities=ranked,
+                    notes=notes,
+                )
+            next_exp = next(
+                (e for e in candidates if e.experiment_id == decision.candidate),
+                candidates[0],
+            )
+            if next_exp.experiment_id == current_exp_id:
+                return AdaptiveStepResult(
+                    prior_outcome=f"coverage_{sufficiency}",
+                    stop=True,
+                    stop_reason="coverage_same_experiment_blocked",
+                    next_action="STOP",
+                    decision=decision,
+                    next_experiment=next_exp,
+                    reranked_opportunities=ranked,
+                    notes=notes + ["refused to re-select same experiment"],
+                )
+            notes.append(
+                f"M6 follow-up next_experiment_id={next_exp.experiment_id} "
+                f"hypothesis_id={next_exp.hypothesis_id}"
+            )
+            return AdaptiveStepResult(
+                prior_outcome=f"coverage_{sufficiency}",
+                stop=False,
+                stop_reason="",
+                next_action="EXECUTE_FOLLOWUP",
+                decision=decision,
+                next_experiment=next_exp,
+                reranked_opportunities=ranked,
+                notes=notes,
+            )
+
 
         if not closed.scope_allowed:
             return AdaptiveStepResult(
