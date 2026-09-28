@@ -334,12 +334,16 @@ class ClosedLoopRunner:
         force_experiment: bind this Experiment for alignment (M7 follow-up).
         skip_research + prior_plan: re-evaluate fixtures under a new experiment without re-planning.
         """
+        host_hint = "api.acme-demo.test"
+        scenario = scenario or default_idor_lab_scenario(host_hint)
+        if getattr(scenario, "methodology", None):
+            self.research.preferred_methodology = scenario.methodology
+
         if skip_research and prior_plan is not None:
             plan = prior_plan
         else:
             plan = self.research.run_from_recon_file(recon_path)
-        host = plan.target_context.primary_host or "api.acme-demo.test"
-        scenario = scenario or default_idor_lab_scenario(host)
+        host = plan.target_context.primary_host or host_hint
 
         selected_experiment = force_experiment or resolve_selected_experiment(plan)
         hyp_id_early = (

@@ -56,6 +56,7 @@ class ResearchLoop:
         self.knowledge_retriever = knowledge_retriever or KnowledgeRetriever()
         self.jev = JEV(engagement_id)
         self.last_retrieval = None
+        self.preferred_methodology: str | None = None
 
     def run_from_recon_file(self, path: Union[str, Path]) -> ResearchLoopResult:
         recon = RawRecon.from_file(path)
@@ -78,7 +79,12 @@ class ResearchLoop:
                 source="recon_structure",
             )
 
-        retrieval = self.knowledge_retriever.retrieve_for_authz(ctx, opportunities)
+        if self.preferred_methodology:
+            retrieval = self.knowledge_retriever.retrieve_for_context(
+                ctx, opportunities, methodology=self.preferred_methodology
+            )
+        else:
+            retrieval = self.knowledge_retriever.retrieve_for_authz(ctx, opportunities)
         self.last_retrieval = retrieval
         hypotheses = self.hypothesis_engine.generate_from_unknowns(
             unknowns, opportunities, ctx, retrieval=retrieval

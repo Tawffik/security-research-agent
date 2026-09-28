@@ -9,6 +9,8 @@ from typing import Optional
 @dataclass
 class KnowledgeQuery:
     domain: Optional[str] = None
+    # Preferred methodologies / security properties for alignment (MATCH > UNKNOWN > MISMATCH)
+    methodologies: list[str] = field(default_factory=list)
     kinds: list[str] = field(default_factory=lambda: ["pattern", "procedure", "case", "strategy"])
     signals: list[str] = field(default_factory=list)
     tags_any: list[str] = field(default_factory=list)
@@ -16,5 +18,6 @@ class KnowledgeQuery:
     security_properties: list[str] = field(default_factory=list)
     limit: int = 5
     require_domain_match: bool = False
+    require_methodology_match: bool = False
     # Domain policy may attach extra competitors after retrieval (not used by ranker)
     extra_competing_explanations: list[str] = field(default_factory=list)
