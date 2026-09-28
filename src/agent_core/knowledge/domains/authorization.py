@@ -46,6 +46,16 @@ def build_authz_query(
             signals.append("object_path")
             break
 
+    # Target technologies as soft signals (ranking only; not execution permission)
+    for tech in list(getattr(ctx, "technologies", None) or [])[:8]:
+        tname = str(tech).strip().lower()
+        if tname:
+            signals.append(f"tech:{tname}")
+            tags_prefer.append(tname)
+
+    if getattr(ctx, "primary_host", None):
+        signals.append("host_context")
+
     return KnowledgeQuery(
         domain="authorization",
         kinds=["pattern", "procedure", "case", "strategy"],

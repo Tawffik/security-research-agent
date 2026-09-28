@@ -175,3 +175,22 @@ def test_build_authz_query_shapes_signals():
     q = build_authz_query(ctx, opps)
     assert "multi_identity" in q.signals
     assert q.extra_competing_explanations
+
+
+def test_authz_query_includes_technology_signals():
+    from agent_core.knowledge.domains.authorization import build_authz_query
+    from agent_core.schemas.target import TargetContext, Actor, ActorType, Endpoint
+
+    ctx = TargetContext(
+        engagement_id="e",
+        primary_host="api.example.test",
+        technologies=["GraphQL", "JWT"],
+        actors=[
+            Actor(actor_id="a", name="a", actor_type=ActorType.USER),
+            Actor(actor_id="b", name="b", actor_type=ActorType.USER),
+        ],
+        endpoints=[Endpoint(endpoint_id="e1", method="GET", path="/api/orders/{id}")],
+    )
+    q = build_authz_query(ctx, [])
+    assert any(s.startswith("tech:") for s in q.signals)
+    assert "jwt" in q.tags_prefer or "graphql" in q.tags_prefer
