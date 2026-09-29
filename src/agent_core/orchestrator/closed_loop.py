@@ -28,6 +28,10 @@ from agent_core.orchestrator.experiment_alignment import (
 from agent_core.evaluation.episode import EpisodeRecorder, ResearchEpisode
 from agent_core.knowledge.candidates import KnowledgeCandidateFactory
 from agent_core.schemas.observation import Observation, from_lab_observation
+from agent_core.experiments.differential import (
+    compare_lab_observations,
+    differential_to_polarity,
+)
 from agent_core.knowledge.case_extract import extract_case_from_episode
 from agent_core.hypotheses.update import apply_evidence_to_hypotheses
 from agent_core.findings.poc import MinimizedPoC, PoCMinimizer
@@ -98,6 +102,7 @@ class ClosedLoopResult:
     budget_exhausted: bool = False
     knowledge_procedure_required_blocked: bool = False
     hypothesis_updates: list = field(default_factory=list)
+    differential_result: dict | None = None
     max_experiments_budget: Optional[int] = None
     experiments_designed: int = 0
     report: Optional[EvidenceReport] = None
@@ -467,24 +472,41 @@ class ClosedLoopRunner:
         )
         evidence_ids.append(ev_align.evidence_id)
 
-        # Differential summary evidence
-        if len(scenario.observations) >= 2:
-            a, b = scenario.observations[0], scenario.observations[1]
+        # Gate 4: first-class Differential (not a finding; fixture labels are not polarity)
+        differential = compare_lab_observations(
+            list(scenario.observations or []),
+            experiment_id=alignment.experiment_id if alignment else "",
+        )
+        self.last_differential = differential
+        if differential is not None:
             diff_note = (
-                f"identity_diff status_a={a.status} status_b={b.status} "
-                f"body_equal={a.body == b.body} suggests_authz_issue={scenario.suggests_authz_issue}"
+                f"change_kind={differential.change_kind} "
+                f"status_a={differential.baseline_status} status_b={differential.compare_status} "
+                f"body_differs={differential.body_differs} "
+                f"body_differs_after_noise={differential.body_differs_after_noise} "
+                f"interpretation={differential.interpretation}"
             )
+            # Structural evidence: neutral unless change_kind implies research signal;
+            # never use scenario.suggests_authz_issue as polarity source.
+            dpol = differential_to_polarity(differential)
+            if dpol == "positive":
+                ev_pol = EvidencePolarity.POSITIVE
+            elif dpol == "negative":
+                ev_pol = EvidencePolarity.NEGATIVE
+            else:
+                ev_pol = EvidencePolarity.NEUTRAL
             ev = self.evidence.record(
-                target=f"{host}/api/orders/1001",
-                action="diff_response_by_identity",
-                input_data="user_a vs user_b",
-                expected=scenario.expected_if_secure,
+                target=f"{host}/differential",
+                action="baseline_vs_challenge_differential",
+                input_data="baseline vs challenge observations",
+                expected="controlled experiment differential",
                 observed=diff_note,
-                polarity=EvidencePolarity.POSITIVE
-                if scenario.suggests_authz_issue
-                else EvidencePolarity.NEGATIVE,
+                polarity=ev_pol,
                 confidence=0.9,
-                source="closed_loop.diff",
+                source=(
+                    f"closed_loop.differential|exp={alignment.experiment_id}"
+                    f"|kind={differential.change_kind}"
+                ),
                 related_hypothesis=hyp_id,
             )
             evidence_ids.append(ev.evidence_id)
@@ -687,6 +709,7 @@ class ClosedLoopRunner:
             selected_experiment_id=alignment.experiment_id,
             knowledge_procedure_required_blocked=knowledge_blocked,
             hypothesis_updates=hyp_updates,
+            differential_result=(differential.to_dict() if differential else None),
             experiments_designed=len(plan.experiments or []),
             max_experiments_budget=getattr(self, "max_experiments_budget", None),
             experiment_alignment=alignment.to_dict(),
