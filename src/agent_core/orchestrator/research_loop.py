@@ -72,6 +72,12 @@ class ResearchLoop:
 
         opportunities = self.opportunity_engine.rank(ctx, graph)
         unknowns = self.unknown_engine.seed_from_opportunities(opportunities, ctx)
+        # Gate 2: seed retrieval state from unknowns when not pre-set
+        if not self.evidence_gaps and unknowns:
+            self.evidence_gaps = [
+                (getattr(u, "unknown_id", None) or getattr(u, "statement", "") or "")[:40]
+                for u in unknowns[:5]
+            ]
 
         # Seed a prior belief from multi-identity presence
         if len(ctx.actors) >= 2 and any(r.owner_actor_id for r in ctx.resources):
