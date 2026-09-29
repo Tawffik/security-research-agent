@@ -11,7 +11,7 @@ class KnowledgeQuery:
     domain: Optional[str] = None
     # Preferred methodologies / security properties for alignment (MATCH > UNKNOWN > MISMATCH)
     methodologies: list[str] = field(default_factory=list)
-    kinds: list[str] = field(default_factory=lambda: ["pattern", "procedure", "case", "strategy"])
+    kinds: list[str] = field(default_factory=lambda: ["pattern", "procedure", "case", "strategy", "tip", "negative"])
     signals: list[str] = field(default_factory=list)
     tags_any: list[str] = field(default_factory=list)
     tags_prefer: list[str] = field(default_factory=list)

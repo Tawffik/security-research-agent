@@ -96,6 +96,12 @@ class ResearchLoop:
         else:
             retrieval = self.knowledge_retriever.retrieve_for_authz(ctx, opportunities)
         self.last_retrieval = retrieval
+        # Gate 2: negative/FP knowledge becomes competing explanations (not findings)
+        if retrieval and getattr(retrieval, "negatives", None):
+            for neg in retrieval.negatives:
+                note = f"negative:{neg.record_id}:{neg.title[:80]}"
+                if note not in retrieval.competing_explanations:
+                    retrieval.competing_explanations.append(note)
         hypotheses = self.hypothesis_engine.generate_from_unknowns(
             unknowns, opportunities, ctx, retrieval=retrieval
         )

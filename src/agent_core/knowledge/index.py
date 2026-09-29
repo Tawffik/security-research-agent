@@ -109,6 +109,12 @@ def parse_knowledge_markdown(path: Path, kind: str) -> Optional[KnowledgeRecord]
         if kind == "strategy" and i.upper().startswith("STRAT"):
             record_id = i
             break
+        if kind == "tip" and i.upper().startswith("TIP"):
+            record_id = i
+            break
+        if kind == "negative" and i.upper().startswith("NEG"):
+            record_id = i
+            break
 
     domain = "unknown"
     dm = re.search(r"\*\*Domain:\*\*\s*(\S+)", text, re.I)
@@ -205,6 +211,8 @@ class KnowledgeIndex:
             "patterns": "pattern",
             "procedures": "procedure",
             "strategies": "strategy",
+            "tips": "tip",
+            "negative": "negative",
         }
         if not self.root.is_dir():
             return self

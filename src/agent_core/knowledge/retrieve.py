@@ -20,6 +20,8 @@ class RetrievalResult:
     procedures: list[KnowledgeRecord] = field(default_factory=list)
     cases: list[KnowledgeRecord] = field(default_factory=list)
     strategies: list[KnowledgeRecord] = field(default_factory=list)
+    tips: list[KnowledgeRecord] = field(default_factory=list)
+    negatives: list[KnowledgeRecord] = field(default_factory=list)
     competing_explanations: list[str] = field(default_factory=list)
     provenance: list[dict[str, Any]] = field(default_factory=list)
 
@@ -37,6 +39,8 @@ class RetrievalResult:
             "pattern_ids": self.pattern_ids,
             "procedure_ids": self.procedure_ids,
             "case_ids": [c.record_id for c in self.cases],
+            "tip_ids": [x.record_id for x in self.tips],
+            "negative_ids": [x.record_id for x in self.negatives],
             "competing_explanations": self.competing_explanations,
             "provenance": self.provenance,
         }
@@ -170,6 +174,10 @@ def _score_record(rec: KnowledgeRecord, query: KnowledgeQuery) -> float:
         s += 0.3
     if rec.evidence_required:
         s += 0.2
+    if rec.kind == "tip":
+        s += 0.15  # heuristic only — never outranks strong procedure alone
+    if rec.kind == "negative":
+        s += 0.25  # FP guidance is valuable when domain matches
 
     return s
 
@@ -224,6 +232,8 @@ class KnowledgeRetriever:
         procedures = take("procedure")
         cases = take("case")
         strategies = take("strategy")
+        tips = take("tip")
+        negatives = take("negative")
 
         # Prefer procedures that match tags_prefer among all procedures in index
         if query.tags_prefer:
@@ -278,6 +288,8 @@ class KnowledgeRetriever:
             procedures=procedures,
             cases=cases,
             strategies=strategies,
+            tips=tips,
+            negatives=negatives,
             competing_explanations=competing[:10],
             provenance=prov,
         )
@@ -375,7 +387,7 @@ def build_contextual_query(
         domain=meth if meth else None,
         methodologies=[meth],
         security_properties=[prop],
-        kinds=["pattern", "procedure", "case", "strategy"],
+        kinds=["pattern", "procedure", "case", "strategy", "tip", "negative"],
         signals=signals,
         tags_any=tags,
         tags_prefer=tags,

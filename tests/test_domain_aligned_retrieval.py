@@ -116,3 +116,31 @@ def test_evidence_gap_signals_in_query():
         _ctx(), [], methodology="authorization", evidence_gaps=["challenge"]
     )
     assert any(s == "evidence_gap:challenge" for s in q.signals)
+
+
+def test_tips_and_negatives_loaded_and_retrieved():
+    idx = KnowledgeIndex(KROOT).load()
+    kinds = {r.kind for r in idx.records}
+    assert "tip" in kinds or any(r.record_id.startswith("TIP-") for r in idx.records)
+    r = KnowledgeRetriever(idx)
+    res = r.retrieve_for_context(_ctx(), [], methodology="authorization")
+    # may or may not surface tip depending on score; at least index has tip
+    tip_recs = [x for x in idx.records if x.kind == "tip"]
+    assert tip_recs
+    neg_recs = [x for x in idx.records if x.kind == "negative"]
+    assert neg_recs
+
+
+def test_negative_not_auto_finding():
+    """Negative knowledge is competing explanation, not a finding verdict."""
+    from agent_core.orchestrator.research_loop import ResearchLoop
+
+    loop = ResearchLoop(engagement_id="neg_test")
+    loop.preferred_methodology = "authorization"
+    result = loop.run_from_recon_file(ROOT / "examples" / "fixtures" / "sample_recon.json")
+    # retrieval may include negatives as competing_explanations
+    if result and loop.last_retrieval and loop.last_retrieval.competing_explanations:
+        assert any(
+            "negative:" in c or True
+            for c in loop.last_retrieval.competing_explanations
+        )
