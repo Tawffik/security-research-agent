@@ -107,3 +107,12 @@ def test_none_still_fn_on_hard():
         knowledge_root=KROOT,
     )
     assert m.false_negative is True
+
+
+def test_evidence_gap_signals_in_query():
+    from agent_core.knowledge.retrieve import build_contextual_query
+
+    q = build_contextual_query(
+        _ctx(), [], methodology="authorization", evidence_gaps=["challenge"]
+    )
+    assert any(s == "evidence_gap:challenge" for s in q.signals)

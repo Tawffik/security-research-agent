@@ -34,6 +34,7 @@ class StructuredCase:
     confirmed_why: str = ""
     provenance: dict[str, Any] = field(default_factory=dict)
     unknowns: list[str] = field(default_factory=list)
+    false_positive_guidance: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -91,6 +92,11 @@ def extract_case_from_text(
     case.root_cause = _section_after(text, "root cause") or ""
     case.impact = _section_after(text, "impact") or ""
     case.experiment = _section_after(text, "experiment", "minimum experiment") or ""
+    fp = _section_after(text, "false positive", "not the same as", "not same as")
+    if fp:
+        case.false_positive_guidance = [
+            p.strip("- *") for p in fp.splitlines() if p.strip()
+        ]
     pre = _section_after(text, "precondition")
     if pre:
         case.preconditions = [p.strip("- *") for p in pre.splitlines() if p.strip()]

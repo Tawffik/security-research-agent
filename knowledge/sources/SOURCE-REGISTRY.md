@@ -17,3 +17,6 @@ Per Notion V3 source hierarchy. Discovery sources ≠ trusted knowledge until ex
 
 | SRC-0008 | A/B Research | APIsec 100+ BOLA in the wild analysis | Pattern/strategy | PAT-0003, PROC-0003, STRAT-0002 |
 | SRC-0009 | A Platform | HackerOne GraphQL auth bypass post | Case | CASE-0007, PAT-0004 |
+
+| SRC-FX-0001 | A — Fixture writeup | Offline BOLA writeup sample | Case extraction | ACCEPTED offline |
+| SRC-FX-0002 | A — Fixture writeup | Offline SSRF writeup sample | Case extraction | ACCEPTED offline |

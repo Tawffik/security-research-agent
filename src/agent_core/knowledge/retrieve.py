@@ -303,7 +303,12 @@ class KnowledgeRetriever:
         limit: int = 5,
     ) -> RetrievalResult:
         query = build_contextual_query(
-            ctx, opportunities, methodology=methodology, limit=limit
+            ctx,
+            opportunities,
+            methodology=methodology,
+            evidence_gaps=getattr(self, "_evidence_gaps", None),
+            prior_experiment_ids=getattr(self, "_prior_experiment_ids", None),
+            limit=limit,
         )
         return self.retrieve(query)
 
@@ -313,6 +318,8 @@ def build_contextual_query(
     opportunities: list,
     *,
     methodology: str | None = None,
+    evidence_gaps: list[str] | None = None,
+    prior_experiment_ids: list[str] | None = None,
     limit: int = 5,
 ) -> KnowledgeQuery:
     """Generic context query — methodology is data, not a separate engine."""
@@ -325,6 +332,11 @@ def build_contextual_query(
         q.security_properties = list(dict.fromkeys(
             (q.security_properties or []) + ["authorization"]
         ))
+        for g in evidence_gaps or []:
+            q.signals.append(f"evidence_gap:{g}")
+            q.tags_prefer.append(g)
+        for eid in prior_experiment_ids or []:
+            q.signals.append(f"prior_experiment:{eid}")
         return q
 
     signals = [meth]
@@ -354,6 +366,11 @@ def build_contextual_query(
     for tech in getattr(ctx, "technologies", None) or []:
         signals.append(str(tech).lower())
 
+    for g in evidence_gaps or []:
+        signals.append(f"evidence_gap:{g}")
+        tags.append(g)
+    for eid in prior_experiment_ids or []:
+        signals.append(f"prior_experiment:{eid}")
     return KnowledgeQuery(
         domain=meth if meth else None,
         methodologies=[meth],

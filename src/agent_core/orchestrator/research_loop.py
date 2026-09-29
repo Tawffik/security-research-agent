@@ -57,6 +57,8 @@ class ResearchLoop:
         self.jev = JEV(engagement_id)
         self.last_retrieval = None
         self.preferred_methodology: str | None = None
+        self.evidence_gaps: list[str] = []
+        self.prior_experiment_ids: list[str] = []
 
     def run_from_recon_file(self, path: Union[str, Path]) -> ResearchLoopResult:
         recon = RawRecon.from_file(path)
@@ -79,6 +81,8 @@ class ResearchLoop:
                 source="recon_structure",
             )
 
+        self.knowledge_retriever._evidence_gaps = list(self.evidence_gaps)
+        self.knowledge_retriever._prior_experiment_ids = list(self.prior_experiment_ids)
         if self.preferred_methodology:
             retrieval = self.knowledge_retriever.retrieve_for_context(
                 ctx, opportunities, methodology=self.preferred_methodology
