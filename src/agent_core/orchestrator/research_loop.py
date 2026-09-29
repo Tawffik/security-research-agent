@@ -19,6 +19,8 @@ from agent_core.decisions.jev import JEV
 from agent_core.experiments.designer import ExperimentDesigner
 from agent_core.hypotheses.engine import HypothesisEngine
 from agent_core.knowledge.retrieve import KnowledgeRetriever
+from agent_core.experiments.discriminate import select_minimum_discriminating
+from agent_core.research.contracts import contract_from_retrieval
 from agent_core.recon.adapter import RawRecon, ReconResultAdapter
 from agent_core.schemas.research import Decision, Experiment, Hypothesis, Opportunity
 from agent_core.schemas.target import TargetContext, TargetGraph
@@ -59,6 +61,8 @@ class ResearchLoop:
         self.preferred_methodology: str | None = None
         self.evidence_gaps: list[str] = []
         self.prior_experiment_ids: list[str] = []
+        self.last_knowledge_contract = None
+        self.last_discrimination_scores = []
 
     def run_from_recon_file(self, path: Union[str, Path]) -> ResearchLoopResult:
         recon = RawRecon.from_file(path)
@@ -147,6 +151,19 @@ class ResearchLoop:
         experiments = self.experiment_designer.design_portfolio(
             hypotheses, ctx, retrieval=retrieval
         )
+        self.last_knowledge_contract = contract_from_retrieval(
+            retrieval, property_hint=self.preferred_methodology or ""
+        )
+        best, disc_scores = select_minimum_discriminating(
+            experiments,
+            hypotheses,
+            prior_experiment_ids=list(self.prior_experiment_ids),
+            evidence_gaps=list(self.evidence_gaps),
+        )
+        self.last_discrimination_scores = disc_scores
+        if best is not None:
+            # Prefer discriminating experiment first in portfolio order for JEV
+            experiments = [best] + [e for e in experiments if e.experiment_id != best.experiment_id]
         decision = self.jev.choose(experiments, hypotheses, budget_remaining_ratio=1.0)
 
         top_h = hypotheses[0].statement if hypotheses else "none"

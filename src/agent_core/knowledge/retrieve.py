@@ -428,27 +428,23 @@ def build_contextual_query(
         q.has_object_id_param = has_obj
         return q
 
-    signals = [meth]
-    tags = [meth]
-    if meth == "ssrf":
-        signals += ["ssrf", "url-fetch", "server-side"]
-        tags += ["ssrf"]
-        prop = "ssrf"
-    elif meth in ("business_logic", "business-logic"):
-        signals += ["business_logic", "state", "workflow", "coupon"]
-        tags += ["business_logic", "state"]
-        prop = "business_logic"
-    elif meth in ("authentication", "authn"):
-        signals += ["authentication", "session"]
-        tags += ["authentication"]
-        prop = "authentication"
-    elif meth == "xss":
-        signals += ["xss"]
-        tags += ["xss"]
-        prop = "xss"
+    # Data map — not per-methodology engines
+    METHOD_SIGNALS = {
+        "ssrf": (["ssrf", "url-fetch", "server-side"], ["ssrf"], "ssrf"),
+        "business_logic": (["business_logic", "state", "workflow", "coupon"], ["business_logic", "state"], "business_logic"),
+        "business-logic": (["business_logic", "state", "workflow", "coupon"], ["business_logic", "state"], "business_logic"),
+        "authentication": (["authentication", "session"], ["authentication"], "authentication"),
+        "authn": (["authentication", "session"], ["authentication"], "authentication"),
+        "xss": (["xss", "reflection", "encoding"], ["xss"], "xss"),
+        "injection": (["injection", "sqli", "interpreter"], ["injection"], "injection"),
+    }
+    if meth in METHOD_SIGNALS:
+        extra_sig, extra_tags, prop = METHOD_SIGNALS[meth]
+        signals = [meth] + list(extra_sig)
+        tags = [meth] + list(extra_tags)
     else:
-        signals += [meth]
-        tags += [meth]
+        signals = [meth]
+        tags = [meth]
         prop = meth
 
     # light tech from context

@@ -29,6 +29,7 @@ from agent_core.evaluation.episode import EpisodeRecorder, ResearchEpisode
 from agent_core.knowledge.candidates import KnowledgeCandidateFactory
 from agent_core.schemas.observation import Observation, from_lab_observation
 from agent_core.knowledge.case_extract import extract_case_from_episode
+from agent_core.hypotheses.update import apply_evidence_to_hypotheses
 from agent_core.findings.poc import MinimizedPoC, PoCMinimizer
 from agent_core.findings.report import EvidenceReport, build_evidence_report
 from agent_core.orchestrator.research_loop import ResearchLoop, ResearchLoopResult
@@ -96,6 +97,7 @@ class ClosedLoopResult:
     experiment_alignment: Optional[dict] = None
     budget_exhausted: bool = False
     knowledge_procedure_required_blocked: bool = False
+    hypothesis_updates: list = field(default_factory=list)
     max_experiments_budget: Optional[int] = None
     experiments_designed: int = 0
     report: Optional[EvidenceReport] = None
@@ -576,6 +578,17 @@ class ClosedLoopRunner:
         final_status = ruling.final_status.value if ruling.final_status else "unknown"
         belief_updates: list[str] = []
         # Update beliefs + hypothesis portfolio from referee outcome
+        # Gate 3: observation/evidence polarity → hypothesis portfolio update
+        pol = "positive" if ruling.accepted else "negative"
+        hyp_updates = apply_evidence_to_hypotheses(
+            list(plan.hypotheses or []),
+            polarity=pol,
+            evidence_ids=list(evidence_ids),
+            competing_notes=list(
+                (self.research.last_retrieval.competing_explanations
+                 if self.research.last_retrieval else []) or []
+            )[:3],
+        )
         if ruling.accepted:
             b = self.research.belief_engine.assert_belief(
                 claim="Cross-identity object access observed under lab scenario",
@@ -673,6 +686,7 @@ class ClosedLoopRunner:
             poc=poc,
             selected_experiment_id=alignment.experiment_id,
             knowledge_procedure_required_blocked=knowledge_blocked,
+            hypothesis_updates=hyp_updates,
             experiments_designed=len(plan.experiments or []),
             max_experiments_budget=getattr(self, "max_experiments_budget", None),
             experiment_alignment=alignment.to_dict(),
