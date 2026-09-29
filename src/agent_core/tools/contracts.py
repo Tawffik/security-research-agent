@@ -71,13 +71,20 @@ def authorize_tool(
             reason="live_http_not_enabled_on_contract",
             contract_name=contract.name,
         )
+    if not host or not str(host).strip():
+        return ToolAuthorizationResult(
+            allowed=False,
+            reason="missing_scope",
+            contract_name=contract.name,
+        )
     if contract.authorization_required:
         decision = guard.authorize(
             host=host,
             risk_tier=RiskTier.ACTIVE_SAFE if contract.side_effects == "read" else RiskTier.ACTIVE_RISKY,
             action_description=action_description,
         )
-        if decision not in (ScopeDecision.ALLOW, ScopeDecision.REQUIRES_APPROVAL):
+        # Gate 5.1: only explicit ALLOW — REQUIRES_APPROVAL is not permission
+        if decision != ScopeDecision.ALLOW:
             return ToolAuthorizationResult(
                 allowed=False,
                 reason=f"scope_{decision.value}",
