@@ -7,7 +7,7 @@ Gate 5.1 — Tool Contract + Authorized Execution Boundary
 d57d098
 
 ## Final commit
-(pending)
+5a13b4e9cbbd43d0ae966d2eb0cfb5f206b28db1
 
 ## Files changed
 - `src/agent_core/tools/execution_boundary.py` (new)
