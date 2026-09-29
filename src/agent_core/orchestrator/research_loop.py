@@ -87,24 +87,63 @@ class ResearchLoop:
                 source="recon_structure",
             )
 
+        # Gate 2: seed retrieval state from target context + loop state
         self.knowledge_retriever._evidence_gaps = list(self.evidence_gaps)
         self.knowledge_retriever._prior_experiment_ids = list(self.prior_experiment_ids)
-        if self.preferred_methodology:
+        self.knowledge_retriever._precondition_hints = [
+            "multiple identities" if len(ctx.actors) >= 2 else "single identity",
+        ]
+        if any(
+            "{id}" in (getattr(ep, "path", "") or "").lower()
+            or ":id" in (getattr(ep, "path", "") or "").lower()
+            for ep in (ctx.endpoints or [])
+        ):
+            self.knowledge_retriever._precondition_hints.append("object identifier")
+
+        meth = self.preferred_methodology
+        if meth:
             retrieval = self.knowledge_retriever.retrieve_for_context(
-                ctx, opportunities, methodology=self.preferred_methodology
+                ctx, opportunities, methodology=meth
             )
         else:
             retrieval = self.knowledge_retriever.retrieve_for_authz(ctx, opportunities)
-        self.last_retrieval = retrieval
-        # Gate 2: negative/FP knowledge becomes competing explanations (not findings)
+
+        # Negatives → competing explanations (not findings)
         if retrieval and getattr(retrieval, "negatives", None):
             for neg in retrieval.negatives:
                 note = f"negative:{neg.record_id}:{neg.title[:80]}"
                 if note not in retrieval.competing_explanations:
                     retrieval.competing_explanations.append(note)
+                self.knowledge_retriever._negative_evidence_ids = list(
+                    getattr(self.knowledge_retriever, "_negative_evidence_ids", None) or []
+                ) + [neg.record_id]
+
         hypotheses = self.hypothesis_engine.generate_from_unknowns(
             unknowns, opportunities, ctx, retrieval=retrieval
         )
+
+        # Second pass: hypothesis-aware retrieval for experiment design
+        hyp_tokens: list[str] = []
+        for h in hypotheses[:5]:
+            stmt = (getattr(h, "statement", "") or "").lower()
+            for tok in stmt.replace("/", " ").replace("-", " ").split():
+                if len(tok) >= 4 and tok not in hyp_tokens:
+                    hyp_tokens.append(tok)
+        self.knowledge_retriever._hypothesis_tokens = hyp_tokens[:20]
+        if hyp_tokens or getattr(self.knowledge_retriever, "_negative_evidence_ids", None):
+            if meth:
+                retrieval = self.knowledge_retriever.retrieve_for_context(
+                    ctx, opportunities, methodology=meth
+                )
+            else:
+                retrieval = self.knowledge_retriever.retrieve_for_authz(ctx, opportunities)
+            if retrieval and getattr(retrieval, "negatives", None):
+                for neg in retrieval.negatives:
+                    note = f"negative:{neg.record_id}:{neg.title[:80]}"
+                    if note not in retrieval.competing_explanations:
+                        retrieval.competing_explanations.append(note)
+
+        self.last_retrieval = retrieval
         experiments = self.experiment_designer.design_portfolio(
             hypotheses, ctx, retrieval=retrieval
         )

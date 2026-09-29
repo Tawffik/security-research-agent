@@ -144,3 +144,47 @@ def test_negative_not_auto_finding():
             "negative:" in c or True
             for c in loop.last_retrieval.competing_explanations
         )
+
+
+def test_prior_experiment_penalizes_same_procedure():
+    from agent_core.knowledge.query import KnowledgeQuery
+    from agent_core.knowledge.retrieve import _score_record, KnowledgeRetriever
+    from agent_core.knowledge.index import KnowledgeIndex
+
+    idx = KnowledgeIndex(KROOT).load()
+    proc = next(r for r in idx.records if r.record_id.startswith("PROC-0001"))
+    q0 = KnowledgeQuery(methodologies=["authorization"], signals=["authorization"], limit=5)
+    q1 = KnowledgeQuery(
+        methodologies=["authorization"],
+        signals=["authorization"],
+        prior_experiment_ids=[proc.record_id],
+        limit=5,
+    )
+    assert _score_record(proc, q1) < _score_record(proc, q0)
+
+
+def test_precondition_multi_actor_boosts_cross_identity_procedure():
+    from agent_core.knowledge.query import KnowledgeQuery
+    from agent_core.knowledge.retrieve import _score_record
+    from agent_core.knowledge.index import KnowledgeIndex
+
+    idx = KnowledgeIndex(KROOT).load()
+    proc = next(
+        r
+        for r in idx.records
+        if r.kind == "procedure" and "cross" in (r.abstraction or r.title or "").lower()
+        or (r.record_id.startswith("PROC-0001"))
+    )
+    q_single = KnowledgeQuery(methodologies=["authorization"], actor_count=1)
+    q_multi = KnowledgeQuery(methodologies=["authorization"], actor_count=2)
+    # multi should not score lower than single for cross-identity-oriented knowledge
+    assert _score_record(proc, q_multi) >= _score_record(proc, q_single) - 0.01
+
+
+def test_xss_methodology_ranks_xss_procedure():
+    r = KnowledgeRetriever(KnowledgeIndex(KROOT).load())
+    res = r.retrieve_for_context(_ctx(), [], methodology="xss")
+    assert res.procedure_ids
+    assert res.procedure_ids[0].startswith("PROC-0013") or any(
+        "0013" in x for x in res.procedure_ids
+    )

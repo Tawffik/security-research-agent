@@ -179,6 +179,63 @@ def _score_record(rec: KnowledgeRecord, query: KnowledgeQuery) -> float:
     if rec.kind == "negative":
         s += 0.25  # FP guidance is valuable when domain matches
 
+    # --- Gate 2 research-state signals ---
+    rid = rec.record_id.lower()
+    blob = f"{rec.title} {rec.abstraction} {' '.join(rec.tags)} {rec.raw_excerpt}".lower()
+
+    # Hypothesis tokens: boost knowledge that can discriminate current claims
+    for tok in query.hypothesis_tokens or []:
+        tl = tok.lower().strip()
+        if len(tl) < 3:
+            continue
+        if tl in blob or tl in rid:
+            s += 0.6
+
+    # Evidence gaps: prefer procedures that mention missing roles/evidence
+    for g in query.evidence_gaps or []:
+        gl = str(g).lower()
+        if gl and gl in blob:
+            s += 0.5
+        if gl.startswith("evidence_gap:"):
+            gl = gl.split(":", 1)[-1]
+        if gl and gl in blob:
+            s += 0.4
+
+    # Prior experiments: avoid recommending the same procedure again
+    for eid in query.prior_experiment_ids or []:
+        el = str(eid).lower()
+        if el and (el in rid or el in blob):
+            s -= 2.0
+
+    # Negative evidence ids: boost negative-kind records that match
+    for nid in query.negative_evidence_ids or []:
+        if str(nid).lower() in rid:
+            s += 1.0
+
+    # Preconditions from target context (MATCH boost / MISMATCH soft penalty)
+    preconds = list(query.precondition_hints or [])
+    if query.actor_count >= 2:
+        preconds.append("multiple identities")
+        preconds.append("two identities")
+        preconds.append("cross-identity")
+    if query.has_object_id_param:
+        preconds.append("object identifier")
+        preconds.append("object id")
+        preconds.append("resource id")
+
+    matched_pre = 0
+    for pre in preconds:
+        pl = pre.lower()
+        if pl in blob:
+            matched_pre += 1
+            s += 0.45
+    # If procedure text requires multi-identity but actor_count < 2 → soft mismatch
+    if query.actor_count < 2 and any(
+        x in blob for x in ("cross-identity", "two identities", "multiple identities")
+    ):
+        if "public" not in blob:
+            s -= 0.8
+
     return s
 
 
@@ -320,6 +377,9 @@ class KnowledgeRetriever:
             methodology=methodology,
             evidence_gaps=getattr(self, "_evidence_gaps", None),
             prior_experiment_ids=getattr(self, "_prior_experiment_ids", None),
+            hypothesis_tokens=getattr(self, "_hypothesis_tokens", None),
+            negative_evidence_ids=getattr(self, "_negative_evidence_ids", None),
+            precondition_hints=getattr(self, "_precondition_hints", None),
             limit=limit,
         )
         return self.retrieve(query)
@@ -332,12 +392,22 @@ def build_contextual_query(
     methodology: str | None = None,
     evidence_gaps: list[str] | None = None,
     prior_experiment_ids: list[str] | None = None,
+    hypothesis_tokens: list[str] | None = None,
+    negative_evidence_ids: list[str] | None = None,
+    precondition_hints: list[str] | None = None,
     limit: int = 5,
 ) -> KnowledgeQuery:
     """Generic context query — methodology is data, not a separate engine."""
     from agent_core.knowledge.domains.authorization import build_authz_query
 
     meth = (methodology or "").lower().strip()
+
+    actor_count = len(getattr(ctx, "actors", None) or [])
+    has_obj = False
+    for ep in getattr(ctx, "endpoints", None) or []:
+        path = (getattr(ep, "path", "") or "").lower()
+        if "{id}" in path or ":id" in path or "id}" in path:
+            has_obj = True
     if not meth or meth in ("authorization", "authz", "bola", "idor"):
         q = build_authz_query(ctx, opportunities, limit=limit)
         q.methodologies = ["authorization"]
@@ -349,6 +419,13 @@ def build_contextual_query(
             q.tags_prefer.append(g)
         for eid in prior_experiment_ids or []:
             q.signals.append(f"prior_experiment:{eid}")
+        q.evidence_gaps = list(evidence_gaps or [])
+        q.prior_experiment_ids = list(prior_experiment_ids or [])
+        q.hypothesis_tokens = list(hypothesis_tokens or [])
+        q.negative_evidence_ids = list(negative_evidence_ids or [])
+        q.precondition_hints = list(precondition_hints or [])
+        q.actor_count = actor_count
+        q.has_object_id_param = has_obj
         return q
 
     signals = [meth]
@@ -394,5 +471,12 @@ def build_contextual_query(
         limit=limit,
         require_domain_match=False,
         require_methodology_match=False,
+        evidence_gaps=list(evidence_gaps or []),
+        prior_experiment_ids=list(prior_experiment_ids or []),
+        hypothesis_tokens=list(hypothesis_tokens or []),
+        negative_evidence_ids=list(negative_evidence_ids or []),
+        precondition_hints=list(precondition_hints or []),
+        actor_count=actor_count,
+        has_object_id_param=has_obj,
     )
 
