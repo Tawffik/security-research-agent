@@ -177,3 +177,52 @@ class BranchManager:
         )
         self.events.append(ev)
         return ev
+
+
+def branch_manager_snapshot(manager: "BranchManager") -> dict[str, Any]:
+    """Serialize branch graph + lineage for offline replay stress."""
+    return {
+        "episode_id": manager.episode_id,
+        "branches": [b.to_dict() for b in manager.branches],
+        "events": [e.to_dict() for e in manager.events],
+        "fingerprints_tried": sorted(manager._fingerprints_tried),
+    }
+
+
+def branch_manager_from_snapshot(data: dict[str, Any]) -> "BranchManager":
+    """Restore BranchManager from snapshot — deterministic structure, not live re-exec."""
+    m = BranchManager(episode_id=str(data.get("episode_id") or ""))
+    for bd in data.get("branches") or []:
+        b = ResearchBranch(
+            branch_id=bd["branch_id"],
+            parent_checkpoint=bd.get("parent_checkpoint") or "",
+            parent_branch_id=bd.get("parent_branch_id") or "",
+            hypothesis_path=list(bd.get("hypothesis_path") or []),
+            experiment_ids=list(bd.get("experiment_ids") or []),
+            observation_ids=list(bd.get("observation_ids") or []),
+            evidence_ids=list(bd.get("evidence_ids") or []),
+            termination_reason=bd.get("termination_reason") or "",
+            return_target=bd.get("return_target") or "",
+            failed_fingerprint=bd.get("failed_fingerprint") or "",
+            active=bool(bd.get("active", True)),
+            created_at=bd.get("created_at") or "",
+        )
+        m.branches.append(b)
+    for ed in data.get("events") or []:
+        m.events.append(
+            LineageEvent(
+                event_id=ed["event_id"],
+                parent_event_id=ed.get("parent_event_id") or "",
+                episode_id=ed.get("episode_id") or "",
+                event_type=ed.get("event_type") or "",
+                actor=ed.get("actor") or "",
+                input_refs=list(ed.get("input_refs") or []),
+                output_refs=list(ed.get("output_refs") or []),
+                state_before_hash=ed.get("state_before_hash") or "",
+                state_after_hash=ed.get("state_after_hash") or "",
+                timestamp=ed.get("timestamp") or "",
+            )
+        )
+    for fp in data.get("fingerprints_tried") or []:
+        m._fingerprints_tried.add(fp)
+    return m
