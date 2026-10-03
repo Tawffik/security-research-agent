@@ -1,0 +1,46 @@
+{
+  "campaign_status": "IN_PROGRESS",
+  "current_gate": "5_complete_offline_7_foundations",
+  "current_task": "Gate 7 offline foundations (branches/lineage); Gate 6 blocked",
+  "current_commit": "pending",
+  "completed": [
+    "gate2_contextual_retrieval",
+    "gate3_generic_hypothesis_experiment",
+    "gate4_observation_differential",
+    "gate5_1_execution_boundary",
+    "gate5_2_capability_failure_taxonomy",
+    "gate5_3_executable_verification",
+    "gate5_4_stop_semantics",
+    "gate7_branch_lineage_foundation"
+  ],
+  "in_progress": [],
+  "deferred": [
+    {
+      "id": "fix_fixture_claim_text",
+      "description": "Researcher claim text still references scenario.suggests_authz_issue in closed_loop",
+      "reason": "non-blocking for Gate 5 runtime boundary",
+      "priority": "low",
+      "return_condition": "when polishing claim generation"
+    }
+  ],
+  "blocked": [
+    {
+      "id": "gate6_live_bbci_e2e",
+      "why": "No authorized live environment / credentials",
+      "blocked_capability": "Real BugBountyCI E2E with live HTTP",
+      "required_human_action": "Provide authorized program scope + credentials + live target approval",
+      "resume_condition": "explicit live authorization available"
+    }
+  ],
+  "next_dependencies": [
+    "gate7_trajectory_evaluation_offline",
+    "gate8_trusted_memory_lifecycle_foundation",
+    "gate5_observation_from_authorized_tool_path"
+  ],
+  "human_dependencies": [
+    "gate6_live_authorization"
+  ],
+  "last_test": {"passed": 276, "failed": 0},
+  "last_verified_commit": "pending",
+  "resume_condition": null
+}
