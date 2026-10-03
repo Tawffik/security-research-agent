@@ -124,6 +124,7 @@ class Experiment(BaseModel):
     expected_observation: str = ""
     discriminator: str = ""
     required_evidence: list[str] = Field(default_factory=list)
+    preconditions: list[str] = Field(default_factory=list)
     stop_condition: str = ""
     risk: float = Field(default=0.3, ge=0.0, le=1.0)
     cost: float = Field(default=0.3, ge=0.0, le=1.0)

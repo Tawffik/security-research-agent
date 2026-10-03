@@ -241,3 +241,69 @@ class CapabilityTracker:
             "n_failures": len(self.failures),
             "failure_classes": sorted({f.failure_class for f in self.failures}),
         }
+
+
+@dataclass
+class CapabilityAuthorityRecord:
+    """
+    Declared vs observed capability differential.
+    LLM decision / skill metadata ≠ authorization.
+    """
+
+    capability_name: str
+    declared_available: bool = False
+    observed_available: bool = False
+    declared_exposed: bool = False
+    observed_exposed: bool = False
+    used: bool = False
+    outcome: str = ""
+    authorization_required: bool = True
+    scope_checked: bool = False
+    scope_allowed: bool = False
+    differential: str = ""  # match | declared_only | observed_only | mismatch
+    notes: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def capability_differential(
+    *,
+    name: str,
+    declared_available: bool,
+    observed_available: bool,
+    declared_exposed: bool = False,
+    observed_exposed: bool = False,
+    used: bool = False,
+    outcome: str = "",
+    scope_checked: bool = False,
+    scope_allowed: bool = False,
+) -> CapabilityAuthorityRecord:
+    if declared_available == observed_available and declared_exposed == observed_exposed:
+        diff = "match"
+    elif declared_available and not observed_available:
+        diff = "declared_only"
+    elif observed_available and not declared_available:
+        diff = "observed_only"
+    else:
+        diff = "mismatch"
+    notes: list[str] = []
+    if not scope_checked:
+        notes.append("scope_not_checked_cannot_execute")
+    if scope_checked and not scope_allowed:
+        notes.append("scope_denied")
+    notes.append("skill_metadata_neq_execution_permission")
+    notes.append("llm_decision_neq_authorization")
+    return CapabilityAuthorityRecord(
+        capability_name=name,
+        declared_available=declared_available,
+        observed_available=observed_available,
+        declared_exposed=declared_exposed,
+        observed_exposed=observed_exposed,
+        used=used,
+        outcome=outcome,
+        scope_checked=scope_checked,
+        scope_allowed=scope_allowed,
+        differential=diff,
+        notes=notes,
+    )

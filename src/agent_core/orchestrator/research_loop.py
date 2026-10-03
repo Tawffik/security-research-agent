@@ -20,6 +20,7 @@ from agent_core.experiments.designer import ExperimentDesigner
 from agent_core.hypotheses.engine import HypothesisEngine
 from agent_core.knowledge.retrieve import KnowledgeRetriever
 from agent_core.experiments.discriminate import select_minimum_discriminating
+from agent_core.experiments.utility import select_by_utility
 from agent_core.research.contracts import contract_from_retrieval
 from agent_core.recon.adapter import RawRecon, ReconResultAdapter
 from agent_core.schemas.research import Decision, Experiment, Hypothesis, Opportunity
@@ -63,6 +64,7 @@ class ResearchLoop:
         self.prior_experiment_ids: list[str] = []
         self.last_knowledge_contract = None
         self.last_discrimination_scores = []
+        self.last_utility_scores = []
 
     def run_from_recon_file(self, path: Union[str, Path]) -> ResearchLoopResult:
         recon = RawRecon.from_file(path)
@@ -161,9 +163,20 @@ class ResearchLoop:
             evidence_gaps=list(self.evidence_gaps),
         )
         self.last_discrimination_scores = disc_scores
-        if best is not None:
-            # Prefer discriminating experiment first in portfolio order for JEV
-            experiments = [best] + [e for e in experiments if e.experiment_id != best.experiment_id]
+        util_best, util_scores = select_by_utility(
+            experiments,
+            hypotheses=hypotheses,
+            evidence_gaps=list(self.evidence_gaps),
+            prior_experiment_ids=list(self.prior_experiment_ids),
+            available_preconditions=list(
+                getattr(self.knowledge_retriever, "_precondition_hints", None) or []
+            ),
+        )
+        self.last_utility_scores = util_scores
+        # Prefer utility-eligible experiment when available; else discrimination best
+        chosen = util_best or best
+        if chosen is not None:
+            experiments = [chosen] + [e for e in experiments if e.experiment_id != chosen.experiment_id]
         decision = self.jev.choose(experiments, hypotheses, budget_remaining_ratio=1.0)
 
         top_h = hypotheses[0].statement if hypotheses else "none"
