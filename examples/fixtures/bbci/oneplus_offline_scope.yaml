@@ -1,0 +1,19 @@
+# Offline-only authorized scope for Gate 6A lab using historical BBCI artifact.
+# Does NOT authorize live HTTP against oneplus.ch in production.
+# live_http remains disabled on ToolContracts.
+
+program_name: "oneplus-ch-offline-bbci-artifact"
+rate_limit_per_host_per_min: 10
+concurrency_limit_per_host: 1
+
+in_scope:
+  - pattern: "oneplus.ch"
+    max_risk_tier: "active_safe"
+    note: "offline artifact study only — Gate 6A"
+  - pattern: "*.oneplus.ch"
+    max_risk_tier: "active_safe"
+    note: "offline artifact study only — Gate 6A"
+
+excluded:
+  - pattern: "*.internal.oneplus.ch"
+    note: "internal hosts excluded"
