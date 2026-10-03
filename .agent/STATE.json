@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
   "current_gate": "offline_hardening",
-  "current_task": "Multi-branch replay stress verified; Gate 6B blocked; browser deferred (no Playwright/runtime)",
-  "current_commit": "9507400b100a4401ba1a3728f10e8f0a9872690d",
-  "last_verified_commit": "9507400b100a4401ba1a3728f10e8f0a9872690d",
+  "current_task": "Failure policy + long-horizon checkpoint verified; Gate 6B blocked; browser deferred",
+  "current_commit": "3de83db1051cc9fc2989cfb7d362a411986aa1b3",
+  "last_verified_commit": "3de83db1051cc9fc2989cfb7d362a411986aa1b3",
   "last_test": {
-    "passed": 351,
+    "passed": 357,
     "failed": 0
   },
   "completed": [
@@ -37,7 +37,10 @@
     "trajectory_hypothesis_transition_metrics",
     "canonical_reconciliation_freeze",
     "multi_branch_replay_stress",
-    "branch_snapshot_restore"
+    "branch_snapshot_restore",
+    "failure_next_action_policy",
+    "long_horizon_checkpoint_branch_snapshot",
+    "malformed_bbci_parse_safety"
   ],
   "in_progress": [],
   "deferred": [
@@ -79,7 +82,7 @@
     "gate6b_when_authorized"
   ],
   "freeze": {
-    "status": "OFFLINE_CORE_VERIFIED",
-    "note": "Core research loop frozen; optional offline hardening only; Gate 6B human-blocked"
+    "status": "OFFLINE_SAFE_WORK_NEARLY_EXHAUSTED",
+    "note": "Independent offline material work largely complete; remaining required is Gate 6B (human)"
   }
 }
