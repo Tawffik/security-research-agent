@@ -181,6 +181,18 @@ class EvidenceStore:
             prev = ev.self_hash
         return True
 
+    def list_evidence(self, hypothesis: Optional[str] = None) -> list[Evidence]:
+        if hypothesis:
+            rows = self.conn.execute(
+                "SELECT * FROM evidence WHERE related_hypothesis=? ORDER BY timestamp ASC",
+                (hypothesis,),
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                "SELECT * FROM evidence ORDER BY timestamp ASC"
+            ).fetchall()
+        return [self._row_to_evidence(r) for r in rows]
+
     def negative_evidence_for(self, hypothesis: str) -> list[Evidence]:
         """Call this BEFORE re-attempting a hypothesis after resume."""
         rows = self.conn.execute(
