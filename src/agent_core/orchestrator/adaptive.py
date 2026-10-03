@@ -25,6 +25,8 @@ from agent_core.orchestrator.experiment_alignment import (
 )
 from agent_core.schemas.research import Decision, DecisionAction, Experiment, Opportunity
 from agent_core.target.opportunity import OpportunityEngine
+from agent_core.research.branch import BranchManager
+from agent_core.schemas.research import HypothesisStatus
 
 
 @dataclass
@@ -39,6 +41,11 @@ class AdaptiveStepResult:
     notes: list[str] = field(default_factory=list)
     coverage_gap: Optional[dict[str, Any]] = None
     selection_reason: str = ""
+    branch_id: str = ""
+    parent_branch_id: str = ""
+    backtracked: bool = False
+    active_hypothesis_ids: list[str] = field(default_factory=list)
+    rejected_hypothesis_ids: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -52,6 +59,11 @@ class AdaptiveStepResult:
             "notes": list(self.notes),
             "coverage_gap": self.coverage_gap,
             "selection_reason": self.selection_reason,
+            "branch_id": self.branch_id,
+            "parent_branch_id": self.parent_branch_id,
+            "backtracked": self.backtracked,
+            "active_hypothesis_ids": list(self.active_hypothesis_ids),
+            "rejected_hypothesis_ids": list(self.rejected_hypothesis_ids),
         }
 
 
@@ -62,6 +74,8 @@ class AdaptiveLoop:
         self.designer = ExperimentDesigner(engagement_id)
         self.opp_engine = OpportunityEngine(engagement_id)
         self.tried_experiment_ids: set[str] = set()
+        self.branches = BranchManager(episode_id=engagement_id)
+        self._root_branch_id: str = ""
 
     def step(self, closed: ClosedLoopResult) -> AdaptiveStepResult:
         notes: list[str] = []
@@ -191,13 +205,135 @@ class AdaptiveLoop:
             notes.append(
                 "negative evidence preserved — do not re-spray equivalent authorization test"
             )
+            hyps = list(plan.hypotheses or [])
+            rejected_ids = []
+            active_ids = []
+            for h in hyps:
+                st = h.status.value if hasattr(h.status, "value") else str(h.status)
+                stmt = (h.statement or "").lower()
+                if st in ("rejected",) or (
+                    st == "supported" and ("null" in stmt or "not a vulnerability" in stmt)
+                ):
+                    # supported null is viable; claim hyps with negative evidence → reject list if rejected
+                    if st == "rejected":
+                        rejected_ids.append(h.hypothesis_id)
+                if st in ("open", "supported"):
+                    active_ids.append(h.hypothesis_id)
+                if st == "open" and h.hypothesis_id not in active_ids:
+                    active_ids.append(h.hypothesis_id)
+
+            # From hypothesis_updates on closed result
+            for u in list(getattr(closed, "hypothesis_updates", None) or []):
+                hid = getattr(u, "hypothesis_id", None) or (u.get("hypothesis_id") if isinstance(u, dict) else None)
+                reason = getattr(u, "reason", None) or (u.get("reason") if isinstance(u, dict) else "")
+                if hid and reason and "negative" in str(reason):
+                    if hid not in rejected_ids and "null" not in str(reason):
+                        rejected_ids.append(str(hid))
+
+            # Open root branch once
+            if not self._root_branch_id:
+                root = self.branches.open_branch(
+                    hypothesis_ids=[h.hypothesis_id for h in hyps[:5]],
+                )
+                self._root_branch_id = root.branch_id
+            if current_exp_id:
+                self.branches.record_experiment(self._root_branch_id, current_exp_id)
+
+            alt_hyps = [
+                h for h in hyps
+                if h.hypothesis_id not in rejected_ids
+                and (h.status.value if hasattr(h.status, "value") else str(h.status))
+                in ("open", "supported")
+            ]
+            # Prefer null / alternate explanations when primary claim was rejected
+            alt_hyps_sorted = sorted(
+                alt_hyps,
+                key=lambda h: (
+                    0 if "null" in (h.statement or "").lower() or "intended" in (h.statement or "").lower() else 1
+                ),
+            )
+
+            if alt_hyps_sorted:
+                nb = self.branches.backtrack(
+                    self._root_branch_id,
+                    new_hypothesis_ids=[h.hypothesis_id for h in alt_hyps_sorted],
+                )
+                experiments = self.designer.design_portfolio(
+                    alt_hyps_sorted, plan.target_context, retrieval=getattr(self, "_retrieval", None)
+                )
+                candidates = [
+                    e for e in experiments if e.experiment_id not in self.tried_experiment_ids
+                ]
+                if not candidates:
+                    notes.append("backtrack: no discriminating experiment left on alternate branch")
+                    return AdaptiveStepResult(
+                        prior_outcome="rejected",
+                        stop=True,
+                        stop_reason="no_discriminating_experiment",
+                        next_action="STOP",
+                        reranked_opportunities=ranked,
+                        notes=notes,
+                        branch_id=nb.branch_id if nb else self._root_branch_id,
+                        parent_branch_id=self._root_branch_id,
+                        backtracked=bool(nb),
+                        active_hypothesis_ids=[h.hypothesis_id for h in alt_hyps_sorted],
+                        rejected_hypothesis_ids=list(rejected_ids),
+                    )
+                next_exp = candidates[0]
+                decision = self.jev.choose(candidates, alt_hyps_sorted, budget_remaining_ratio=0.7)
+                if decision.decision == DecisionAction.STOP or not candidates:
+                    return AdaptiveStepResult(
+                        prior_outcome="rejected",
+                        stop=True,
+                        stop_reason="no_discriminating_experiment",
+                        next_action="STOP",
+                        decision=decision,
+                        reranked_opportunities=ranked,
+                        notes=notes + ["JEV stop after backtrack"],
+                        branch_id=nb.branch_id if nb else "",
+                        parent_branch_id=self._root_branch_id,
+                        backtracked=True,
+                        active_hypothesis_ids=[h.hypothesis_id for h in alt_hyps_sorted],
+                        rejected_hypothesis_ids=list(rejected_ids),
+                    )
+                if decision.candidate:
+                    next_exp = next(
+                        (e for e in candidates if e.experiment_id == decision.candidate),
+                        candidates[0],
+                    )
+                notes.append(
+                    f"backtrack to branch={nb.branch_id if nb else '?'} "
+                    f"active_hyps={[h.hypothesis_id for h in alt_hyps_sorted[:3]]} "
+                    f"next_exp={next_exp.experiment_id}"
+                )
+                return AdaptiveStepResult(
+                    prior_outcome="rejected",
+                    stop=False,
+                    stop_reason="",
+                    next_action="EXECUTE_FOLLOWUP",
+                    decision=decision,
+                    next_experiment=next_exp,
+                    reranked_opportunities=ranked,
+                    notes=notes,
+                    selection_reason="evidence_driven_backtrack",
+                    branch_id=nb.branch_id if nb else "",
+                    parent_branch_id=self._root_branch_id,
+                    backtracked=True,
+                    active_hypothesis_ids=[h.hypothesis_id for h in alt_hyps_sorted],
+                    rejected_hypothesis_ids=list(rejected_ids),
+                )
+
+            # No alternate hypotheses → stop with evidence preserved
             return AdaptiveStepResult(
                 prior_outcome="rejected",
                 stop=True,
                 stop_reason="hypothesis_disproven",
                 next_action="STOP",
                 reranked_opportunities=ranked,
-                notes=notes,
+                notes=notes + ["no alternate hypothesis branch"],
+                branch_id=self._root_branch_id,
+                backtracked=False,
+                rejected_hypothesis_ids=list(rejected_ids),
             )
 
         if closed.referee_accepted:

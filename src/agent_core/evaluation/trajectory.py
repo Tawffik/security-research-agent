@@ -28,6 +28,8 @@ class TrajectoryMetrics:
     inconclusive: bool = False
     scope_blocked: bool = False
     false_confirmation_risk: bool = False
+    n_hypothesis_transitions: int = 0
+    evidence_driven_backtracks: int = 0
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -45,6 +47,8 @@ def evaluate_trajectory(
     stop_reason: str = "",
     discriminating_experiment_ids: list[str] | None = None,
     tried_experiment_ids: list[str] | None = None,
+    hypothesis_transition_count: int = 0,
+    evidence_driven_backtracks: int = 0,
 ) -> TrajectoryMetrics:
     experiments = list(experiment_ids or [])
     tried = list(tried_experiment_ids or experiments)
@@ -74,5 +78,7 @@ def evaluate_trajectory(
             and len(discriminating_experiment_ids or []) == 0
             and stop in ("verified", "evidence_sufficient")
         ),
+        n_hypothesis_transitions=hypothesis_transition_count,
+        evidence_driven_backtracks=evidence_driven_backtracks,
         notes=[],
     )

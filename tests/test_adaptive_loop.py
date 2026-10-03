@@ -20,8 +20,14 @@ def test_rejected_adaptive_stops_no_spray():
     step = AdaptiveLoop("eng_ad_r").step(closed)
     assert step.stop is True
     assert step.next_action == "STOP"
-    assert step.stop_reason == "hypothesis_disproven"
-    assert any("negative" in n.lower() or "spray" in n.lower() for n in step.notes)
+    assert step.stop_reason in (
+        "hypothesis_disproven",
+        "no_discriminating_experiment",
+    )
+    assert any(
+        "negative" in n.lower() or "spray" in n.lower() or "backtrack" in n.lower()
+        for n in step.notes
+    )
 
 
 def test_confirmed_with_variants_may_continue_once():
