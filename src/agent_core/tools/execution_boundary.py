@@ -17,6 +17,7 @@ from uuid import uuid4
 
 from agent_core.scope.guard import Decision as ScopeDecision, RiskTier, ScopeGuard
 from agent_core.tools.contracts import ToolContract, ToolAuthorizationResult
+from agent_core.tools.capability import CapabilityTracker, FailureClass
 
 
 @dataclass
@@ -73,11 +74,13 @@ class ExecutionBoundary:
         self.guard = guard
         self.contracts: dict[str, ToolContract] = dict(contracts or {})
         self.audit_log: list[ExecutionDecision] = []
+        self.capabilities = CapabilityTracker()
 
     def register(self, contract: ToolContract) -> None:
         if not contract or not contract.name:
             raise ValueError("invalid_contract")
         self.contracts[contract.name] = contract
+        self.capabilities.mark_available(contract.name)
 
     def request_execution(self, request: ActionRequest) -> ExecutionDecision:
         rid = f"exec-{uuid4().hex[:12]}"
@@ -103,6 +106,23 @@ class ExecutionBoundary:
                 },
             )
             self.audit_log.append(d)
+            fc = self.capabilities.classify_denial_reason(reason)
+            self.capabilities.record_failure(
+                fc,
+                detail=reason,
+                capability_name=request.tool_name,
+                experiment_id=request.experiment_id,
+                request_id=rid,
+                provenance={"audit": d.audit},
+            )
+            self.capabilities.mark_used(
+                request.tool_name or "unknown",
+                outcome="denied",
+                request_id=rid,
+                experiment_id=request.experiment_id,
+                failure_class=fc.value,
+                failure_detail=reason,
+            )
             return d
 
         # --- Fail-closed checks ---
@@ -201,6 +221,14 @@ class ExecutionBoundary:
             },
         )
         self.audit_log.append(allowed)
+        if request.tool_name not in self.capabilities._exposed:
+            self.capabilities.mark_exposed(request.tool_name)
+        self.capabilities.mark_used(
+            request.tool_name,
+            outcome="success",
+            request_id=rid,
+            experiment_id=request.experiment_id,
+        )
         return allowed
 
     def attempt_bypass_direct_tool(self, tool_name: str, host: str) -> ExecutionDecision:
