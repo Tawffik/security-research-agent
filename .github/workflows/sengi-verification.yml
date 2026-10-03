@@ -1,0 +1,145 @@
+# Temporary Sengi runner verification — CI/temporary worker only.
+# Does NOT deploy control plane publicly.
+name: Sengi Verification
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sengi-verification:
+    runs-on: sengi-standard-2-ubuntu-2404
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Runner identity
+        run: |
+          set -euo pipefail
+          echo "GITHUB_ACTIONS=${GITHUB_ACTIONS:-}"
+          echo "GITHUB_RUN_ID=${GITHUB_RUN_ID:-}"
+          echo "GITHUB_SHA=${GITHUB_SHA:-}"
+          echo "RUNNER_NAME=${RUNNER_NAME:-}"
+          echo "RUNNER_OS=${RUNNER_OS:-}"
+          echo "RUNNER_ARCH=${RUNNER_ARCH:-}"
+          echo "RUNNER_LABELS=${RUNNER_LABELS:-}"
+          python3 --version || true
+          python --version || true
+          uname -a
+          cat /etc/os-release
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package extras
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install -e ".[control]"
+          pip install -e ".[browser]"
+
+      - name: Full test suite
+        run: |
+          set -euo pipefail
+          export PYTHONPATH=src
+          pytest -v --tb=short | tee pytest-sengi.log
+          tail -5 pytest-sengi.log
+
+      - name: Playwright / browser probe
+        run: |
+          set -euo pipefail
+          python -c "import playwright; print('playwright', getattr(playwright, '__version__', 'import-ok'))"
+          which google-chrome || true
+          which chromium || true
+          which chromium-browser || true
+          python -c "from agent_core.tools.browser_health import check_browser_health; print(check_browser_health(try_launch=True))"
+
+      - name: Control plane + SQLite offline lifecycle
+        run: |
+          set -euo pipefail
+          export PYTHONPATH=src
+          export AGENT_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+          export AGENT_SESSION_DB="/tmp/sra-sengi-sessions.db"
+          python - <<'PY'
+          import os, time, threading
+          from pathlib import Path
+          from uvicorn import Config, Server
+          from agent_core.control_plane.app import build_app
+          from agent_core.runtime.store import SessionStore
+          from agent_core.runtime.engine import ResearchRuntime
+          import httpx
+
+          ROOT = Path(".").resolve()
+          # Persistence restart recovery
+          db = Path(os.environ["AGENT_SESSION_DB"])
+          if db.exists():
+              db.unlink()
+          store = SessionStore(db)
+          rt = ResearchRuntime(
+              store,
+              default_recon=ROOT / "examples/fixtures/sample_recon.json",
+              default_scope=ROOT / "examples/demo_program_scope.yaml",
+          )
+          s = rt.create_session(label="sengi-persist")
+          sid = s.session_id
+          rt.start(sid)
+          for _ in range(80):
+              time.sleep(0.25)
+              s = rt.get(sid)
+              if s.is_terminal():
+                  break
+          n1 = len(store.list_events(sid))
+          store2 = SessionStore(db)
+          s2 = store2.get_session(sid)
+          n2 = len(store2.list_events(sid))
+          assert s2 is not None and s2.status == s.status and n2 == n1 and n1 >= 1
+          print("PERSISTENCE_PASS", s.status, n1)
+
+          # Local control plane API
+          app = build_app(runtime=rt)
+          config = Config(app, host="127.0.0.1", port=8765, log_level="warning")
+          server = Server(config)
+          t = threading.Thread(target=server.run, daemon=True)
+          t.start()
+          time.sleep(1.5)
+          token = os.environ["AGENT_API_TOKEN"]
+          h = {"Authorization": f"Bearer {token}"}
+          with httpx.Client(base_url="http://127.0.0.1:8765", timeout=60) as c:
+              r = c.get("/health")
+              assert r.status_code == 200 and r.json().get("live_http_default") is False
+              r = c.post("/api/sessions", headers=h, json={"label": "sengi-cp"})
+              assert r.status_code == 200
+              sid2 = r.json()["session_id"]
+              assert r.json().get("live_http") is False
+              r = c.post(f"/api/sessions/{sid2}/start", headers=h)
+              assert r.status_code == 200
+              status = "RUNNING"
+              for _ in range(80):
+                  time.sleep(0.25)
+                  status = c.get(f"/api/sessions/{sid2}", headers=h).json()["status"]
+                  if status not in ("RUNNING", "READY", "CREATED", "PAUSED"):
+                      break
+              assert status in ("COMPLETED", "INCONCLUSIVE", "BLOCKED", "FAILED", "CANCELLED"), status
+              ev = c.get(f"/api/sessions/{sid2}/events", headers=h).json()["events"]
+              assert len(ev) >= 1
+              rep = c.get(f"/api/sessions/{sid2}/report", headers=h).json()
+              assert rep.get("live_http") is False
+              print("CONTROL_PLANE_PASS", status, len(ev))
+              # security: dangerous routes absent
+              for path in ("/exec", "/shell", "/python", "/run-anything", "/browser-any-url"):
+                  assert c.post(path, headers=h).status_code == 404
+              print("SECURITY_ROUTES_ABSENT_PASS")
+          server.should_exit = True
+          print("SENGI_VERIFICATION_PASS")
+          PY
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sengi-verification-logs
+          path: |
+            pytest-sengi.log
+          if-no-files-found: ignore
