@@ -512,17 +512,28 @@ class ClosedLoopRunner:
             evidence_ids.append(ev.evidence_id)
 
         def researcher_fn(hypothesis_id: str) -> ResearcherClaim:
+            # Prefer differential interpretation over fixture oracle label
+            if differential is not None and differential.interpretation == "possible_authorization_issue":
+                claim_text_r = (
+                    "Cross-identity ownership access produced success similar to baseline "
+                    "(differential=possible_authorization_issue)."
+                )
+                sev = "medium"
+            elif differential is not None and differential.interpretation == "ownership_or_authz_appears_enforced":
+                claim_text_r = (
+                    "Non-owner denied while baseline succeeded "
+                    "(differential=ownership_or_authz_appears_enforced)."
+                )
+                sev = "info"
+            else:
+                claim_text_r = "Lab observations recorded; claim deferred to evidence/differential."
+                sev = "info"
             return ResearcherClaim(
                 hypothesis_id=hypothesis_id,
                 title="Cross-identity object access on order resource",
-                claim=(
-                    "User B can retrieve User A's order object via GET /api/orders/{id} "
-                    "with identical private fields when authorization should be ownership-bound."
-                    if scenario.suggests_authz_issue
-                    else "Ownership appears enforced: non-owner receives 403."
-                ),
+                claim=claim_text_r,
                 supporting_evidence_ids=list(evidence_ids),
-                severity_estimate="medium" if scenario.suggests_authz_issue else "info",
+                severity_estimate=sev,
             )
 
         def skeptic_fn(claim: ResearcherClaim, store: EvidenceStore) -> SkepticVerdict:
@@ -632,11 +643,12 @@ class ClosedLoopRunner:
             self.research.hypothesis_engine.update_status(hyp_id, HypothesisStatus.REJECTED)
             stop_reason = "hypothesis_disproven"
 
-        claim_text = (
-            "User B can retrieve User A's order object via identifier when ownership should bind access."
-            if scenario.suggests_authz_issue
-            else "Non-owner cannot access owner object; authorization appears enforced."
-        )
+        if differential is not None and differential.interpretation == "possible_authorization_issue":
+            claim_text = "Differential suggests possible ownership/authorization issue under lab observations."
+        elif differential is not None and differential.interpretation == "ownership_or_authz_appears_enforced":
+            claim_text = "Differential suggests ownership/authz appears enforced under lab observations."
+        else:
+            claim_text = "Lab episode recorded; see evidence and differential for interpretation."
         report = build_evidence_report(
             engagement_id=self.engagement_id,
             title="Cross-identity object access on order resource",
