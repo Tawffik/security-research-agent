@@ -1,8 +1,8 @@
 {
   "campaign_status": "IN_PROGRESS",
   "current_gate": "5_complete_offline_7_foundations",
-  "current_task": "Gate 7 offline foundations (branches/lineage); Gate 6 blocked",
-  "current_commit": "87a9c07e85ea92c1724d7e5057cffef38445721d",
+  "current_task": "Offline hardening; Gate 6 blocked",
+  "current_commit": "8c898a7e5e2a5b9649354ede17edbeefd8c213e4",
   "completed": [
     "gate2_contextual_retrieval",
     "gate3_generic_hypothesis_experiment",
@@ -11,7 +11,9 @@
     "gate5_2_capability_failure_taxonomy",
     "gate5_3_executable_verification",
     "gate5_4_stop_semantics",
-    "gate7_branch_lineage_foundation"
+    "gate7_branch_lineage_foundation",
+    "gate7_trajectory_metrics_offline",
+    "gate8_trusted_memory_foundation"
   ],
   "in_progress": [],
   "deferred": [
@@ -33,17 +35,17 @@
     }
   ],
   "next_dependencies": [
-    "gate7_trajectory_evaluation_offline",
-    "gate8_trusted_memory_lifecycle_foundation",
-    "gate5_observation_from_authorized_tool_path"
+    "gate8_poisoning_resistance_tests_expand",
+    "gate7_benchmark_scenarios_expand",
+    "remove_fixture_label_from_claim_text"
   ],
   "human_dependencies": [
     "gate6_live_authorization"
   ],
   "last_test": {
-    "passed": 276,
+    "passed": 280,
     "failed": 0
   },
-  "last_verified_commit": "87a9c07e85ea92c1724d7e5057cffef38445721d",
+  "last_verified_commit": "8c898a7e5e2a5b9649354ede17edbeefd8c213e4",
   "resume_condition": null
 }
