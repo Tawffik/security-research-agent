@@ -1,24 +1,31 @@
-# Implementation Report — Gate 6A
+# Implementation Report — Canonical Reconciliation & Core Freeze
 
 ## TASK
-Offline real-BBCI artifact → full research episode
+Read-only-first reconciliation; control-plane freeze. No feature expansion.
 
-## FINAL COMMIT
-834a72f8ed42183634b32093489116143d310fa2
-
-## ARTIFACT
-examples/fixtures/bbci/oneplus.ch.live.txt (historical BugBountyCI live.txt)
+## REPOSITORY HEAD
+cab923f0bacf252c9f75f65e60197cc216415616
 
 ## TESTS
-324 passed / 0 failed
+346 passed / 0 failed (full suite at HEAD)
 
-## PIPELINE
-ingestion → adaptation → opportunity → knowledge → hypotheses → experiments →
-utility selection → offline execution boundary → observation → differential →
-evidence → verification → episode → decision
+## DRIFT FIXED
+STATE/CURRENT_TASK previously pointed at 1c82cb2 while HEAD was cab923f.
+Both now reference cab923f.
 
-## LIVE HTTP
-None. execution_mode=offline_lab. live_mode denied.
+## GATES
+- Gate 5: VERIFIED
+- Gate 6A: VERIFIED (offline)
+- Gate 7: CORE VERIFIED
+- Gate 6B: BLOCKED (live authorization)
+- Backtracking: SEMANTIC VERIFIED
+- Trajectory: foundations VERIFIED
 
-## GATE 6B
-BLOCKED until authorized live environment
+## SECURITY
+ScopeGuard fail-closed · no live HTTP · knowledge ≠ execution · oracle isolation · Gate 6B not marked complete
+
+## CAMPAIGN
+IN_PROGRESS — offline core frozen; waiting for Gate 6B authorization
+
+## NEXT
+gate6b_when_authorized only

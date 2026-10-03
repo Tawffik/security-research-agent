@@ -1,12 +1,31 @@
 # Current Task
 
-**Campaign status:** IN_PROGRESS
-**HEAD:** 1c82cb2745b7a1ab362e1088317b60fa32d20811
-**Tests:** 346 passed
+**Campaign:** IN_PROGRESS  
+**HEAD:** `cab923f0bacf252c9f75f65e60197cc216415616`  
+**Tests:** 346 passed / 0 failed  
 
-## Backtracking verdict
-REAL path when alternate hypotheses remain after negative evidence;
-stops with no_discriminating_experiment when none remain.
+## Core offline research engine
+**VERIFIED / FROZEN**
 
-## Gate 6B
-BLOCKED — live authorization required
+| Gate | Status |
+|------|--------|
+| Gate 5 | VERIFIED |
+| Gate 6A | VERIFIED (historical BBCI artifact → Research Episode, offline) |
+| Gate 7 | CORE VERIFIED (multi-class, adaptivity, oracle isolation, negative evidence, evidence-driven backtracking, trajectory foundations) |
+| Gate 8 | Offline foundations VERIFIED (memory replay / origin / poisoning isolation) |
+| Gate 6B | **BLOCKED** — explicit live authorization required |
+
+## Backtracking
+**SEMANTIC BACKTRACKING VERIFIED**  
+Negative evidence → alternate branch when hypotheses remain → different experiment or `no_discriminating_experiment`.
+
+## Trajectory
+Evaluation / lineage foundations VERIFIED (not a substitute for live E2E).
+
+## Current action
+Canonical reconciliation / freeze complete.  
+Do not reopen completed offline gates without regression evidence.
+
+## Next meaningful milestone
+**Gate 6B — Authorized Live BBCI → Research Agent E2E**  
+Only when: approved scope + target + credentials + authorized live environment are available.

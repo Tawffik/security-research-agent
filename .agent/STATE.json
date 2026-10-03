@@ -1,8 +1,8 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "research_loop_backtracking",
-  "current_task": "Semantic backtracking verified PARTIAL\u2192REAL path; Gate 6B blocked",
-  "current_commit": "1c82cb2745b7a1ab362e1088317b60fa32d20811",
+  "current_gate": "offline_core_frozen",
+  "current_task": "Offline core verified and frozen; Gate 6B blocked until authorized live environment",
+  "current_commit": "cab923f0bacf252c9f75f65e60197cc216415616",
   "completed": [
     "utility_aware_experiment_selection",
     "capability_authority_record",
@@ -29,29 +29,37 @@
     "public_shared_fp_guard",
     "backtracking_semantics_audit",
     "evidence_driven_backtrack",
-    "trajectory_hypothesis_transition_metrics"
+    "trajectory_hypothesis_transition_metrics",
+    "canonical_reconciliation_freeze"
   ],
   "in_progress": [],
   "deferred": [
     {
       "id": "full_belief_graph_query_object",
-      "description": "Belief graph query object",
-      "reason": "ResearchBrief sufficient",
+      "description": "Belief graph as first-class retrieval query object",
+      "reason": "ResearchBrief sufficient for current decisions; no demonstrated need",
       "priority": "medium",
-      "return_condition": "retrieval needs belief state"
+      "return_condition": "when retrieval ranking needs full belief state"
     },
     {
       "id": "integration_wire_utility_into_adaptive_loop",
       "description": "Deeper adaptive-loop utility wiring",
-      "reason": "ResearchLoop already uses select_by_utility",
+      "reason": "ResearchLoop already uses select_by_utility; AdaptiveLoop uses JEV",
       "priority": "low",
-      "return_condition": "audit shows gap"
+      "return_condition": "audit shows concrete selection gap"
+    },
+    {
+      "id": "multi_branch_replay_stress",
+      "description": "Optional multi-branch replay stress beyond current tests",
+      "reason": "semantic backtracking verified; stress depth optional",
+      "priority": "low",
+      "return_condition": "Control Plane prioritizes replay depth"
     }
   ],
   "blocked": [
     {
       "id": "gate6b_live_bbci_e2e",
-      "why": "No authorized live environment / credentials",
+      "why": "No authorized live environment / credentials / approved target",
       "blocked_capability": "Real BugBountyCI live HTTP E2E",
       "required_human_action": "Explicit authorized program scope + credentials + target approval",
       "resume_condition": "Authorized live environment available"
@@ -61,13 +69,16 @@
     "gate6_live_authorization"
   ],
   "next_dependencies": [
-    "gate6b_when_authorized",
-    "optional_belief_graph_if_needed"
+    "gate6b_when_authorized"
   ],
   "last_test": {
     "passed": 346,
     "failed": 0
   },
-  "last_verified_commit": "1c82cb2745b7a1ab362e1088317b60fa32d20811",
-  "resume_condition": null
+  "last_verified_commit": "cab923f0bacf252c9f75f65e60197cc216415616",
+  "resume_condition": null,
+  "freeze": {
+    "status": "OFFLINE_CORE_VERIFIED_FROZEN",
+    "note": "No independent offline feature work remains; waiting for Gate 6B authorization"
+  }
 }
