@@ -1,8 +1,8 @@
 {
-  "campaign_status": "IN_PROGRESS",
+  "campaign_status": "CAMPAIGN_BLOCKED",
   "current_gate": "offline_hardening_gate7_8",
-  "current_task": "Gate 6 blocked; offline Gate 7/8 hardening continues",
-  "current_commit": "377800a7f9535483b59a0f592a85ae6b5ecd0bf6",
+  "current_task": "Gate 6 human authorization required; offline work exhausted for critical path",
+  "current_commit": "f7ca3fcaee5e3b5275cffe9b2ac8fd9ae7f0cde2",
   "completed": [
     "gate2_contextual_retrieval",
     "gate3_generic_hypothesis_experiment",
@@ -19,7 +19,8 @@
     "gate8_conditional_negative_knowledge",
     "evidence_graph_relations_offline",
     "fixture_claim_text_differential_prefer",
-    "evidence_graph_closed_loop_wired"
+    "evidence_graph_closed_loop_wired",
+    "offline_research_episode_integration_audit"
   ],
   "in_progress": [],
   "deferred": [
@@ -49,9 +50,9 @@
     "gate6_live_authorization"
   ],
   "last_test": {
-    "passed": 287,
+    "passed": 291,
     "failed": 0
   },
-  "last_verified_commit": "377800a7f9535483b59a0f592a85ae6b5ecd0bf6",
-  "resume_condition": null
+  "last_verified_commit": "f7ca3fcaee5e3b5275cffe9b2ac8fd9ae7f0cde2",
+  "resume_condition": "explicit live authorization for Gate 6 OR new offline requirement from Control Plane"
 }
