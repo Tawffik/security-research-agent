@@ -1,39 +1,39 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "offline_hardening_gate7_8",
-  "current_task": "Offline deps advancing; Gate 6 locally blocked",
-  "current_commit": "02cd4c5b4e45649111c42b14139f183c1b631524",
+  "current_gate": "agent_security_offline_primitives",
+  "current_task": "Offline agent-security primitives complete; Gate 6 locally blocked",
+  "current_commit": "daed826b26ca6ea4a81aad4dd013f748d477e02c",
   "completed": [
-    "gate2_contextual_retrieval",
-    "gate3_generic_hypothesis_experiment",
-    "gate4_observation_differential",
+    "utility_aware_experiment_selection",
+    "capability_authority_record",
+    "origin_bound_memory_authority",
+    "skill_assurance_lifecycle",
+    "trajectory_security_influence",
+    "agent_security_benchmark_catalog",
     "gate5_1_execution_boundary",
     "gate5_2_capability_failure_taxonomy",
     "gate5_3_executable_verification",
     "gate5_4_stop_semantics",
-    "gate7_branch_lineage_foundation",
-    "gate7_trajectory_metrics_offline",
-    "gate7_false_confirmation_metric",
     "gate7_benchmark_scenario_catalog_expand",
-    "gate8_trusted_memory_foundation",
-    "gate8_poisoning_scope_isolation",
-    "gate8_conditional_negative_knowledge",
     "gate8_memory_replay_validation",
-    "evidence_graph_relations_offline",
-    "evidence_graph_closed_loop_wired",
-    "offline_research_episode_integration_audit",
     "campaign_blocker_scope_repair",
-    "research_brief_compiler",
-    "readme_architecture_drift_pass"
+    "research_brief_compiler"
   ],
   "in_progress": [],
   "deferred": [
     {
       "id": "full_belief_graph_query_object",
-      "description": "Belief graph as first-class retrieval query object",
-      "reason": "ResearchBrief covers bounded need; full graph not required yet",
+      "description": "Belief graph query object",
+      "reason": "ResearchBrief sufficient",
       "priority": "medium",
-      "return_condition": "when retrieval ranking needs full belief state"
+      "return_condition": "retrieval needs belief state"
+    },
+    {
+      "id": "integration_wire_utility_into_adaptive_loop",
+      "description": "Deeper adaptive-loop utility wiring",
+      "reason": "ResearchLoop already uses select_by_utility",
+      "priority": "low",
+      "return_condition": "audit shows gap"
     }
   ],
   "blocked": [
@@ -49,13 +49,12 @@
     "gate6_live_authorization"
   ],
   "next_dependencies": [
-    "utility_aware_experiment_selection_audit",
     "gate6_when_authorized"
   ],
   "last_test": {
-    "passed": 301,
+    "passed": 319,
     "failed": 0
   },
-  "last_verified_commit": "02cd4c5b4e45649111c42b14139f183c1b631524",
+  "last_verified_commit": "daed826b26ca6ea4a81aad4dd013f748d477e02c",
   "resume_condition": null
 }
