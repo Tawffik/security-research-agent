@@ -1,9 +1,9 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "offline_roadmap_exhaustion",
-  "current_task": "BeliefQuery + security invariant regressions; Gate 6B blocked; Playwright optional skip",
-  "current_commit": "2680de04b88ea7b42b261cdee85ea4406dae91bc",
-  "last_verified_commit": "2680de04b88ea7b42b261cdee85ea4406dae91bc",
+  "current_gate": "offline_exhausted_awaiting_live_auth",
+  "current_task": "Final integrity audit: offline roadmap exhausted; Playwright skipped (package absent); Gate 6B blocked",
+  "current_commit": "dcbb7edfe8a9e3819cdd573f0b99c6ded03b8d07",
+  "last_verified_commit": "dcbb7edfe8a9e3819cdd573f0b99c6ded03b8d07",
   "last_test": {
     "passed": 377,
     "failed": 0,
@@ -57,21 +57,32 @@
     "playwright_tests_skip_when_unavailable"
   ],
   "in_progress": [],
-  "deferred": [],
+  "deferred": [
+    {
+      "id": "playwright_package_runtime",
+      "description": "Playwright Python package available for test execution",
+      "reason": "import playwright fails; reinstall hits PyPI 502",
+      "priority": "high",
+      "return_condition": "playwright importable in agent runtime",
+      "blocks_other_work": false
+    }
+  ],
   "blocked": [
     {
       "id": "gate6b_live_bbci_e2e",
       "why": "No authorized live environment",
       "blocked_capability": "Live BBCI E2E",
       "required_human_action": "Authorized scope + credentials + target",
-      "resume_condition": "Authorized live environment available"
+      "resume_condition": "Authorized live environment available",
+      "scope": "LOCAL"
     },
     {
       "id": "browser_live_network_research",
-      "why": "No authorized live UI target",
-      "blocked_capability": "Live browser network navigation research",
-      "required_human_action": "Authorized UI target + scope",
-      "resume_condition": "Authorized UI target available"
+      "why": "No authorized UI target",
+      "blocked_capability": "Live browser network research",
+      "required_human_action": "Authorized UI target",
+      "resume_condition": "Authorized UI target available",
+      "scope": "LOCAL"
     }
   ],
   "human_dependencies": [
@@ -82,10 +93,10 @@
     "gate6b_when_authorized"
   ],
   "environment_audit": {
-    "playwright": "installed 1.63.0",
-    "system_chrome": "/usr/bin/google-chrome",
-    "node": "available",
-    "selenium": "not installed (not required)",
-    "playwright_chromium_download": "skipped; channel=chrome works"
+    "playwright_package": false,
+    "system_chrome": true,
+    "path": "/usr/bin/google-chrome",
+    "playwright_tests": "8 skipped \u2014 package not importable (PyPI previously installed then lost / not reinstallable due to 502)",
+    "prior_runtime_proof": "commit 115915a established channel=chrome when package was present"
   }
 }

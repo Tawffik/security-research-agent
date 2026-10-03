@@ -1,16 +1,21 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS
-**HEAD:** `2680de04b88ea7b42b261cdee85ea4406dae91bc`
-**Tests:** 377 passed / 0 failed / 8 skipped (Playwright optional)
+**HEAD:** `dcbb7edfe8a9e3819cdd573f0b99c6ded03b8d07`
+**Tests:** 377 passed / 0 failed / 8 skipped
 
-## This cycle
-- BeliefQuery (claim/evidence/contradiction/snapshot)
-- Security invariant regression suite
-- Playwright tests skip-safe when package missing
+## Integrity audit
+Offline implementable work: exhausted (no READY material items).
 
-## Blocked
-Gate 6B + live browser network (human authorization)
+## Playwright
+- Implementation: present (PlaywrightBrowserRuntime + contracts)
+- Package in this environment: **absent** (import fails)
+- Tests: **8 skipped** (not passed)
+- Prior successful runtime: documented at commit 115915a when package was installed
+- Live network browser: **BLOCKED** (authorization)
 
-## Offline READY
-None material after this sweep
+## Gate 6B
+BLOCKED — human authorization required
+
+## Do not claim
+Playwright runtime is currently verified in this environment.
