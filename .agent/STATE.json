@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "browser_capability_offline",
-  "current_task": "Browser Tool Contract + synthetic runtime verified; Playwright package install failed; Gate 6B blocked",
-  "current_commit": "4cfe931ad6a453d86baaf2bd57a6b290aeb0a26b",
-  "last_verified_commit": "4cfe931ad6a453d86baaf2bd57a6b290aeb0a26b",
+  "current_gate": "browser_playwright_runtime",
+  "current_task": "Playwright+Chrome runtime verified offline; live network + Gate 6B blocked",
+  "current_commit": "115915afe60435d398294ea4af9c81a86da075be",
+  "last_verified_commit": "115915afe60435d398294ea4af9c81a86da075be",
   "last_test": {
-    "passed": 365,
+    "passed": 373,
     "failed": 0
   },
   "completed": [
@@ -43,17 +43,14 @@
     "malformed_bbci_parse_safety",
     "browser_tool_contract",
     "browser_synthetic_runtime",
-    "browser_scopeguard_boundary"
+    "browser_scopeguard_boundary",
+    "browser_playwright_runtime",
+    "browser_interaction_contracts",
+    "browser_failure_taxonomy",
+    "skill_trust_cannot_authorize_browser"
   ],
   "in_progress": [],
   "deferred": [
-    {
-      "id": "browser_playwright_runtime",
-      "description": "Real Playwright browser runtime",
-      "reason": "pip install playwright failed (PyPI 502); no chromium binaries",
-      "priority": "high",
-      "return_condition": "playwright package + browser binaries installable in runtime"
-    },
     {
       "id": "full_belief_graph_query_object",
       "description": "Belief graph query object",
@@ -65,17 +62,17 @@
   "blocked": [
     {
       "id": "gate6b_live_bbci_e2e",
-      "why": "No authorized live environment / credentials / approved target",
-      "blocked_capability": "Real BugBountyCI live HTTP E2E",
-      "required_human_action": "Explicit authorized program scope + credentials + target approval",
+      "why": "No authorized live environment",
+      "blocked_capability": "Live BBCI E2E",
+      "required_human_action": "Authorized scope + credentials + target",
       "resume_condition": "Authorized live environment available"
     },
     {
-      "id": "browser_live_ui_target",
-      "why": "No authorized UI target for live browser navigation",
-      "blocked_capability": "Live browser research against real target",
+      "id": "browser_live_network_research",
+      "why": "No authorized live UI target",
+      "blocked_capability": "Live browser network navigation research",
       "required_human_action": "Authorized UI target + scope",
-      "resume_condition": "Authorized UI target available AND playwright runtime installed"
+      "resume_condition": "Authorized UI target available"
     }
   ],
   "human_dependencies": [
@@ -83,11 +80,13 @@
     "browser_live_ui_authorization"
   ],
   "next_dependencies": [
-    "gate6b_when_authorized",
-    "browser_playwright_when_installable"
+    "gate6b_when_authorized"
   ],
-  "freeze": {
-    "status": "OFFLINE_EXPANDING",
-    "note": "Synthetic browser boundary complete; live paths human-blocked"
+  "environment_audit": {
+    "playwright": "installed 1.63.0",
+    "system_chrome": "/usr/bin/google-chrome",
+    "node": "available",
+    "selenium": "not installed (not required)",
+    "playwright_chromium_download": "skipped; channel=chrome works"
   }
 }

@@ -1,16 +1,17 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS
-**HEAD:** `4cfe931ad6a453d86baaf2bd57a6b290aeb0a26b`
-**Tests:** 365 passed / 0 failed
+**HEAD:** `115915afe60435d398294ea4af9c81a86da075be`
+**Tests:** 373 passed / 0 failed
 
 ## Browser
-- Tool Contract + ScopeGuard: VERIFIED (synthetic)
-- Playwright package: DEFERRED (install failed — PyPI 502)
-- Live UI target: BLOCKED (authorization)
+- Synthetic: VERIFIED
+- Playwright + system Chrome: VERIFIED (local data: URLs)
+- Live network browser research: BLOCKED (authorization)
+- Skill trust ≠ permission: VERIFIED
 
 ## Gate 6B
 BLOCKED — live authorization required
 
-## Next independent work
-Rescan for remaining offline gaps; live paths wait on human/auth/runtime.
+## Next
+Continue dependency sweep for remaining offline gaps; live paths wait on human.
