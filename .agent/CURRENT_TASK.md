@@ -1,14 +1,14 @@
 # Current Task
 
 **Campaign status:** IN_PROGRESS
-**HEAD:** daed826b26ca6ea4a81aad4dd013f748d477e02c
-**Tests:** 319 passed
+**HEAD:** 834a72f8ed42183634b32093489116143d310fa2
+**Tests:** 324 passed
 
-## Gate 6
-BLOCKED (local) — does not stop campaign.
+## Gate 6A (OFFLINE) — COMPLETE
+Real BBCI artifact `examples/fixtures/bbci/oneplus.ch.live.txt` → full research episode offline.
 
-## Completed
-Utility selection, capability authority, memory origin, skill assurance, trajectory security, agent-security catalog.
+## Gate 6B (LIVE) — BLOCKED
+Requires authorized live environment.
 
 ## Next
-Gate 6 when authorized; optional deferred integration polish only.
+Gate 7 generalization from offline BBCI path; or more offline hardening.

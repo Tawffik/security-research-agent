@@ -1,8 +1,8 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "agent_security_offline_primitives",
-  "current_task": "Offline agent-security primitives complete; Gate 6 locally blocked",
-  "current_commit": "daed826b26ca6ea4a81aad4dd013f748d477e02c",
+  "current_gate": "gate6a_offline_bbci_e2e",
+  "current_task": "Gate 6A offline BBCI E2E verified; Gate 6B live still blocked",
+  "current_commit": "834a72f8ed42183634b32093489116143d310fa2",
   "completed": [
     "utility_aware_experiment_selection",
     "capability_authority_record",
@@ -17,7 +17,9 @@
     "gate7_benchmark_scenario_catalog_expand",
     "gate8_memory_replay_validation",
     "campaign_blocker_scope_repair",
-    "research_brief_compiler"
+    "research_brief_compiler",
+    "gate6a_offline_bbci_artifact_e2e",
+    "offline_bbci_episode_runner"
   ],
   "in_progress": [],
   "deferred": [
@@ -38,9 +40,9 @@
   ],
   "blocked": [
     {
-      "id": "gate6_live_bbci_e2e",
+      "id": "gate6b_live_bbci_e2e",
       "why": "No authorized live environment / credentials",
-      "blocked_capability": "Real BugBountyCI E2E with live HTTP",
+      "blocked_capability": "Real BugBountyCI live HTTP E2E",
       "required_human_action": "Explicit authorized program scope + credentials + target approval",
       "resume_condition": "Authorized live environment available"
     }
@@ -49,12 +51,13 @@
     "gate6_live_authorization"
   ],
   "next_dependencies": [
-    "gate6_when_authorized"
+    "gate7_generalization_from_offline_bbci",
+    "gate6b_when_authorized"
   ],
   "last_test": {
-    "passed": 319,
+    "passed": 324,
     "failed": 0
   },
-  "last_verified_commit": "daed826b26ca6ea4a81aad4dd013f748d477e02c",
+  "last_verified_commit": "834a72f8ed42183634b32093489116143d310fa2",
   "resume_condition": null
 }

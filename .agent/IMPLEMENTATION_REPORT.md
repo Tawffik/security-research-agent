@@ -1,45 +1,24 @@
-# Implementation Report — Campaign recovery + offline Gate 7/8
+# Implementation Report — Gate 6A
 
 ## TASK
-Repair premature CAMPAIGN_BLOCKED; expand offline Gate 7/8; Research Brief.
-
-## BASE COMMIT
-2eb05d7
+Offline real-BBCI artifact → full research episode
 
 ## FINAL COMMIT
-1de41ed6dfac467cb38dff9baee5fcc8feeb4822
+834a72f8ed42183634b32093489116143d310fa2
 
-## FILES CHANGED
-- .agent/AUTONOMOUS_CAMPAIGN_POLICY.md
-- .agent/STATE.json, CURRENT_TASK.md
-- src/agent_core/orchestrator/closed_loop.py (lab scenarios)
-- src/agent_core/evaluation/benchmark.py
-- src/agent_core/memory/replay_validate.py
-- src/agent_core/research/brief.py
-- tests: campaign_control_plane, gate7_benchmark_expand, gate8_memory_replay, research_brief
-
-## IMPLEMENTATION
-- LOCAL BLOCKER ≠ CAMPAIGN BLOCKER policy + tests
-- Benchmark: incomplete, role-authorized, cache-artifact
-- Memory replay validation + execution-permission ban
-- ResearchBrief compiler from closed-loop
+## ARTIFACT
+examples/fixtures/bbci/oneplus.ch.live.txt (historical BugBountyCI live.txt)
 
 ## TESTS
-301 passed / 0 failed
+324 passed / 0 failed
 
-## SECURITY INVARIANTS
-ScopeGuard · Gate 6 not faked · knowledge ≠ execution · memory ≠ execution ·
-oracle isolation · no-evidence ≠ secure
+## PIPELINE
+ingestion → adaptation → opportunity → knowledge → hypotheses → experiments →
+utility selection → offline execution boundary → observation → differential →
+evidence → verification → episode → decision
 
-## BLOCKED CAPABILITIES
-Gate 6 live BBCI E2E only
+## LIVE HTTP
+None. execution_mode=offline_lab. live_mode denied.
 
-## DEFERRED
-Belief-graph query object; README drift pass
-
-## NEXT DEPENDENCIES
-README reconciliation; experiment-selection audit; Gate 6 when authorized
-
-## CORRECTION
-Previous termination treated Gate 6 as global campaign stop. Corrected:
-Gate 6 remains locally blocked; campaign IN_PROGRESS while offline work remains.
+## GATE 6B
+BLOCKED until authorized live environment
