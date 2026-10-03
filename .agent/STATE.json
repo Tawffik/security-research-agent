@@ -1,8 +1,13 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "offline_core_frozen",
-  "current_task": "Offline core verified and frozen; Gate 6B blocked until authorized live environment",
-  "current_commit": "1dfba54176abb4f51dece718229ecf7f99f169b5",
+  "current_gate": "offline_hardening",
+  "current_task": "Multi-branch replay stress verified; Gate 6B blocked; browser deferred (no Playwright/runtime)",
+  "current_commit": "9507400b100a4401ba1a3728f10e8f0a9872690d",
+  "last_verified_commit": "9507400b100a4401ba1a3728f10e8f0a9872690d",
+  "last_test": {
+    "passed": 351,
+    "failed": 0
+  },
   "completed": [
     "utility_aware_experiment_selection",
     "capability_authority_record",
@@ -30,30 +35,32 @@
     "backtracking_semantics_audit",
     "evidence_driven_backtrack",
     "trajectory_hypothesis_transition_metrics",
-    "canonical_reconciliation_freeze"
+    "canonical_reconciliation_freeze",
+    "multi_branch_replay_stress",
+    "branch_snapshot_restore"
   ],
   "in_progress": [],
   "deferred": [
     {
       "id": "full_belief_graph_query_object",
-      "description": "Belief graph as first-class retrieval query object",
-      "reason": "ResearchBrief sufficient for current decisions; no demonstrated need",
+      "description": "Belief graph query object",
+      "reason": "ResearchBrief sufficient",
       "priority": "medium",
-      "return_condition": "when retrieval ranking needs full belief state"
+      "return_condition": "retrieval needs belief state"
+    },
+    {
+      "id": "browser_playwright_capability",
+      "description": "Browser/Playwright capability through Tool Contract + ScopeGuard",
+      "reason": "playwright not installed; no authorized UI target; frozen HTTP core sufficient until Gate 6B/UI requirement",
+      "priority": "high",
+      "return_condition": "Playwright available AND explicit product requirement for UI surfaces"
     },
     {
       "id": "integration_wire_utility_into_adaptive_loop",
-      "description": "Deeper adaptive-loop utility wiring",
-      "reason": "ResearchLoop already uses select_by_utility; AdaptiveLoop uses JEV",
+      "description": "Deeper adaptive utility wiring",
+      "reason": "already wired via ResearchLoop + JEV",
       "priority": "low",
-      "return_condition": "audit shows concrete selection gap"
-    },
-    {
-      "id": "multi_branch_replay_stress",
-      "description": "Optional multi-branch replay stress beyond current tests",
-      "reason": "semantic backtracking verified; stress depth optional",
-      "priority": "low",
-      "return_condition": "Control Plane prioritizes replay depth"
+      "return_condition": "concrete selection gap"
     }
   ],
   "blocked": [
@@ -71,15 +78,8 @@
   "next_dependencies": [
     "gate6b_when_authorized"
   ],
-  "last_test": {
-    "passed": 346,
-    "failed": 0
-  },
-  "last_verified_commit": "1dfba54176abb4f51dece718229ecf7f99f169b5",
-  "resume_condition": null,
   "freeze": {
-    "status": "OFFLINE_CORE_VERIFIED_FROZEN",
-    "code_baseline": "cab923f0bacf252c9f75f65e60197cc216415616",
-    "note": "Offline core verified at cab923f; this commit is control-plane freeze only"
+    "status": "OFFLINE_CORE_VERIFIED",
+    "note": "Core research loop frozen; optional offline hardening only; Gate 6B human-blocked"
   }
 }
