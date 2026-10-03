@@ -118,9 +118,81 @@ class TrustedMemoryStore:
         self.audit.append({"action": "revoke", "memory_id": memory_id, "reason": reason})
         return item
 
-    def trusted_refs(self) -> list[str]:
-        return [
-            i.content_ref
-            for i in self.items.values()
-            if i.trust_state in (MemoryTrustState.TRUSTED.value, MemoryTrustState.PROMOTED.value)
-        ]
+    def supersede(self, memory_id: str, replacement_id: str, reason: str = "") -> MemoryItem | None:
+        item = self.items.get(memory_id)
+        if not item:
+            return None
+        item.trust_state = MemoryTrustState.SUPERSEDED.value
+        item.notes.append(f"superseded_by:{replacement_id}:{reason}")
+        item.updated_at = _ts()
+        self.audit.append(
+            {"action": "supersede", "memory_id": memory_id, "replacement": replacement_id, "reason": reason}
+        )
+        return item
+
+    def trusted_refs(self, *, scope_context: str | None = None) -> list[str]:
+        """Trusted refs optionally filtered by scope to prevent cross-target contamination."""
+        out = []
+        for i in self.items.values():
+            if i.trust_state not in (MemoryTrustState.TRUSTED.value, MemoryTrustState.PROMOTED.value):
+                continue
+            if scope_context is not None and i.scope_context and i.scope_context != scope_context:
+                continue
+            out.append(i.content_ref)
+        return out
+
+    def is_applicable(self, memory_id: str, *, scope_context: str) -> bool:
+        """Poisoning resistance: promoted memory must match target scope or be global (empty scope)."""
+        item = self.items.get(memory_id)
+        if not item:
+            return False
+        if item.trust_state not in (MemoryTrustState.TRUSTED.value, MemoryTrustState.PROMOTED.value):
+            return False
+        if not item.scope_context:
+            return True  # global
+        return item.scope_context == scope_context
+
+    def detect_conflicts(self) -> list[dict[str, Any]]:
+        """Flag multiple promoted items with same content_ref but different states/evidence."""
+        by_ref: dict[str, list[MemoryItem]] = {}
+        for i in self.items.values():
+            if i.trust_state in (MemoryTrustState.PROMOTED.value, MemoryTrustState.TRUSTED.value):
+                by_ref.setdefault(i.content_ref, []).append(i)
+        conflicts = []
+        for ref, items in by_ref.items():
+            if len(items) > 1:
+                scopes = {x.scope_context for x in items}
+                if len(scopes) > 1 or len(items) > 1:
+                    conflicts.append(
+                        {
+                            "content_ref": ref,
+                            "memory_ids": [x.memory_id for x in items],
+                            "scopes": list(scopes),
+                            "kind": "duplicate_or_cross_scope",
+                        }
+                    )
+        return conflicts
+
+
+@dataclass
+class ConditionalNegativeKnowledge:
+    """
+    Gate 8: negative knowledge is conditional — never "technique never works".
+
+    Technique + Target/Context + Preconditions + Experiment + Observation + Limitation
+    """
+
+    technique: str
+    target_context: str
+    preconditions: list[str] = field(default_factory=list)
+    experiment_id: str = ""
+    observation_summary: str = ""
+    limitation: str = ""
+    provenance: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def universal_claim_forbidden(self) -> bool:
+        """True if this object must not be generalized into a universal ban."""
+        return True

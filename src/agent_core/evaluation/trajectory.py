@@ -27,6 +27,7 @@ class TrajectoryMetrics:
     verified_finding: bool = False
     inconclusive: bool = False
     scope_blocked: bool = False
+    false_confirmation_risk: bool = False
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -68,5 +69,10 @@ def evaluate_trajectory(
         verified_finding=stop in ("verified", "evidence_sufficient"),
         inconclusive=stop in ("inconclusive_exhausted", "inconclusive"),
         scope_blocked=stop in ("scope_blocked", "authorization_denied"),
+        false_confirmation_risk=(
+            pos > 0
+            and len(discriminating_experiment_ids or []) == 0
+            and stop in ("verified", "evidence_sufficient")
+        ),
         notes=[],
     )

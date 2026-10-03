@@ -1,17 +1,18 @@
 # Current Task
 
-**HEAD:** 8c898a7e5e2a5b9649354ede17edbeefd8c213e4
-**Tests:** 280 passed
+**Campaign:** FULL AUTONOMOUS ENGINEERING V5
+**Status:** IN_PROGRESS (Gate 6 blocked; offline work continuing)
 
-## Completed this campaign session
-- Gate 5.1–5.4 (execution boundary through stop semantics)
-- Gate 7 branch/lineage + trajectory metrics (offline)
-- Gate 8 trusted memory lifecycle foundation
+## Completed this slice
+- Gate 8: scope isolation, supersede, conflict detection, ConditionalNegativeKnowledge
+- Gate 7: false_confirmation_risk trajectory metric
+- EvidenceGraph lightweight relations (SUPPORTS/CONTRADICTS/...)
+- Control plane reconciled to repository reality
 
 ## BLOCKED
 Gate 6 live BBCI E2E — requires authorized live environment
 
 ## Next safe offline work
-- Expand Gate 7 benchmark scenario coverage
-- Expand Gate 8 poisoning resistance tests
-- Remove fixture-label influence from Researcher claim text
+- Wire EvidenceGraph into closed_loop (deferred but high value)
+- Expand benchmark scenario catalog
+- Memory replay validation

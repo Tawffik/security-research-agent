@@ -1,8 +1,8 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "5_complete_offline_7_foundations",
-  "current_task": "Offline hardening; Gate 6 blocked",
-  "current_commit": "8c898a7e5e2a5b9649354ede17edbeefd8c213e4",
+  "current_gate": "offline_hardening_gate7_8",
+  "current_task": "Gate 7/8 offline expand + evidence graph; Gate 6 blocked",
+  "current_commit": "pending",
   "completed": [
     "gate2_contextual_retrieval",
     "gate3_generic_hypothesis_experiment",
@@ -13,16 +13,28 @@
     "gate5_4_stop_semantics",
     "gate7_branch_lineage_foundation",
     "gate7_trajectory_metrics_offline",
-    "gate8_trusted_memory_foundation"
+    "gate7_false_confirmation_metric",
+    "gate8_trusted_memory_foundation",
+    "gate8_poisoning_scope_isolation",
+    "gate8_conditional_negative_knowledge",
+    "evidence_graph_relations_offline",
+    "fixture_claim_text_differential_prefer"
   ],
   "in_progress": [],
   "deferred": [
     {
-      "id": "fix_fixture_claim_text",
-      "description": "Researcher claim text still references scenario.suggests_authz_issue in closed_loop",
-      "reason": "non-blocking for Gate 5 runtime boundary",
-      "priority": "low",
-      "return_condition": "when polishing claim generation"
+      "id": "full_belief_graph_query_object",
+      "description": "Belief graph as first-class retrieval query object",
+      "reason": "non-blocking; Gate 2 limitation recorded",
+      "priority": "medium",
+      "return_condition": "when retrieval ranking needs full belief state"
+    },
+    {
+      "id": "wire_evidence_graph_into_closed_loop",
+      "description": "Emit EvidenceGraph edges from closed_loop automatically",
+      "reason": "foundation exists; wiring is incremental",
+      "priority": "medium",
+      "return_condition": "next offline integration slice"
     }
   ],
   "blocked": [
@@ -35,17 +47,17 @@
     }
   ],
   "next_dependencies": [
-    "gate8_poisoning_resistance_tests_expand",
-    "gate7_benchmark_scenarios_expand",
-    "remove_fixture_label_from_claim_text"
+    "wire_evidence_graph_into_closed_loop",
+    "gate7_benchmark_scenario_catalog_expand",
+    "gate8_memory_replay_validation"
   ],
   "human_dependencies": [
     "gate6_live_authorization"
   ],
   "last_test": {
-    "passed": 280,
+    "passed": 286,
     "failed": 0
   },
-  "last_verified_commit": "8c898a7e5e2a5b9649354ede17edbeefd8c213e4",
+  "last_verified_commit": "pending",
   "resume_condition": null
 }

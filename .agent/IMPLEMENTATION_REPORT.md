@@ -1,47 +1,41 @@
-# Implementation Report — Campaign slice (Gate 5 complete offline + Gate 7 foundation)
+# Implementation Report — Gate 7/8 offline expand + EvidenceGraph
 
 ## TASK
-Complete Gate 5.2–5.4 and offline Gate 7 branch/lineage foundation.
+Poisoning resistance, trajectory false-confirmation metric, evidence relations.
 
 ## BASE COMMIT
-f40e519 (post Gate 5.1)
+cc4a32b (post fixture-claim differential fix)
 
 ## FINAL COMMIT
-87a9c07e85ea92c1724d7e5057cffef38445721d
+(pending)
 
 ## FILES CHANGED
-- src/agent_core/tools/capability.py
-- src/agent_core/tools/execution_boundary.py
-- src/agent_core/verification/executable.py
-- src/agent_core/research/stop_semantics.py
-- src/agent_core/research/branch.py
-- src/agent_core/evidence/store.py (list_evidence)
-- tests/test_gate5_capability.py
-- tests/test_gate5_verification_stop.py
-- tests/test_gate7_branch.py
+- src/agent_core/memory/trusted.py
+- src/agent_core/evaluation/trajectory.py
+- src/agent_core/evidence/relations.py (new)
+- tests/test_gate7_trajectory_gate8_memory.py
 - .agent/STATE.json, CURRENT_TASK.md, IMPLEMENTATION_REPORT.md
 
 ## IMPLEMENTATION
-- 5.2 CapabilityTracker + FailureClass; boundary integration
-- 5.3 ExecutableVerifier: confirm only with positive evidence
-- 5.4 StopReason; never map no-evidence → secure
-- 7.0 BranchManager + LineageEvent; anti-identical-replay
+- TrustedMemoryStore: supersede, scope-filtered trusted_refs, is_applicable, detect_conflicts
+- ConditionalNegativeKnowledge (technique+context+limitation; not universal ban)
+- TrajectoryMetrics.false_confirmation_risk
+- EvidenceGraph relation types without graph-DB infrastructure
 
 ## TESTS
-276 passed / 0 failed
+286 passed / 0 failed
 
 ## SECURITY INVARIANTS
-ScopeGuard fail-closed · knowledge ≠ execution · live HTTP off ·
-insufficient evidence ≠ confirmed · stop ≠ secure · oracle isolation
+ScopeGuard · knowledge ≠ execution · untrusted cannot auto-promote ·
+cross-target memory isolation · no-evidence ≠ secure · Gate 6 not faked
 
 ## REMAINING GAPS
 - Gate 6 live E2E blocked
-- Gate 7 trajectory metrics incomplete
-- Gate 8 promotion/poisoning resistance incomplete
-- Fixture label still influences some claim text (deferred)
+- EvidenceGraph not yet auto-wired in closed_loop
+- Full belief-graph query object deferred
 
 ## BLOCKERS
-Gate 6: requires human-authorized live environment
+Gate 6: human-authorized live environment required
 
 ## NEXT DEPENDENCY
-Gate 7 trajectory evaluation (offline) / Gate 8 memory lifecycle foundation
+Wire EvidenceGraph into closed_loop (offline) OR expand benchmark catalog
