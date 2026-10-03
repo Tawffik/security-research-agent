@@ -1,8 +1,8 @@
 {
-  "campaign_status": "CAMPAIGN_BLOCKED",
+  "campaign_status": "IN_PROGRESS",
   "current_gate": "offline_hardening_gate7_8",
-  "current_task": "Gate 6 human authorization required; offline work exhausted for critical path",
-  "current_commit": "f7ca3fcaee5e3b5275cffe9b2ac8fd9ae7f0cde2",
+  "current_task": "Autonomous offline dependency sweep; Gate 6 remains locally blocked",
+  "current_commit": "2eb05d7ef229a92cdd936208c79522811edbd3ce",
   "completed": [
     "gate2_contextual_retrieval",
     "gate3_generic_hypothesis_experiment",
@@ -20,14 +20,18 @@
     "evidence_graph_relations_offline",
     "fixture_claim_text_differential_prefer",
     "evidence_graph_closed_loop_wired",
-    "offline_research_episode_integration_audit"
+    "offline_research_episode_integration_audit",
+    "campaign_blocker_scope_repair"
   ],
-  "in_progress": [],
+  "in_progress": [
+    "gate7_benchmark_scenario_catalog_expand",
+    "gate8_memory_replay_validation"
+  ],
   "deferred": [
     {
       "id": "full_belief_graph_query_object",
       "description": "Belief graph as first-class retrieval query object",
-      "reason": "non-blocking; Gate 2 limitation recorded",
+      "reason": "retrieval contracts sufficient for current ranking; no demonstrated need yet",
       "priority": "medium",
       "return_condition": "when retrieval ranking needs full belief state"
     }
@@ -37,22 +41,21 @@
       "id": "gate6_live_bbci_e2e",
       "why": "No authorized live environment / credentials",
       "blocked_capability": "Real BugBountyCI E2E with live HTTP",
-      "required_human_action": "Provide authorized program scope + credentials + live target approval",
-      "resume_condition": "explicit live authorization available"
+      "required_human_action": "Explicit authorized program scope + credentials + target approval",
+      "resume_condition": "Authorized live environment available"
     }
-  ],
-  "next_dependencies": [
-    "gate7_benchmark_scenario_catalog_expand",
-    "gate8_memory_replay_validation",
-    "offline_research_episode_integration_audit"
   ],
   "human_dependencies": [
     "gate6_live_authorization"
+  ],
+  "next_dependencies": [
+    "gate7_benchmark_scenario_catalog_expand",
+    "gate8_memory_replay_validation"
   ],
   "last_test": {
     "passed": 291,
     "failed": 0
   },
-  "last_verified_commit": "f7ca3fcaee5e3b5275cffe9b2ac8fd9ae7f0cde2",
-  "resume_condition": "explicit live authorization for Gate 6 OR new offline requirement from Control Plane"
+  "last_verified_commit": "2eb05d7ef229a92cdd936208c79522811edbd3ce",
+  "resume_condition": null
 }

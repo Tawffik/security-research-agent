@@ -1,19 +1,18 @@
 # Current Task
 
-## CAMPAIGN_BLOCKED
+**Campaign status:** IN_PROGRESS
 
-**Blocker:** Gate 6 live BBCI E2E — no authorized live environment
+**Gate 6:** BLOCKED — requires authorized live environment (local capability only).
 
-**HEAD:** f7ca3fcaee5e3b5275cffe9b2ac8fd9ae7f0cde2
-**Tests:** 291 passed (approx; see last run)
+**Current autonomous objective:** Continue all independent offline-safe Gate 7/8 and control-plane dependencies.
 
-### Safe offline work completed this campaign
-- Gate 5.1–5.4 (prior)
-- Gate 7 trajectory + false confirmation metric
-- Gate 8 poisoning resistance + conditional negative knowledge
-- EvidenceGraph + closed-loop wiring
-- Offline research episode integration audit
+**Next candidate dependencies:**
+1. Gate 7 benchmark scenario catalog expansion
+2. Gate 8 memory replay validation
+3. Any newly discovered offline dependency after audit
 
-### Resume when
-- Human provides authorized live scope + credentials + target approval for Gate 6
-- OR Control Plane adds new offline requirements
+Do not stop because Gate 6 is blocked.
+
+Before declaring CAMPAIGN_BLOCKED: exhaust all independent safe work.
+
+Resume Gate 6 only when explicit authorization exists.
