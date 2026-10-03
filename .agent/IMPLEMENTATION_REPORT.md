@@ -1,41 +1,45 @@
-# Implementation Report — Gate 7/8 offline expand + EvidenceGraph
+# Implementation Report — Campaign recovery + offline Gate 7/8
 
 ## TASK
-Poisoning resistance, trajectory false-confirmation metric, evidence relations.
+Repair premature CAMPAIGN_BLOCKED; expand offline Gate 7/8; Research Brief.
 
 ## BASE COMMIT
-cc4a32b (post fixture-claim differential fix)
+2eb05d7
 
 ## FINAL COMMIT
-0a76db59d6e7625fd9c3bd4a7da3846fa5331591
+1de41ed6dfac467cb38dff9baee5fcc8feeb4822
 
 ## FILES CHANGED
-- src/agent_core/memory/trusted.py
-- src/agent_core/evaluation/trajectory.py
-- src/agent_core/evidence/relations.py (new)
-- tests/test_gate7_trajectory_gate8_memory.py
-- .agent/STATE.json, CURRENT_TASK.md, IMPLEMENTATION_REPORT.md
+- .agent/AUTONOMOUS_CAMPAIGN_POLICY.md
+- .agent/STATE.json, CURRENT_TASK.md
+- src/agent_core/orchestrator/closed_loop.py (lab scenarios)
+- src/agent_core/evaluation/benchmark.py
+- src/agent_core/memory/replay_validate.py
+- src/agent_core/research/brief.py
+- tests: campaign_control_plane, gate7_benchmark_expand, gate8_memory_replay, research_brief
 
 ## IMPLEMENTATION
-- TrustedMemoryStore: supersede, scope-filtered trusted_refs, is_applicable, detect_conflicts
-- ConditionalNegativeKnowledge (technique+context+limitation; not universal ban)
-- TrajectoryMetrics.false_confirmation_risk
-- EvidenceGraph relation types without graph-DB infrastructure
+- LOCAL BLOCKER ≠ CAMPAIGN BLOCKER policy + tests
+- Benchmark: incomplete, role-authorized, cache-artifact
+- Memory replay validation + execution-permission ban
+- ResearchBrief compiler from closed-loop
 
 ## TESTS
-286 passed / 0 failed
+301 passed / 0 failed
 
 ## SECURITY INVARIANTS
-ScopeGuard · knowledge ≠ execution · untrusted cannot auto-promote ·
-cross-target memory isolation · no-evidence ≠ secure · Gate 6 not faked
+ScopeGuard · Gate 6 not faked · knowledge ≠ execution · memory ≠ execution ·
+oracle isolation · no-evidence ≠ secure
 
-## REMAINING GAPS
-- Gate 6 live E2E blocked
-- EvidenceGraph not yet auto-wired in closed_loop
-- Full belief-graph query object deferred
+## BLOCKED CAPABILITIES
+Gate 6 live BBCI E2E only
 
-## BLOCKERS
-Gate 6: human-authorized live environment required
+## DEFERRED
+Belief-graph query object; README drift pass
 
-## NEXT DEPENDENCY
-Wire EvidenceGraph into closed_loop (offline) OR expand benchmark catalog
+## NEXT DEPENDENCIES
+README reconciliation; experiment-selection audit; Gate 6 when authorized
+
+## CORRECTION
+Previous termination treated Gate 6 as global campaign stop. Corrected:
+Gate 6 remains locally blocked; campaign IN_PROGRESS while offline work remains.

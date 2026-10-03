@@ -1,18 +1,19 @@
 # Current Task
 
-**Campaign status:** IN_PROGRESS
+**Campaign status:** IN_PROGRESS  
+**HEAD:** 1de41ed6dfac467cb38dff9baee5fcc8feeb4822  
+**Tests:** 301 passed
 
-**Gate 6:** BLOCKED — requires authorized live environment (local capability only).
+## Gate 6
+BLOCKED (local) — authorized live environment required.
 
-**Current autonomous objective:** Continue all independent offline-safe Gate 7/8 and control-plane dependencies.
+## Completed this recovery
+- Campaign policy + control-plane repair
+- Gate 7 benchmark catalog expand
+- Gate 8 memory replay validation
+- Research Brief compiler
 
-**Next candidate dependencies:**
-1. Gate 7 benchmark scenario catalog expansion
-2. Gate 8 memory replay validation
-3. Any newly discovered offline dependency after audit
-
-Do not stop because Gate 6 is blocked.
-
-Before declaring CAMPAIGN_BLOCKED: exhaust all independent safe work.
-
-Resume Gate 6 only when explicit authorization exists.
+## Next offline
+- README architecture drift pass (deferred/low)
+- Utility-aware experiment selection audit
+- Gate 6 only when human authorization exists
