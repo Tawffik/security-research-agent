@@ -34,6 +34,9 @@ class Checkpoint:
     belief_summaries: list[str] = field(default_factory=list)
     execution_position: str = ""
     notes: list[str] = field(default_factory=list)
+    branch_snapshot: dict = field(default_factory=dict)
+    failure_classes: list[str] = field(default_factory=list)
+    tried_experiment_ids: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -62,6 +65,9 @@ class CheckpointStore:
         belief_summaries: Optional[list[str]] = None,
         execution_position: str = "",
         notes: Optional[list[str]] = None,
+        branch_snapshot: Optional[dict] = None,
+        failure_classes: Optional[list[str]] = None,
+        tried_experiment_ids: Optional[list[str]] = None,
     ) -> Checkpoint:
         self._n += 1
         cp = Checkpoint(
@@ -79,6 +85,9 @@ class CheckpointStore:
             belief_summaries=list(belief_summaries or []),
             execution_position=execution_position,
             notes=list(notes or []),
+            branch_snapshot=dict(branch_snapshot or {}),
+            failure_classes=list(failure_classes or []),
+            tried_experiment_ids=list(tried_experiment_ids or []),
         )
         self._items.append(cp)
         return cp
@@ -101,6 +110,9 @@ class CheckpointStore:
         adaptive: Any,
         *,
         label: str = "pre_adaptive_decision",
+        branch_snapshot: dict | None = None,
+        failure_classes: list[str] | None = None,
+        tried_experiment_ids: list[str] | None = None,
     ) -> Checkpoint:
         hyps = list(getattr(closed.plan, "hypotheses", None) or [])
         statuses = {}
@@ -129,4 +141,8 @@ class CheckpointStore:
                 "adaptive_stop" if adaptive.stop else f"adaptive_{adaptive.next_action}"
             ),
             notes=list(adaptive.notes or [])[:8],
+            branch_snapshot=branch_snapshot,
+            failure_classes=failure_classes,
+            tried_experiment_ids=tried_experiment_ids
+            or list(getattr(adaptive, "tried_experiment_ids", None) or []),
         )
