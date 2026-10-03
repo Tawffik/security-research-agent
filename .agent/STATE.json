@@ -1,12 +1,13 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "browser_playwright_runtime",
-  "current_task": "Interpreter safety + Playwright verified; Gate 6B + live browser network blocked",
-  "current_commit": "1a3bd5a98d5fcd0ef8a0c69f6acdf0a1e6874a41",
-  "last_verified_commit": "1a3bd5a98d5fcd0ef8a0c69f6acdf0a1e6874a41",
+  "current_gate": "offline_roadmap_exhaustion",
+  "current_task": "BeliefQuery + security invariant regressions; Gate 6B blocked; Playwright optional skip",
+  "current_commit": "2680de04b88ea7b42b261cdee85ea4406dae91bc",
+  "last_verified_commit": "2680de04b88ea7b42b261cdee85ea4406dae91bc",
   "last_test": {
-    "passed": 378,
-    "failed": 0
+    "passed": 377,
+    "failed": 0,
+    "skipped": 8
   },
   "completed": [
     "utility_aware_experiment_selection",
@@ -49,18 +50,14 @@
     "browser_failure_taxonomy",
     "skill_trust_cannot_authorize_browser",
     "interpreter_deny_by_default",
-    "knowledge_cannot_grant_interpreter"
+    "knowledge_cannot_grant_interpreter",
+    "belief_query_object",
+    "belief_snapshot_restore",
+    "security_invariants_regression_suite",
+    "playwright_tests_skip_when_unavailable"
   ],
   "in_progress": [],
-  "deferred": [
-    {
-      "id": "full_belief_graph_query_object",
-      "description": "Belief graph query object",
-      "reason": "ResearchBrief sufficient",
-      "priority": "medium",
-      "return_condition": "retrieval needs belief state"
-    }
-  ],
+  "deferred": [],
   "blocked": [
     {
       "id": "gate6b_live_bbci_e2e",

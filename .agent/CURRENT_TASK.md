@@ -1,18 +1,16 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS
-**HEAD:** `1a3bd5a98d5fcd0ef8a0c69f6acdf0a1e6874a41`
-**Tests:** 378 passed / 0 failed
+**HEAD:** `2680de04b88ea7b42b261cdee85ea4406dae91bc`
+**Tests:** 377 passed / 0 failed / 8 skipped (Playwright optional)
 
-## Verified this cycle
-- Playwright + system Chrome runtime
-- Browser interaction taxonomy
-- Skill trust ≠ browser permission
-- Interpreter/shell/eval deny-by-default
+## This cycle
+- BeliefQuery (claim/evidence/contradiction/snapshot)
+- Security invariant regression suite
+- Playwright tests skip-safe when package missing
 
-## Blocked (local)
-- Gate 6B live BBCI E2E
-- Live browser network research
+## Blocked
+Gate 6B + live browser network (human authorization)
 
-## Deferred
-- full belief graph (ResearchBrief sufficient)
+## Offline READY
+None material after this sweep
