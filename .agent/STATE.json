@@ -1,8 +1,8 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "gate6a_offline_bbci_e2e",
-  "current_task": "Gate 6A offline BBCI E2E verified; Gate 6B live still blocked",
-  "current_commit": "834a72f8ed42183634b32093489116143d310fa2",
+  "current_gate": "gate7_offline_generalization",
+  "current_task": "Gate 7 multi-class offline generalization verified; Gate 6B blocked",
+  "current_commit": "fc9544836c749af62931c76625d2db5d5f240287",
   "completed": [
     "utility_aware_experiment_selection",
     "capability_authority_record",
@@ -19,7 +19,10 @@
     "campaign_blocker_scope_repair",
     "research_brief_compiler",
     "gate6a_offline_bbci_artifact_e2e",
-    "offline_bbci_episode_runner"
+    "offline_bbci_episode_runner",
+    "bbci_host_preservation",
+    "host_surface_opportunities",
+    "gate7_multi_class_generalization"
   ],
   "in_progress": [],
   "deferred": [
@@ -51,13 +54,13 @@
     "gate6_live_authorization"
   ],
   "next_dependencies": [
-    "gate7_generalization_from_offline_bbci",
+    "gate7_trajectory_on_bbci_classes",
     "gate6b_when_authorized"
   ],
   "last_test": {
-    "passed": 324,
+    "passed": 334,
     "failed": 0
   },
-  "last_verified_commit": "834a72f8ed42183634b32093489116143d310fa2",
+  "last_verified_commit": "fc9544836c749af62931c76625d2db5d5f240287",
   "resume_condition": null
 }

@@ -1,14 +1,12 @@
 # Current Task
 
 **Campaign status:** IN_PROGRESS
-**HEAD:** 834a72f8ed42183634b32093489116143d310fa2
-**Tests:** 324 passed
+**HEAD:** fc9544836c749af62931c76625d2db5d5f240287
+**Tests:** 334 passed
 
-## Gate 6A (OFFLINE) — COMPLETE
-Real BBCI artifact `examples/fixtures/bbci/oneplus.ch.live.txt` → full research episode offline.
+## Gate 6A COMPLETE | Gate 6B BLOCKED
+## Gate 7 multi-class offline generalization COMPLETE
 
-## Gate 6B (LIVE) — BLOCKED
-Requires authorized live environment.
-
-## Next
-Gate 7 generalization from offline BBCI path; or more offline hardening.
+### Next offline
+- Trajectory metrics across BBCI classes (optional depth)
+- Gate 6B only when authorized
