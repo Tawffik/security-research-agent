@@ -1,17 +1,12 @@
 # Current Task
 
 **Campaign status:** IN_PROGRESS
-**HEAD:** 71b5db0730491c58ce3531f6661d60dca960272f
-**Tests:** 341 passed
+**HEAD:** 1c82cb2745b7a1ab362e1088317b60fa32d20811
+**Tests:** 346 passed
 
-## Verified
-- Gate 6A offline BBCI E2E
-- Gate 7 multi-class
-- Research loop adaptivity (hypothesis update from polarity)
-- Oracle isolation: suggests_authz_issue no longer drives skeptic/polarity
+## Backtracking verdict
+REAL path when alternate hypotheses remain after negative evidence;
+stops with no_discriminating_experiment when none remain.
 
 ## Gate 6B
-BLOCKED — authorized live environment required
-
-## Next
-Trajectory metrics across BBCI classes (optional) or Gate 6B when authorized
+BLOCKED — live authorization required

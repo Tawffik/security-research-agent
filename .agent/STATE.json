@@ -1,8 +1,8 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "research_loop_adaptivity_oracle_isolation",
-  "current_task": "Research loop adaptivity + oracle decoupling verified; Gate 6B blocked",
-  "current_commit": "71b5db0730491c58ce3531f6661d60dca960272f",
+  "current_gate": "research_loop_backtracking",
+  "current_task": "Semantic backtracking verified PARTIAL\u2192REAL path; Gate 6B blocked",
+  "current_commit": "1c82cb2745b7a1ab362e1088317b60fa32d20811",
   "completed": [
     "utility_aware_experiment_selection",
     "capability_authority_record",
@@ -26,7 +26,10 @@
     "state_head_reconciliation",
     "oracle_isolation_deep_fix",
     "research_loop_adaptivity_tests",
-    "public_shared_fp_guard"
+    "public_shared_fp_guard",
+    "backtracking_semantics_audit",
+    "evidence_driven_backtrack",
+    "trajectory_hypothesis_transition_metrics"
   ],
   "in_progress": [],
   "deferred": [
@@ -58,13 +61,13 @@
     "gate6_live_authorization"
   ],
   "next_dependencies": [
-    "gate7_trajectory_on_bbci_classes",
-    "gate6b_when_authorized"
+    "gate6b_when_authorized",
+    "optional_belief_graph_if_needed"
   ],
   "last_test": {
-    "passed": 341,
+    "passed": 346,
     "failed": 0
   },
-  "last_verified_commit": "71b5db0730491c58ce3531f6661d60dca960272f",
+  "last_verified_commit": "1c82cb2745b7a1ab362e1088317b60fa32d20811",
   "resume_condition": null
 }
