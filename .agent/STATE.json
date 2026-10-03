@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "offline_hardening",
-  "current_task": "Failure policy + long-horizon checkpoint verified; Gate 6B blocked; browser deferred",
-  "current_commit": "3de83db1051cc9fc2989cfb7d362a411986aa1b3",
-  "last_verified_commit": "3de83db1051cc9fc2989cfb7d362a411986aa1b3",
+  "current_gate": "browser_capability_offline",
+  "current_task": "Browser Tool Contract + synthetic runtime verified; Playwright package install failed; Gate 6B blocked",
+  "current_commit": "4cfe931ad6a453d86baaf2bd57a6b290aeb0a26b",
+  "last_verified_commit": "4cfe931ad6a453d86baaf2bd57a6b290aeb0a26b",
   "last_test": {
-    "passed": 357,
+    "passed": 365,
     "failed": 0
   },
   "completed": [
@@ -40,30 +40,26 @@
     "branch_snapshot_restore",
     "failure_next_action_policy",
     "long_horizon_checkpoint_branch_snapshot",
-    "malformed_bbci_parse_safety"
+    "malformed_bbci_parse_safety",
+    "browser_tool_contract",
+    "browser_synthetic_runtime",
+    "browser_scopeguard_boundary"
   ],
   "in_progress": [],
   "deferred": [
+    {
+      "id": "browser_playwright_runtime",
+      "description": "Real Playwright browser runtime",
+      "reason": "pip install playwright failed (PyPI 502); no chromium binaries",
+      "priority": "high",
+      "return_condition": "playwright package + browser binaries installable in runtime"
+    },
     {
       "id": "full_belief_graph_query_object",
       "description": "Belief graph query object",
       "reason": "ResearchBrief sufficient",
       "priority": "medium",
       "return_condition": "retrieval needs belief state"
-    },
-    {
-      "id": "browser_playwright_capability",
-      "description": "Browser/Playwright capability through Tool Contract + ScopeGuard",
-      "reason": "playwright not installed; no authorized UI target; frozen HTTP core sufficient until Gate 6B/UI requirement",
-      "priority": "high",
-      "return_condition": "Playwright available AND explicit product requirement for UI surfaces"
-    },
-    {
-      "id": "integration_wire_utility_into_adaptive_loop",
-      "description": "Deeper adaptive utility wiring",
-      "reason": "already wired via ResearchLoop + JEV",
-      "priority": "low",
-      "return_condition": "concrete selection gap"
     }
   ],
   "blocked": [
@@ -73,16 +69,25 @@
       "blocked_capability": "Real BugBountyCI live HTTP E2E",
       "required_human_action": "Explicit authorized program scope + credentials + target approval",
       "resume_condition": "Authorized live environment available"
+    },
+    {
+      "id": "browser_live_ui_target",
+      "why": "No authorized UI target for live browser navigation",
+      "blocked_capability": "Live browser research against real target",
+      "required_human_action": "Authorized UI target + scope",
+      "resume_condition": "Authorized UI target available AND playwright runtime installed"
     }
   ],
   "human_dependencies": [
-    "gate6_live_authorization"
+    "gate6_live_authorization",
+    "browser_live_ui_authorization"
   ],
   "next_dependencies": [
-    "gate6b_when_authorized"
+    "gate6b_when_authorized",
+    "browser_playwright_when_installable"
   ],
   "freeze": {
-    "status": "OFFLINE_SAFE_WORK_NEARLY_EXHAUSTED",
-    "note": "Independent offline material work largely complete; remaining required is Gate 6B (human)"
+    "status": "OFFLINE_EXPANDING",
+    "note": "Synthetic browser boundary complete; live paths human-blocked"
   }
 }

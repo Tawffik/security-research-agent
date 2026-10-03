@@ -1,20 +1,16 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS
-**HEAD:** `3de83db1051cc9fc2989cfb7d362a411986aa1b3`
-**Tests:** 357 passed / 0 failed
+**HEAD:** `4cfe931ad6a453d86baaf2bd57a6b290aeb0a26b`
+**Tests:** 365 passed / 0 failed
 
-## Completed this cycle
-- FailureClass → next_action policy
-- Long-horizon checkpoint + branch snapshot restore
-- Malformed BBCI parse safety
+## Browser
+- Tool Contract + ScopeGuard: VERIFIED (synthetic)
+- Playwright package: DEFERRED (install failed — PyPI 502)
+- Live UI target: BLOCKED (authorization)
 
-## Blocked
-Gate 6B — authorized live environment required
+## Gate 6B
+BLOCKED — live authorization required
 
-## Deferred
-Browser/Playwright (no package / no UI target)
-Belief graph (ResearchBrief sufficient)
-
-## Next
-gate6b_when_authorized only for required roadmap work
+## Next independent work
+Rescan for remaining offline gaps; live paths wait on human/auth/runtime.
