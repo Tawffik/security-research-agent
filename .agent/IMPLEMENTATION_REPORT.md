@@ -7,7 +7,7 @@ Complete Gate 5.2–5.4 and offline Gate 7 branch/lineage foundation.
 f40e519 (post Gate 5.1)
 
 ## FINAL COMMIT
-(pending)
+87a9c07e85ea92c1724d7e5057cffef38445721d
 
 ## FILES CHANGED
 - src/agent_core/tools/capability.py

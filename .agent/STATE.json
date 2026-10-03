@@ -2,7 +2,7 @@
   "campaign_status": "IN_PROGRESS",
   "current_gate": "5_complete_offline_7_foundations",
   "current_task": "Gate 7 offline foundations (branches/lineage); Gate 6 blocked",
-  "current_commit": "pending",
+  "current_commit": "87a9c07e85ea92c1724d7e5057cffef38445721d",
   "completed": [
     "gate2_contextual_retrieval",
     "gate3_generic_hypothesis_experiment",
@@ -40,7 +40,10 @@
   "human_dependencies": [
     "gate6_live_authorization"
   ],
-  "last_test": {"passed": 276, "failed": 0},
-  "last_verified_commit": "pending",
+  "last_test": {
+    "passed": 276,
+    "failed": 0
+  },
+  "last_verified_commit": "87a9c07e85ea92c1724d7e5057cffef38445721d",
   "resume_condition": null
 }
