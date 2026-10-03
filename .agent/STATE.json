@@ -2,7 +2,7 @@
   "campaign_status": "IN_PROGRESS",
   "current_gate": "offline_hardening_gate7_8",
   "current_task": "Offline deps advancing; Gate 6 locally blocked",
-  "current_commit": "1de41ed6dfac467cb38dff9baee5fcc8feeb4822",
+  "current_commit": "02cd4c5b4e45649111c42b14139f183c1b631524",
   "completed": [
     "gate2_contextual_retrieval",
     "gate3_generic_hypothesis_experiment",
@@ -23,7 +23,8 @@
     "evidence_graph_closed_loop_wired",
     "offline_research_episode_integration_audit",
     "campaign_blocker_scope_repair",
-    "research_brief_compiler"
+    "research_brief_compiler",
+    "readme_architecture_drift_pass"
   ],
   "in_progress": [],
   "deferred": [
@@ -33,13 +34,6 @@
       "reason": "ResearchBrief covers bounded need; full graph not required yet",
       "priority": "medium",
       "return_condition": "when retrieval ranking needs full belief state"
-    },
-    {
-      "id": "readme_architecture_drift",
-      "description": "README may understate current knowledge/retrieval capabilities",
-      "reason": "non-critical documentation drift",
-      "priority": "low",
-      "return_condition": "documentation pass"
     }
   ],
   "blocked": [
@@ -51,13 +45,17 @@
       "resume_condition": "Authorized live environment available"
     }
   ],
-  "human_dependencies": ["gate6_live_authorization"],
+  "human_dependencies": [
+    "gate6_live_authorization"
+  ],
   "next_dependencies": [
-    "readme_architecture_drift_pass",
     "utility_aware_experiment_selection_audit",
     "gate6_when_authorized"
   ],
-  "last_test": {"passed": 301, "failed": 0},
-  "last_verified_commit": "1de41ed6dfac467cb38dff9baee5fcc8feeb4822",
+  "last_test": {
+    "passed": 301,
+    "failed": 0
+  },
+  "last_verified_commit": "02cd4c5b4e45649111c42b14139f183c1b631524",
   "resume_condition": null
 }

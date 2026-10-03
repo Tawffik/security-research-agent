@@ -1,19 +1,22 @@
 # Current Task
 
-**Campaign status:** IN_PROGRESS  
-**HEAD:** 1de41ed6dfac467cb38dff9baee5fcc8feeb4822  
+**Campaign status:** IN_PROGRESS
+**HEAD:** 02cd4c5b4e45649111c42b14139f183c1b631524
 **Tests:** 301 passed
 
-## Gate 6
-BLOCKED (local) — authorized live environment required.
+## Gate 6 (local BLOCKED)
+Requires authorized live environment — does NOT stop the campaign.
 
-## Completed this recovery
-- Campaign policy + control-plane repair
-- Gate 7 benchmark catalog expand
+## Completed in recovery session
+- Campaign policy (LOCAL BLOCKER ≠ CAMPAIGN BLOCKER)
+- Gate 7 benchmark expansion
 - Gate 8 memory replay validation
 - Research Brief compiler
+- README status alignment
 
-## Next offline
-- README architecture drift pass (deferred/low)
+## Next offline candidates
 - Utility-aware experiment selection audit
-- Gate 6 only when human authorization exists
+- Further knowledge/benchmark depth as gap-driven
+
+## Gate 6 resume
+Explicit authorized scope + credentials + target approval
