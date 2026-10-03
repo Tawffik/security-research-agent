@@ -286,18 +286,16 @@ def interpret_discriminator(
     if expects_denial:
         if non_owner_denied and not non_owner_ok:
             return "supports", "non-owner denied as discriminator suggested"
-        if non_owner_ok and scenario.suggests_authz_issue:
-            return "contradicts", "discriminator expected denial; non-owner got 200"
         if non_owner_ok:
             return "contradicts", "expected denial; observed success for non-owner"
         return "ambiguous", "denial expectation not clearly resolved"
 
     if expects_differential or "procedure:" in d:
         if len(observations) >= 2 and len(set(statuses)) >= 1:
-            if scenario.suggests_authz_issue and non_owner_ok:
-                return "supports", "differential access consistent with issue-oriented experiment"
-            if not scenario.suggests_authz_issue and non_owner_denied:
-                return "supports", "differential denial consistent with secure-oriented experiment"
+            if non_owner_ok:
+                return "supports", "differential access: non-owner success observed"
+            if non_owner_denied:
+                return "supports", "differential denial: non-owner denied observed"
             return "ambiguous", "differential observed but alignment unclear"
         return "missing" if not observations else "ambiguous", "insufficient differential"
 

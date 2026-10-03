@@ -114,7 +114,23 @@ def compare_identity_pair(
         notes.append("status and/or stable body content differs")
 
     # Compat interpretation strings (legacy consumers)
-    if expect_denial_for_other:
+    bodies = (b_body + " " + o_body).lower()
+    public_marker = any(
+        x in bodies
+        for x in ('"visibility":"public"', "public resource", '"public"')
+    )
+    shared_marker = any(x in bodies for x in ('"acl":', "shared acl", "shared-"))
+    if public_marker:
+        interpretation = "public_or_intended_access"
+        notes.append("public visibility marker present — not ownership bypass")
+        if change_kind == ChangeKind.MEANINGFUL_CHANGE:
+            change_kind = ChangeKind.EXPECTED_CHANGE
+    elif shared_marker and o_status < 400 and b_status < 400:
+        interpretation = "shared_acl_or_intended_access"
+        notes.append("shared ACL marker present — not horizontal IDOR")
+        if change_kind == ChangeKind.MEANINGFUL_CHANGE:
+            change_kind = ChangeKind.EXPECTED_CHANGE
+    elif expect_denial_for_other:
         if o_status < 400 and b_status < 400 and not status_differs:
             interpretation = "possible_authorization_issue"
             notes.append("non-baseline identity received success similar to baseline")
@@ -231,5 +247,13 @@ def differential_to_polarity(diff: Optional[DifferentialResult]) -> str:
         # Meaningful without enforcement label → unresolved research signal
         if diff.interpretation == "possible_authorization_issue":
             return "positive"
+        if diff.interpretation == "ownership_or_authz_appears_enforced":
+            return "negative"
         return "neutral"
+    if getattr(diff, "interpretation", "") in (
+        "ownership_or_authz_appears_enforced",
+        "public_or_intended_access",
+        "shared_acl_or_intended_access",
+    ):
+        return "negative"
     return "neutral"

@@ -482,10 +482,13 @@ class ClosedLoopRunner:
             is_challenge = (getattr(obs, "role", "") or "") == "challenge" or (
                 not getattr(obs, "role", None) and obs.identity != "user_a"
             )
-            if scenario.suggests_authz_issue and is_challenge and obs.status == 200:
-                polarity = EvidencePolarity.POSITIVE  # supports candidate issue
-            elif not scenario.suggests_authz_issue and is_challenge and obs.status in (401, 403, 404):
-                polarity = EvidencePolarity.NEGATIVE  # ownership enforced
+            # Polarity from observation statuses (role-aware), NOT from fixture oracle label.
+            # suggests_authz_issue is lab metadata for scenario design only — not a polarity source.
+            if is_challenge:
+                if obs.status == 200:
+                    polarity = EvidencePolarity.POSITIVE  # unexpected success on challenge identity
+                elif obs.status in (401, 403, 404):
+                    polarity = EvidencePolarity.NEGATIVE  # access denied on challenge
             # Experiment-aware adjustment: incomplete required evidence → down-weight to NEUTRAL
             if alignment.required_evidence and not all(
                 r.status == "satisfied" for r in alignment.required_evidence
@@ -629,8 +632,15 @@ class ClosedLoopRunner:
             )
 
         def skeptic_fn(claim: ResearcherClaim, store: EvidenceStore) -> SkepticVerdict:
-            # Deterministic skeptic: for secure scenario, flag intended/authz not crossed.
-            if not scenario.suggests_authz_issue:
+            # Deterministic skeptic driven by differential interpretation — not fixture oracle label.
+            interp = getattr(differential, "interpretation", "") if differential is not None else ""
+            enforced = interp in (
+                "ownership_or_authz_appears_enforced",
+                "public_or_intended_access",
+                "shared_acl_or_intended_access",
+            )
+            issue_signal = interp == "possible_authorization_issue"
+            if enforced or not issue_signal:
                 answers = {
                     SkepticQuestion.AUTHZ_ACTUALLY_CROSSED: False,
                     SkepticQuestion.ALTERNATE_EXPLANATION: False,
@@ -648,13 +658,13 @@ class ClosedLoopRunner:
                     answers=answers,
                     disproof_attempted=True,
                     disproof_evidence_id=evidence_ids[-1] if evidence_ids else None,
-                    notes="Non-owner blocked (403). Authorization boundary holds under lab scenario.",
+                    notes=f"Differential={interp or 'none'}; authorization boundary holds or evidence insufficient.",
                 )
 
-            # Candidate issue: skeptic still attempts alternate explanations but resolves them.
+            # issue_signal path: skeptic still attempts alternate explanations.
             answers = {
-                SkepticQuestion.ALTERNATE_EXPLANATION: True,  # resolved: not shared ACL in body
-                SkepticQuestion.INTENDED_BEHAVIOR: True,  # no public marker
+                SkepticQuestion.ALTERNATE_EXPLANATION: True,
+                SkepticQuestion.INTENDED_BEHAVIOR: True,
                 SkepticQuestion.AUTH_ACTUALLY_BYPASSED: True,
                 SkepticQuestion.AUTHZ_ACTUALLY_CROSSED: True,
                 SkepticQuestion.REPRODUCIBLE: True,
@@ -669,7 +679,7 @@ class ClosedLoopRunner:
                 answers=answers,
                 disproof_attempted=True,
                 disproof_evidence_id=evidence_ids[-1] if evidence_ids else None,
-                notes="Disproof attempted: checked shared-ACL, public endpoint, role grants; none supported by lab bodies.",
+                notes="Disproof attempted from differential issue signal; alternate explanations reviewed.",
             )
 
         loop = VerificationLoop(
