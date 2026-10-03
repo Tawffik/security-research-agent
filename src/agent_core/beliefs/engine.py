@@ -147,3 +147,63 @@ class BeliefEngine:
 
     def list_all(self) -> list[Belief]:
         return list(self._beliefs.values())
+
+
+class BeliefQuery:
+    """
+    First-class belief retrieval over BeliefEngine state.
+
+    Supports claim search, evidence-linked lookup, contradiction enumeration,
+    hypothesis-conditioned filters (via claim/source tags), and snapshot/restore.
+    Does not grant execution permission.
+    """
+
+    def __init__(self, engine: BeliefEngine):
+        self.engine = engine
+
+    def by_claim_substring(self, needle: str) -> list[Belief]:
+        n = (needle or "").lower()
+        return [b for b in self.engine.list_all() if n in b.claim.lower()]
+
+    def by_evidence_id(self, evidence_id: str) -> list[Belief]:
+        eid = evidence_id or ""
+        out: list[Belief] = []
+        for b in self.engine.list_all():
+            if eid in b.supporting_evidence_ids or eid in b.contradicting_evidence_ids:
+                out.append(b)
+        return out
+
+    def contradictory(self) -> list[Belief]:
+        """Beliefs that have at least one contradicting evidence id, or pair conflicts."""
+        marked = {b.belief_id for pair in self.engine.contradictions() for b in pair}
+        out = []
+        for b in self.engine.list_all():
+            if b.contradicting_evidence_ids or b.belief_id in marked:
+                out.append(b)
+        return out
+
+    def high_confidence(self, threshold: float = 0.7) -> list[Belief]:
+        return [b for b in self.engine.list_all() if b.confidence >= threshold]
+
+    def by_source(self, source: str) -> list[Belief]:
+        return [b for b in self.engine.list_all() if b.source == source]
+
+    def snapshot(self) -> dict:
+        return {
+            "engagement_id": self.engine.engagement_id,
+            "beliefs": [b.model_dump() for b in self.engine.list_all()],
+            "counter": self.engine._counter,
+        }
+
+    @staticmethod
+    def restore(data: dict) -> BeliefEngine:
+        eng = BeliefEngine(engagement_id=str(data.get("engagement_id") or ""))
+        eng._counter = int(data.get("counter") or 0)
+        for bd in data.get("beliefs") or []:
+            b = Belief(**bd)
+            eng._beliefs[b.belief_id] = b
+        return eng
+
+
+def belief_query(engine: BeliefEngine) -> BeliefQuery:
+    return BeliefQuery(engine)

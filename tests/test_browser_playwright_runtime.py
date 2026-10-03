@@ -1,5 +1,14 @@
 """Playwright browser runtime — system Chrome; ScopeGuard; no fabricated live network."""
 
+import pytest
+
+from agent_core.tools.browser_capability import playwright_available, system_chrome_available
+
+pytestmark = pytest.mark.skipif(
+    not playwright_available() or not system_chrome_available(),
+    reason="Playwright or system Chrome unavailable in this environment",
+)
+
 from agent_core.scope.guard import ScopeGuard, ScopeRule, RiskTier
 from agent_core.tools.browser_capability import (
     BROWSER_NAVIGATE_LIVE,
@@ -22,6 +31,7 @@ def make_guard():
 
 
 def test_playwright_and_chrome_available():
+    # Module-level skipif already gates real runtime tests.
     assert playwright_available() is True
     assert system_chrome_available() is True
 
