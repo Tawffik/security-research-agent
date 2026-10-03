@@ -1,13 +1,13 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "offline_exhausted_awaiting_live_auth",
-  "current_task": "Final integrity audit: offline roadmap exhausted; Playwright skipped (package absent); Gate 6B blocked",
-  "current_commit": "dcbb7edfe8a9e3819cdd573f0b99c6ded03b8d07",
-  "last_verified_commit": "dcbb7edfe8a9e3819cdd573f0b99c6ded03b8d07",
+  "current_gate": "browser_runtime_verified",
+  "current_task": "Playwright+Chrome runtime TESTED_AND_PASSED; Gate 6B still blocked",
+  "current_commit": "a3fec34bb3160e6ae7672faf65df5494e0ae2bb2",
+  "last_verified_commit": "a3fec34bb3160e6ae7672faf65df5494e0ae2bb2",
   "last_test": {
-    "passed": 377,
+    "passed": 386,
     "failed": 0,
-    "skipped": 8
+    "skipped": 0
   },
   "completed": [
     "utility_aware_experiment_selection",
@@ -54,19 +54,14 @@
     "belief_query_object",
     "belief_snapshot_restore",
     "security_invariants_regression_suite",
-    "playwright_tests_skip_when_unavailable"
+    "playwright_tests_skip_when_unavailable",
+    "playwright_runtime_restored",
+    "browser_health_check",
+    "playwright_tests_executed_passed",
+    "playwright_optional_dependency_declared"
   ],
   "in_progress": [],
-  "deferred": [
-    {
-      "id": "playwright_package_runtime",
-      "description": "Playwright Python package available for test execution",
-      "reason": "import playwright fails; reinstall hits PyPI 502",
-      "priority": "high",
-      "return_condition": "playwright importable in agent runtime",
-      "blocks_other_work": false
-    }
-  ],
+  "deferred": [],
   "blocked": [
     {
       "id": "gate6b_live_bbci_e2e",
@@ -93,10 +88,10 @@
     "gate6b_when_authorized"
   ],
   "environment_audit": {
-    "playwright_package": false,
-    "system_chrome": true,
-    "path": "/usr/bin/google-chrome",
-    "playwright_tests": "8 skipped \u2014 package not importable (PyPI previously installed then lost / not reinstallable due to 502)",
-    "prior_runtime_proof": "commit 115915a established channel=chrome when package was present"
+    "playwright": "1.63.0 importable",
+    "install_path": "https://pypi.org/simple (internal mirror 502)",
+    "chrome": "/usr/bin/google-chrome channel=chrome",
+    "health": "BROWSER_RUNTIME_READY",
+    "tests": "386 passed 0 skipped"
   }
 }

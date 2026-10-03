@@ -1,21 +1,16 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS
-**HEAD:** `dcbb7edfe8a9e3819cdd573f0b99c6ded03b8d07`
-**Tests:** 377 passed / 0 failed / 8 skipped
-
-## Integrity audit
-Offline implementable work: exhausted (no READY material items).
+**HEAD:** `a3fec34bb3160e6ae7672faf65df5494e0ae2bb2`
+**Tests:** 386 passed / 0 failed / 0 skipped
 
 ## Playwright
-- Implementation: present (PlaywrightBrowserRuntime + contracts)
-- Package in this environment: **absent** (import fails)
-- Tests: **8 skipped** (not passed)
-- Prior successful runtime: documented at commit 115915a when package was installed
-- Live network browser: **BLOCKED** (authorization)
+TESTED_AND_PASSED — package + system Chrome channel=chrome
+Health: BROWSER_RUNTIME_READY
 
-## Gate 6B
-BLOCKED — human authorization required
+## Still blocked (local/human)
+- Gate 6B live BBCI E2E
+- Live browser network research (authorized target)
 
-## Do not claim
-Playwright runtime is currently verified in this environment.
+## Offline READY
+Rescan after this fix; core offline work previously exhausted
