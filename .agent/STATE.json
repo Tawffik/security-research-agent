@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
   "current_gate": "browser_playwright_runtime",
-  "current_task": "Playwright+Chrome runtime verified offline; live network + Gate 6B blocked",
-  "current_commit": "115915afe60435d398294ea4af9c81a86da075be",
-  "last_verified_commit": "115915afe60435d398294ea4af9c81a86da075be",
+  "current_task": "Interpreter safety + Playwright verified; Gate 6B + live browser network blocked",
+  "current_commit": "1a3bd5a98d5fcd0ef8a0c69f6acdf0a1e6874a41",
+  "last_verified_commit": "1a3bd5a98d5fcd0ef8a0c69f6acdf0a1e6874a41",
   "last_test": {
-    "passed": 373,
+    "passed": 378,
     "failed": 0
   },
   "completed": [
@@ -47,7 +47,9 @@
     "browser_playwright_runtime",
     "browser_interaction_contracts",
     "browser_failure_taxonomy",
-    "skill_trust_cannot_authorize_browser"
+    "skill_trust_cannot_authorize_browser",
+    "interpreter_deny_by_default",
+    "knowledge_cannot_grant_interpreter"
   ],
   "in_progress": [],
   "deferred": [

@@ -1,17 +1,18 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS
-**HEAD:** `115915afe60435d398294ea4af9c81a86da075be`
-**Tests:** 373 passed / 0 failed
+**HEAD:** `1a3bd5a98d5fcd0ef8a0c69f6acdf0a1e6874a41`
+**Tests:** 378 passed / 0 failed
 
-## Browser
-- Synthetic: VERIFIED
-- Playwright + system Chrome: VERIFIED (local data: URLs)
-- Live network browser research: BLOCKED (authorization)
-- Skill trust ≠ permission: VERIFIED
+## Verified this cycle
+- Playwright + system Chrome runtime
+- Browser interaction taxonomy
+- Skill trust ≠ browser permission
+- Interpreter/shell/eval deny-by-default
 
-## Gate 6B
-BLOCKED — live authorization required
+## Blocked (local)
+- Gate 6B live BBCI E2E
+- Live browser network research
 
-## Next
-Continue dependency sweep for remaining offline gaps; live paths wait on human.
+## Deferred
+- full belief graph (ResearchBrief sufficient)
