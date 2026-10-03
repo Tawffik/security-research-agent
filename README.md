@@ -3,7 +3,7 @@
 [![CI](https://github.com/Tawffik/security-research-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Tawffik/security-research-agent/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-106%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-301%20passing-brightgreen.svg)](tests/)
 
 > Replace `OWNER` in the badge URL above with your GitHub username/org once
 > this is pushed — see the "Publish this to GitHub" section below.
@@ -19,6 +19,22 @@ state, hash-chained evidence, adversarial self-verification, and a
 skill system with progressive disclosure. The offensive reasoning itself
 lives in Skills (`/skills`), which this library loads, sequences, and
 holds accountable for evidence — it never trusts a skill's output blindly.
+
+
+## Current implementation status
+
+> **Source of truth:** `.agent/STATE.json` + tests + git HEAD. Historical Phase labels in older docs are superseded by the Gate roadmap.
+
+| Area | Status |
+|------|--------|
+| Gates 2–4 (retrieval, hypothesis/experiment, observation/differential) | Implemented + tested (offline) |
+| Gate 5 (execution boundary, capability, verification, stop semantics) | Implemented + tested (offline) |
+| Gate 6 (live BugBountyCI E2E) | **Blocked** — requires authorized live environment |
+| Gate 7 (trajectory, branch, hidden-oracle benchmarks) | Offline foundations + expanded scenarios |
+| Gate 8 (trusted memory lifecycle, poisoning resistance) | Offline foundations + replay validation |
+| Knowledge / EvidenceGraph / Research Brief | Offline path present |
+
+**Invariant:** knowledge retrieval never grants execution permission. ScopeGuard is fail-closed. Live HTTP is opt-in and authorization-gated.
 
 ## Why this shape
 
