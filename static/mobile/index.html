@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>SRA Control</title>
+<style>
+:root { --bg:#0f1419; --card:#1a2332; --fg:#e7ecf3; --muted:#8b9bb4; --acc:#3d8bfd; --ok:#3dd68c; --bad:#ff6b6b; --warn:#ffc857; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--fg); }
+header { padding:12px 16px; background:#121a24; border-bottom:1px solid #243044; position:sticky; top:0; z-index:2; }
+h1 { font-size:1.1rem; margin:0; }
+.muted { color:var(--muted); font-size:0.85rem; }
+.card { background:var(--card); margin:12px; padding:14px; border-radius:12px; }
+label { display:block; font-size:0.8rem; color:var(--muted); margin-bottom:4px; }
+input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #2c3b52; background:#0f1419; color:var(--fg); margin-bottom:10px; }
+.row { display:flex; gap:8px; flex-wrap:wrap; }
+button { flex:1; min-width:72px; padding:12px 10px; border:0; border-radius:10px; background:var(--acc); color:#fff; font-weight:600; }
+button.secondary { background:#2a3548; }
+button.danger { background:#a33; }
+button:disabled { opacity:0.4; }
+.badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:0.75rem; background:#2a3548; }
+.badge.RUNNING { background:#1d4f91; }
+.badge.COMPLETED { background:#1f6b4a; }
+.badge.FAILED,.badge.CANCELLED { background:#7a2e2e; }
+.badge.BLOCKED { background:#7a5b1e; }
+.list div { padding:10px 0; border-bottom:1px solid #243044; }
+.events { max-height:280px; overflow:auto; font-size:0.8rem; }
+.ev { padding:6px 0; border-bottom:1px solid #1e2a3c; }
+.ev .t { color:var(--muted); }
+.hidden { display:none; }
+.err { color:var(--bad); font-size:0.85rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Security Research Agent</h1>
+  <div class="muted">Phone = control · Research runs remotely · Live HTTP off by default</div>
+</header>
+
+<section class="card" id="authCard">
+  <label>API token (Bearer)</label>
+  <input id="token" type="password" autocomplete="off" placeholder="AGENT_API_TOKEN"/>
+  <div class="row">
+    <button id="btnSaveToken">Save token</button>
+    <button class="secondary" id="btnHealth">Health</button>
+  </div>
+  <div id="healthOut" class="muted" style="margin-top:8px"></div>
+  <div id="authErr" class="err"></div>
+</section>
+
+<section class="card">
+  <div class="row">
+    <button id="btnCreate">New session</button>
+    <button class="secondary" id="btnRefresh">Refresh</button>
+  </div>
+  <div id="sessions" class="list" style="margin-top:10px"></div>
+</section>
+
+<section class="card hidden" id="sessionCard">
+  <div><strong id="sid"></strong> <span id="sstatus" class="badge"></span></div>
+  <div class="muted" id="sphase"></div>
+  <div class="muted" id="smeta"></div>
+  <div class="row" style="margin-top:10px">
+    <button id="btnStart">Start</button>
+    <button class="secondary" id="btnPause">Pause</button>
+    <button class="secondary" id="btnResume">Resume</button>
+    <button class="danger" id="btnStop">Stop</button>
+  </div>
+  <h3 style="font-size:0.95rem">Events</h3>
+  <div id="events" class="events"></div>
+  <h3 style="font-size:0.95rem">Report</h3>
+  <pre id="report" class="muted" style="white-space:pre-wrap;font-size:0.8rem"></pre>
+</section>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let currentId = null;
+let pollTimer = null;
+
+function token() { return localStorage.getItem('sra_token') || ''; }
+function headers() {
+  return { 'Authorization': 'Bearer ' + token(), 'Content-Type': 'application/json' };
+}
+async function api(path, opts={}) {
+  const r = await fetch(path, { ...opts, headers: { ...headers(), ...(opts.headers||{}) } });
+  const text = await r.text();
+  let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  if (!r.ok) throw new Error(data.detail || data.error || r.statusText);
+  return data;
+}
+
+$('btnSaveToken').onclick = () => {
+  localStorage.setItem('sra_token', $('token').value.trim());
+  $('authErr').textContent = '';
+  refresh();
+};
+$('token').value = token();
+
+$('btnHealth').onclick = async () => {
+  try {
+    const h = await fetch('/health').then(r => r.json());
+    $('healthOut').textContent = JSON.stringify(h);
+  } catch (e) { $('healthOut').textContent = String(e); }
+};
+
+async function refresh() {
+  try {
+    const data = await api('/api/sessions');
+    const el = $('sessions');
+    el.innerHTML = '';
+    (data.sessions || []).forEach(s => {
+      const d = document.createElement('div');
+      d.innerHTML = `<span class="badge ${s.status}">${s.status}</span> ${s.session_id}<br/><span class="muted">${s.label} · ${s.current_phase}</span>`;
+      d.onclick = () => openSession(s.session_id);
+      el.appendChild(d);
+    });
+    $('authErr').textContent = '';
+  } catch (e) {
+    $('authErr').textContent = String(e.message || e);
+  }
+}
+
+$('btnRefresh').onclick = refresh;
+$('btnCreate').onclick = async () => {
+  try {
+    const s = await api('/api/sessions', { method:'POST', body: JSON.stringify({ label: 'mobile-session' }) });
+    await openSession(s.session_id);
+    refresh();
+  } catch (e) { $('authErr').textContent = String(e.message || e); }
+};
+
+async function openSession(id) {
+  currentId = id;
+  $('sessionCard').classList.remove('hidden');
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(() => loadSession(id), 1000);
+  await loadSession(id);
+}
+
+async function loadSession(id) {
+  try {
+    const s = await api('/api/sessions/' + id);
+    $('sid').textContent = s.session_id;
+    $('sstatus').textContent = s.status;
+    $('sstatus').className = 'badge ' + s.status;
+    $('sphase').textContent = 'Phase: ' + (s.current_phase || '-') + ' · hyp: ' + (s.current_hypothesis||'-') + ' · exp: ' + (s.current_experiment||'-');
+    $('smeta').textContent = 'Evidence: ' + s.evidence_count + ' · finding: ' + (s.latest_finding||'none') + ' · live_http: false';
+    const ev = await api('/api/sessions/' + id + '/events');
+    const box = $('events');
+    box.innerHTML = '';
+    (ev.events || []).forEach(e => {
+      const d = document.createElement('div');
+      d.className = 'ev';
+      d.innerHTML = `<span class="t">#${e.sequence}</span> <strong>${e.event_type}</strong> ${e.message||''}`;
+      box.appendChild(d);
+    });
+    box.scrollTop = box.scrollHeight;
+    const rep = await api('/api/sessions/' + id + '/report');
+    $('report').textContent = JSON.stringify(rep, null, 2);
+    const running = s.status === 'RUNNING';
+    const ready = s.status === 'READY' || s.status === 'PAUSED' || s.status === 'CREATED';
+    $('btnStart').disabled = !ready;
+    $('btnPause').disabled = !running;
+    $('btnResume').disabled = s.status !== 'PAUSED';
+    $('btnStop').disabled = s.is_terminal || ['COMPLETED','FAILED','CANCELLED','BLOCKED','INCONCLUSIVE'].includes(s.status);
+  } catch (e) { $('authErr').textContent = String(e.message || e); }
+}
+
+async function mut(op) {
+  if (!currentId) return;
+  if (op === 'stop' && !confirm('Stop this session?')) return;
+  try {
+    await api('/api/sessions/' + currentId + '/' + op, { method:'POST', body:'{}' });
+    await loadSession(currentId);
+    refresh();
+  } catch (e) { alert(e.message || e); }
+}
+$('btnStart').onclick = () => mut('start');
+$('btnPause').onclick = () => mut('pause');
+$('btnResume').onclick = () => mut('resume');
+$('btnStop').onclick = () => mut('stop');
+
+refresh();
+</script>
+</body>
+</html>
