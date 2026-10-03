@@ -17,6 +17,9 @@ from agent_core.orchestrator.closed_loop import (
     public_resource_lab_scenario,
     secure_lab_scenario,
     shared_object_lab_scenario,
+    ambiguous_incomplete_lab_scenario,
+    role_authorized_lab_scenario,
+    cache_artifact_lab_scenario,
 )
 
 
@@ -68,19 +71,25 @@ DEFAULT_SUITE = [
     BenchmarkCase("bm_secure", "secure", "secure", "rejected"),
     BenchmarkCase("bm_public", "public", "public", "rejected"),
     BenchmarkCase("bm_shared", "shared", "shared", "rejected"),
+    BenchmarkCase("bm_ambiguous_incomplete", "ambiguous_incomplete", "ambiguous", "incomplete"),
+    BenchmarkCase("bm_role_authorized", "role_authorized", "secure", "rejected"),
+    BenchmarkCase("bm_cache_artifact", "cache_artifact", "secure", "rejected"),
 ]
 
 
 def _scenario(name: str, host: str = "api.acme-demo.test") -> LabScenario:
-    if name == "default_idor":
-        return default_idor_lab_scenario(host)
-    if name == "secure":
-        return secure_lab_scenario(host)
-    if name == "public":
-        return public_resource_lab_scenario(host)
-    if name == "shared":
-        return shared_object_lab_scenario(host)
-    raise ValueError(name)
+    factories = {
+        "default_idor": default_idor_lab_scenario,
+        "secure": secure_lab_scenario,
+        "public": public_resource_lab_scenario,
+        "shared": shared_object_lab_scenario,
+        "ambiguous_incomplete": ambiguous_incomplete_lab_scenario,
+        "role_authorized": role_authorized_lab_scenario,
+        "cache_artifact": cache_artifact_lab_scenario,
+    }
+    if name not in factories:
+        raise ValueError(name)
+    return factories[name](host)
 
 
 def evaluate_closed_result(case: BenchmarkCase, result: ClosedLoopResult) -> BenchmarkScore:

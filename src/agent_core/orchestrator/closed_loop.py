@@ -302,6 +302,69 @@ def hard_ssrf_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
     )
 
 
+def ambiguous_incomplete_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Incomplete evidence: only baseline observation — agent must not confirm."""
+    return LabScenario(
+        name="lab_ambiguous_incomplete",
+        expected_if_secure="Insufficient evidence to conclude",
+        suggests_authz_issue=False,
+        methodology="authorization",
+        observations=[
+            LabObservation(
+                identity="user_a", method="GET", path="/api/orders/1001", host=host,
+                status=200, body='{"order_id":1001,"owner":"user_a"}',
+                notes="baseline only — no challenge pair", role="baseline",
+            ),
+        ],
+    )
+
+
+def role_authorized_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Role-authorized access: admin may see object — not an ownership bypass."""
+    return LabScenario(
+        name="lab_role_authorized",
+        expected_if_secure="Admin role may read order by policy",
+        suggests_authz_issue=False,
+        methodology="authorization",
+        observations=[
+            LabObservation(
+                identity="user_a", method="GET", path="/api/orders/1001", host=host,
+                status=200, body='{"order_id":1001,"owner":"user_a","role":"owner"}',
+                notes="owner", role="baseline",
+            ),
+            LabObservation(
+                identity="admin", method="GET", path="/api/orders/1001", host=host,
+                status=200, body='{"order_id":1001,"owner":"user_a","role":"admin"}',
+                notes="admin role grant", role="challenge",
+            ),
+        ],
+    )
+
+
+def cache_artifact_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Cache/CDN-like noise: bodies differ only by cache headers/timestamps — not authz."""
+    return LabScenario(
+        name="lab_cache_artifact",
+        expected_if_secure="Noise-only difference (cache metadata)",
+        suggests_authz_issue=False,
+        methodology="authorization",
+        observations=[
+            LabObservation(
+                identity="user_a", method="GET", path="/api/orders/1001", host=host,
+                status=200,
+                body='{"order_id":1001,"owner":"user_a","etag":"v1","date":"2024-01-01T00:00:00Z"}',
+                notes="baseline", role="baseline",
+            ),
+            LabObservation(
+                identity="user_b", method="GET", path="/api/orders/1001", host=host,
+                status=403,
+                body='{"error":"forbidden","etag":"v2","date":"2025-06-06T11:22:33Z"}',
+                notes="non-owner denied; timestamps differ (noise)", role="challenge",
+            ),
+        ],
+    )
+
+
 
 class ClosedLoopRunner:
     """
