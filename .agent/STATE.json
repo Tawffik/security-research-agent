@@ -2,7 +2,7 @@
   "campaign_status": "IN_PROGRESS",
   "current_gate": "offline_hardening_gate7_8",
   "current_task": "Gate 7/8 offline expand + evidence graph; Gate 6 blocked",
-  "current_commit": "pending",
+  "current_commit": "0a76db59d6e7625fd9c3bd4a7da3846fa5331591",
   "completed": [
     "gate2_contextual_retrieval",
     "gate3_generic_hypothesis_experiment",
@@ -58,6 +58,6 @@
     "passed": 286,
     "failed": 0
   },
-  "last_verified_commit": "pending",
+  "last_verified_commit": "0a76db59d6e7625fd9c3bd4a7da3846fa5331591",
   "resume_condition": null
 }

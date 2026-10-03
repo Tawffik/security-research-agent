@@ -7,7 +7,7 @@ Poisoning resistance, trajectory false-confirmation metric, evidence relations.
 cc4a32b (post fixture-claim differential fix)
 
 ## FINAL COMMIT
-(pending)
+0a76db59d6e7625fd9c3bd4a7da3846fa5331591
 
 ## FILES CHANGED
 - src/agent_core/memory/trusted.py
