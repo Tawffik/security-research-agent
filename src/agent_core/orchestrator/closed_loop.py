@@ -21,6 +21,7 @@ from typing import Any, Optional, Union
 
 from agent_core.content_isolation.sanitizer import wrap_target_content
 from agent_core.evidence.store import EvidencePolarity, EvidenceStore, FindingStatus
+from agent_core.evidence.relations import EvidenceGraph, EvidenceRelationType
 from agent_core.orchestrator.experiment_alignment import (
     align_experiment_to_scenario,
     resolve_selected_experiment,
@@ -103,6 +104,7 @@ class ClosedLoopResult:
     knowledge_procedure_required_blocked: bool = False
     hypothesis_updates: list = field(default_factory=list)
     differential_result: dict | None = None
+    evidence_graph: list = field(default_factory=list)
     max_experiments_budget: Optional[int] = None
     experiments_designed: int = 0
     report: Optional[EvidenceReport] = None
@@ -511,6 +513,33 @@ class ClosedLoopRunner:
             )
             evidence_ids.append(ev.evidence_id)
 
+
+        evidence_graph = EvidenceGraph()
+        try:
+            entries = self.evidence.list_evidence() if hasattr(self.evidence, "list_evidence") else []
+        except Exception:
+            entries = []
+        for e in entries:
+            pol = getattr(e, "polarity", None)
+            pol_v = pol.value if hasattr(pol, "value") else str(pol or "neutral")
+            hyp = getattr(e, "related_hypothesis", None) or hyp_id
+            if pol_v == "positive":
+                evidence_graph.link(
+                    EvidenceRelationType.SUPPORTS, e.evidence_id, str(hyp), episode_id=self.engagement_id
+                )
+            elif pol_v == "negative":
+                evidence_graph.link(
+                    EvidenceRelationType.CONTRADICTS, e.evidence_id, str(hyp), episode_id=self.engagement_id
+                )
+        if differential is not None and evidence_ids:
+            evidence_graph.link(
+                EvidenceRelationType.DERIVED_FROM,
+                evidence_ids[-1],
+                differential.experiment_id or (alignment.experiment_id if alignment else ""),
+                episode_id=self.engagement_id,
+                notes=f"change_kind={differential.change_kind}",
+            )
+
         def researcher_fn(hypothesis_id: str) -> ResearcherClaim:
             # Prefer differential interpretation over fixture oracle label
             if differential is not None and differential.interpretation == "possible_authorization_issue":
@@ -598,6 +627,7 @@ class ClosedLoopRunner:
             )
         )
         knowledge_blocked = False
+        evidence_graph = None
         if getattr(scenario, "requires_knowledge_procedure", False) and not knowledge_driven:
             knowledge_blocked = True
             # Force incomplete — discriminating procedure not selected (baseline insufficiency)
@@ -722,6 +752,7 @@ class ClosedLoopRunner:
             knowledge_procedure_required_blocked=knowledge_blocked,
             hypothesis_updates=hyp_updates,
             differential_result=(differential.to_dict() if differential else None),
+            evidence_graph=[r.to_dict() for r in (evidence_graph.relations if evidence_graph else [])],
             experiments_designed=len(plan.experiments or []),
             max_experiments_budget=getattr(self, "max_experiments_budget", None),
             experiment_alignment=alignment.to_dict(),

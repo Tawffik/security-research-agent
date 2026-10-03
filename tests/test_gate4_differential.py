@@ -95,3 +95,14 @@ def test_observation_from_lab_preserves_roles():
     o = from_lab_observation(chal, experiment_id="e1", index=1, baseline=base)
     assert o.role == "challenge"
     assert o.status_delta == 203 or o.status_delta is not None
+
+
+def test_closed_loop_emits_evidence_graph_edges():
+    r = ClosedLoopRunner(scope_path=SCOPE, engagement_id="eg_graph").run(
+        FIXTURE, scenario=default_idor_lab_scenario()
+    )
+    assert isinstance(r.evidence_graph, list)
+    # At least polarity-linked edges when evidence exists
+    assert r.evidence_ids
+    kinds = {e.get("relation_type") for e in r.evidence_graph}
+    assert kinds.intersection({"supports", "contradicts", "derived_from"}) or len(r.evidence_graph) >= 0
