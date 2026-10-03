@@ -1,8 +1,8 @@
 {
   "campaign_status": "IN_PROGRESS",
   "current_gate": "offline_hardening_gate7_8",
-  "current_task": "Gate 7/8 offline expand + evidence graph; Gate 6 blocked",
-  "current_commit": "0a76db59d6e7625fd9c3bd4a7da3846fa5331591",
+  "current_task": "Gate 6 blocked; offline Gate 7/8 hardening continues",
+  "current_commit": "377800a7f9535483b59a0f592a85ae6b5ecd0bf6",
   "completed": [
     "gate2_contextual_retrieval",
     "gate3_generic_hypothesis_experiment",
@@ -18,7 +18,8 @@
     "gate8_poisoning_scope_isolation",
     "gate8_conditional_negative_knowledge",
     "evidence_graph_relations_offline",
-    "fixture_claim_text_differential_prefer"
+    "fixture_claim_text_differential_prefer",
+    "evidence_graph_closed_loop_wired"
   ],
   "in_progress": [],
   "deferred": [
@@ -28,13 +29,6 @@
       "reason": "non-blocking; Gate 2 limitation recorded",
       "priority": "medium",
       "return_condition": "when retrieval ranking needs full belief state"
-    },
-    {
-      "id": "wire_evidence_graph_into_closed_loop",
-      "description": "Emit EvidenceGraph edges from closed_loop automatically",
-      "reason": "foundation exists; wiring is incremental",
-      "priority": "medium",
-      "return_condition": "next offline integration slice"
     }
   ],
   "blocked": [
@@ -47,17 +41,17 @@
     }
   ],
   "next_dependencies": [
-    "wire_evidence_graph_into_closed_loop",
     "gate7_benchmark_scenario_catalog_expand",
-    "gate8_memory_replay_validation"
+    "gate8_memory_replay_validation",
+    "offline_research_episode_integration_audit"
   ],
   "human_dependencies": [
     "gate6_live_authorization"
   ],
   "last_test": {
-    "passed": 286,
+    "passed": 287,
     "failed": 0
   },
-  "last_verified_commit": "0a76db59d6e7625fd9c3bd4a7da3846fa5331591",
+  "last_verified_commit": "377800a7f9535483b59a0f592a85ae6b5ecd0bf6",
   "resume_condition": null
 }
