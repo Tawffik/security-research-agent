@@ -70,6 +70,40 @@ class OpportunityEngine:
                 )
             )
 
+        # Sparse BBCI / host-only recon: surface opportunities without inventing authz
+        # opportunity ≠ finding; zero rich object signals ≠ fabricate BOLA
+        host_surfaces: set[str] = set()
+        for h in list(getattr(ctx, "hosts", None) or []):
+            if h:
+                host_surfaces.add(str(h).strip())
+        for ep in ctx.endpoints:
+            h = (ep.host or "").strip()
+            if h:
+                host_surfaces.add(h)
+        if not host_surfaces and ctx.primary_host:
+            host_surfaces.add(ctx.primary_host)
+
+        rich_authz = any(o.type in ("authorization", "authorization_mutation") for o in opps)
+        if not rich_authz:
+            for h in sorted(host_surfaces):
+                opps.append(
+                    self._make(
+                        type_="host_surface",
+                        target=f"host:{h}",
+                        identity_surface=False,
+                        object_surface=False,
+                        stateful=False,
+                        mutation=False,
+                        privilege_boundary=False,
+                        novelty=0.25,
+                        testability=0.4,
+                        evidence_potential=0.3,
+                        cost=0.2,
+                        risk=0.15,
+                        priority=Priority.LOW,
+                    )
+                )
+
         return sorted(opps, key=self._score, reverse=True)
 
     def _from_endpoint(
@@ -114,7 +148,7 @@ class OpportunityEngine:
 
         return self._make(
             type_=typ,
-            target=f"{ep.method} {ep.path}",
+            target=f"{ep.method} {(ep.host + ep.path) if ep.host else ep.path}",
             identity_surface=bool(ep.auth_required and multi_identity) or multi_identity,
             object_surface=object_path,
             stateful=any(r.state for r in ctx.resources),

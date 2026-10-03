@@ -220,24 +220,38 @@ def parse_bbci_live_txt(
     endpoints = []
     for u in urls:
         try:
-            p = urlparse(u)
-            path = p.path or "/"
-            endpoints.append({"method": "GET", "path": path if path.startswith("/") else f"/{path}", "url": u})
+            parsed = urlparse(u)
+            path = parsed.path or "/"
+            if not path.startswith("/"):
+                path = f"/{path}"
+            host = parsed.hostname or ""
+            endpoints.append({
+                "method": "GET",
+                "path": path,
+                "host": host,
+                "url": u,
+            })
         except Exception:
             continue
 
-    # Dedupe endpoints by path keeping first
+    # Dedupe by (method, host, path) — hosts must remain distinct even when path is /
     seen = set()
     dedup_ep = []
     for e in endpoints:
-        key = (e["method"], e["path"], e.get("url", ""))
+        key = (e["method"], e.get("host") or "", e["path"])
         if key in seen:
             continue
         seen.add(key)
-        dedup_ep.append({"method": e["method"], "path": e["path"]})
+        dedup_ep.append({
+            "method": e["method"],
+            "path": e["path"],
+            "host": e.get("host") or "",
+        })
 
+    hosts_list = sorted(host_counts.keys())
     normalized = {
         "primary_host": primary_host,
+        "hosts": hosts_list,
         "technologies": list(dict.fromkeys(tech))[:30],
         "endpoints": dedup_ep[:500],
         "actors": [],
@@ -248,6 +262,7 @@ def parse_bbci_live_txt(
             "source_shape": "live_txt",
             "url_count": len(urls),
             "unique_hosts": len(host_counts),
+            "hosts": hosts_list,
         },
     }
     if not dedup_ep:

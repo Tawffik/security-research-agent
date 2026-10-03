@@ -1,0 +1,13 @@
+{
+  "recon_id": "recon_sparse_001",
+  "source": "fixture",
+  "program": "sparse-demo",
+  "primary_host": "sparse.example.test",
+  "hosts": ["sparse.example.test"],
+  "technologies": ["nginx"],
+  "endpoints": [
+    {"method": "GET", "path": "/", "host": "sparse.example.test", "auth_required": false}
+  ],
+  "actors": [],
+  "resources": []
+}

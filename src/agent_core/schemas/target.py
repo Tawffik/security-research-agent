@@ -92,6 +92,7 @@ class TargetContext(BaseModel):
 
     engagement_id: str
     primary_host: str = ""
+    hosts: list[str] = Field(default_factory=list)
     technologies: list[str] = Field(default_factory=list)
     actors: list[Actor] = Field(default_factory=list)
     roles: list[Role] = Field(default_factory=list)

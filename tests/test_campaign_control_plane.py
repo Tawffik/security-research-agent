@@ -28,14 +28,17 @@ def test_state_gate6_blocked_does_not_force_campaign_blocked_when_offline_work_l
         d for d in next_deps if d not in ("offline_research_episode_integration_audit",)
     ):
         assert state.get("campaign_status") != "CAMPAIGN_BLOCKED" or not next_deps
-    if "gate6_live_bbci_e2e" in blocked_ids:
+    if "gate6b_live_bbci_e2e" in blocked_ids:
         # Gate 6 local block is expected and valid
         assert True
 
 
 def test_gate6_blocker_record_has_resume_condition():
     state = json.loads((ROOT / ".agent" / "STATE.json").read_text())
-    g6 = next((b for b in state.get("blocked", []) if b.get("id") == "gate6_live_bbci_e2e"), None)
+    g6 = next(
+        (b for b in state.get("blocked", []) if b.get("id") in ("gate6_live_bbci_e2e", "gate6b_live_bbci_e2e")),
+        None,
+    )
     assert g6 is not None
     assert g6.get("resume_condition")
     assert g6.get("required_human_action")

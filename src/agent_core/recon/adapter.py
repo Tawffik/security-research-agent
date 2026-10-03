@@ -66,9 +66,17 @@ class ReconResultAdapter:
         resources = self._normalize_resources(data.get("resources") or [])
         endpoints = self._normalize_endpoints(data.get("endpoints") or [])
 
+        hosts = list(dict.fromkeys(
+            list(data.get("hosts") or [])
+            + ([primary_host] if primary_host else [])
+            + [str(e.get("host") or "") for e in (data.get("endpoints") or []) if e.get("host")]
+        ))
+        hosts = [h for h in hosts if h]
+
         ctx = TargetContext(
             engagement_id=self.engagement_id,
             primary_host=primary_host,
+            hosts=hosts,
             technologies=technologies,
             actors=actors,
             roles=roles,
