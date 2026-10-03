@@ -1,7 +1,7 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS  
-**HEAD:** `bd6d29fb505bfdfee974f4e3311945c6b97b8e5b`  
+**HEAD:** `1dfba54176abb4f51dece718229ecf7f99f169b5`  
 **Tests:** 346 passed / 0 failed  
 
 ## Core offline research engine
