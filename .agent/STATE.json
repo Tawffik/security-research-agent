@@ -1,8 +1,8 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "gate7_offline_generalization",
-  "current_task": "Gate 7 multi-class offline generalization verified; Gate 6B blocked",
-  "current_commit": "fc9544836c749af62931c76625d2db5d5f240287",
+  "current_gate": "research_loop_adaptivity_oracle_isolation",
+  "current_task": "Research loop adaptivity + oracle decoupling verified; Gate 6B blocked",
+  "current_commit": "71b5db0730491c58ce3531f6661d60dca960272f",
   "completed": [
     "utility_aware_experiment_selection",
     "capability_authority_record",
@@ -22,7 +22,11 @@
     "offline_bbci_episode_runner",
     "bbci_host_preservation",
     "host_surface_opportunities",
-    "gate7_multi_class_generalization"
+    "gate7_multi_class_generalization",
+    "state_head_reconciliation",
+    "oracle_isolation_deep_fix",
+    "research_loop_adaptivity_tests",
+    "public_shared_fp_guard"
   ],
   "in_progress": [],
   "deferred": [
@@ -58,9 +62,9 @@
     "gate6b_when_authorized"
   ],
   "last_test": {
-    "passed": 334,
+    "passed": 341,
     "failed": 0
   },
-  "last_verified_commit": "fc9544836c749af62931c76625d2db5d5f240287",
+  "last_verified_commit": "71b5db0730491c58ce3531f6661d60dca960272f",
   "resume_condition": null
 }

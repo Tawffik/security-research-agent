@@ -1,12 +1,17 @@
 # Current Task
 
 **Campaign status:** IN_PROGRESS
-**HEAD:** fc9544836c749af62931c76625d2db5d5f240287
-**Tests:** 334 passed
+**HEAD:** 71b5db0730491c58ce3531f6661d60dca960272f
+**Tests:** 341 passed
 
-## Gate 6A COMPLETE | Gate 6B BLOCKED
-## Gate 7 multi-class offline generalization COMPLETE
+## Verified
+- Gate 6A offline BBCI E2E
+- Gate 7 multi-class
+- Research loop adaptivity (hypothesis update from polarity)
+- Oracle isolation: suggests_authz_issue no longer drives skeptic/polarity
 
-### Next offline
-- Trajectory metrics across BBCI classes (optional depth)
-- Gate 6B only when authorized
+## Gate 6B
+BLOCKED — authorized live environment required
+
+## Next
+Trajectory metrics across BBCI classes (optional) or Gate 6B when authorized
