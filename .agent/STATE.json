@@ -1,9 +1,9 @@
 {
   "campaign_status": "IN_PROGRESS",
   "current_gate": "mobile_control_plane",
-  "current_task": "Control plane + offline + mobile UI verified offline; deploy URL/HTTPS human",
-  "current_commit": "79779540b401cb787b6df43fb27bff7f90131d25",
-  "last_verified_commit": "79779540b401cb787b6df43fb27bff7f90131d25",
+  "current_task": "Mobile session-cookie auth; restart control plane on Codespaces to pick up 87f414b",
+  "current_commit": "87f414b240db35f1bd8d35145d6f86f0d871259e",
+  "last_verified_commit": "87f414b240db35f1bd8d35145d6f86f0d871259e",
   "last_test": {
     "passed": 385,
     "failed": 0,
