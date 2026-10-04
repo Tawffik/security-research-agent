@@ -21,7 +21,15 @@ from agent_core.runtime.engine import ResearchRuntime
 from agent_core.runtime.store import SessionStore
 
 
-ROOT = Path(__file__).resolve().parents[3]
+def _repo_root() -> Path:
+    env = os.environ.get("AGENT_REPO_ROOT", "").strip()
+    if env:
+        return Path(env).resolve()
+    # src/agent_core/control_plane/app.py -> repo root
+    return Path(__file__).resolve().parents[3]
+
+
+ROOT = _repo_root()
 
 
 class CreateBody(BaseModel):
@@ -183,7 +191,15 @@ def build_app(runtime: ResearchRuntime | None = None) -> FastAPI:
     def ui_index() -> HTMLResponse:
         index = static_dir / "index.html"
         if index.exists():
-            return HTMLResponse(index.read_text(encoding="utf-8"))
+            # Always re-read from disk so Codespaces/stale processes serve the fixed UI
+            body = index.read_text(encoding="utf-8")
+            return HTMLResponse(
+                body,
+                headers={
+                    "Cache-Control": "no-store, no-cache, must-revalidate",
+                    "Pragma": "no-cache",
+                },
+            )
         return HTMLResponse("<h1>Mobile UI missing</h1>", status_code=500)
 
     # Explicitly absent dangerous routes

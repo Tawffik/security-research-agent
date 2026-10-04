@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
 <title>SRA Control</title>
 <style>
 :root { --bg:#0f1419; --card:#1a2332; --fg:#e7ecf3; --muted:#8b9bb4; --acc:#3d8bfd; --ok:#3dd68c; --bad:#ff6b6b; --warn:#ffc857; }
@@ -24,12 +25,15 @@ button:disabled { opacity:0.4; }
 .badge.COMPLETED { background:#1f6b4a; }
 .badge.FAILED,.badge.CANCELLED { background:#7a2e2e; }
 .badge.BLOCKED { background:#7a5b1e; }
+.badge.ok { background:#1f6b4a; }
+.badge.bad { background:#7a2e2e; }
 .list div { padding:10px 0; border-bottom:1px solid #243044; }
 .events { max-height:280px; overflow:auto; font-size:0.8rem; }
 .ev { padding:6px 0; border-bottom:1px solid #1e2a3c; }
 .ev .t { color:var(--muted); }
 .hidden { display:none; }
 .err { color:var(--bad); font-size:0.85rem; }
+.okmsg { color:var(--ok); font-size:0.85rem; }
 </style>
 </head>
 <body>
@@ -42,17 +46,19 @@ button:disabled { opacity:0.4; }
   <label>API token (Bearer)</label>
   <input id="token" type="password" autocomplete="off" placeholder="AGENT_API_TOKEN"/>
   <div class="row">
-    <button id="btnSaveToken">Save token</button>
-    <button class="secondary" id="btnHealth">Health</button>
+    <button id="btnSaveToken" type="button">Save token</button>
+    <button class="secondary" id="btnHealth" type="button">Health</button>
   </div>
+  <div id="authState" class="muted" style="margin-top:8px">Auth: not set</div>
   <div id="healthOut" class="muted" style="margin-top:8px"></div>
   <div id="authErr" class="err"></div>
+  <div id="authOk" class="okmsg"></div>
 </section>
 
 <section class="card">
   <div class="row">
-    <button id="btnCreate">New session</button>
-    <button class="secondary" id="btnRefresh">Refresh</button>
+    <button id="btnCreate" type="button">New session</button>
+    <button class="secondary" id="btnRefresh" type="button">Refresh</button>
   </div>
   <div id="sessions" class="list" style="margin-top:10px"></div>
 </section>
@@ -62,10 +68,10 @@ button:disabled { opacity:0.4; }
   <div class="muted" id="sphase"></div>
   <div class="muted" id="smeta"></div>
   <div class="row" style="margin-top:10px">
-    <button id="btnStart">Start</button>
-    <button class="secondary" id="btnPause">Pause</button>
-    <button class="secondary" id="btnResume">Resume</button>
-    <button class="danger" id="btnStop">Stop</button>
+    <button id="btnStart" type="button">Start</button>
+    <button class="secondary" id="btnPause" type="button">Pause</button>
+    <button class="secondary" id="btnResume" type="button">Resume</button>
+    <button class="danger" id="btnStop" type="button">Stop</button>
   </div>
   <h3 style="font-size:0.95rem">Events</h3>
   <div id="events" class="events"></div>
@@ -74,114 +80,204 @@ button:disabled { opacity:0.4; }
 </section>
 
 <script>
+/* mobile-auth-v2: Bearer header uses string concat; no token in URL/logs */
 const $ = (id) => document.getElementById(id);
+const TOKEN_KEY = 'sra_token';
 let currentId = null;
 let pollTimer = null;
 
-function token() { return localStorage.getItem('sra_token') || ''; }
-function headers() {
-  return { 'Authorization': 'Bearer ' + token(), 'Content-Type': 'application/json' };
+function token() {
+  try {
+    return (localStorage.getItem(TOKEN_KEY) || '').trim();
+  } catch (e) {
+    return '';
+  }
 }
-async function api(path, opts={}) {
-  const r = await fetch(path, { ...opts, headers: { ...headers(), ...(opts.headers||{}) } });
-  const text = await r.text();
-  let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  if (!r.ok) throw new Error(data.detail || data.error || r.statusText);
+
+function headers() {
+  var t = token();
+  return {
+    'Authorization': 'Bearer ' + t,
+    'Content-Type': 'application/json'
+  };
+}
+
+function setAuthState() {
+  var t = token();
+  var el = $('authState');
+  if (!t) {
+    el.innerHTML = 'Auth: <span class="badge bad">not set</span> — paste token then Save';
+  } else {
+    el.innerHTML = 'Auth: <span class="badge ok">token saved locally</span> (length ' + t.length + ')';
+  }
+}
+
+async function api(path, opts) {
+  opts = opts || {};
+  var h = headers();
+  if (opts.headers) {
+    for (var k in opts.headers) {
+      if (Object.prototype.hasOwnProperty.call(opts.headers, k)) h[k] = opts.headers[k];
+    }
+  }
+  var r = await fetch(path, {
+    method: opts.method || 'GET',
+    headers: h,
+    body: opts.body,
+    cache: 'no-store'
+  });
+  var text = await r.text();
+  var data;
+  try { data = JSON.parse(text); } catch (e) { data = { raw: text }; }
+  if (!r.ok) {
+    var detail = data.detail || data.error || r.statusText || String(r.status);
+    if (typeof detail !== 'string') detail = JSON.stringify(detail);
+    throw new Error(detail);
+  }
   return data;
 }
 
-$('btnSaveToken').onclick = () => {
-  localStorage.setItem('sra_token', $('token').value.trim());
+$('btnSaveToken').onclick = async function () {
   $('authErr').textContent = '';
-  refresh();
-};
-$('token').value = token();
-
-$('btnHealth').onclick = async () => {
+  $('authOk').textContent = '';
+  var value = ($('token').value || '').trim();
+  if (!value) {
+    $('authErr').textContent = 'Token is empty';
+    return;
+  }
+  if (value.length < 16) {
+    $('authErr').textContent = 'Token too short (server requires min 16 chars)';
+    return;
+  }
   try {
-    const h = await fetch('/health').then(r => r.json());
+    localStorage.setItem(TOKEN_KEY, value);
+  } catch (e) {
+    $('authErr').textContent = 'Cannot store token in this browser';
+    return;
+  }
+  setAuthState();
+  try {
+    await api('/api/sessions');
+    $('authOk').textContent = 'Token accepted by server';
+    await refresh();
+  } catch (e) {
+    $('authErr').textContent = 'Saved locally but API rejected: ' + (e.message || e);
+  }
+};
+
+$('token').value = token();
+setAuthState();
+
+$('btnHealth').onclick = async function () {
+  try {
+    var h = await fetch('/health', { cache: 'no-store' }).then(function (r) { return r.json(); });
     $('healthOut').textContent = JSON.stringify(h);
-  } catch (e) { $('healthOut').textContent = String(e); }
+  } catch (e) {
+    $('healthOut').textContent = String(e);
+  }
 };
 
 async function refresh() {
+  $('authErr').textContent = '';
+  if (!token()) {
+    $('authErr').textContent = 'Enter API token and tap Save token first';
+    $('sessions').innerHTML = '';
+    return;
+  }
   try {
-    const data = await api('/api/sessions');
-    const el = $('sessions');
+    var data = await api('/api/sessions');
+    var el = $('sessions');
     el.innerHTML = '';
-    (data.sessions || []).forEach(s => {
-      const d = document.createElement('div');
-      d.innerHTML = `<span class="badge ${s.status}">${s.status}</span> ${s.session_id}<br/><span class="muted">${s.label} · ${s.current_phase}</span>`;
-      d.onclick = () => openSession(s.session_id);
+    (data.sessions || []).forEach(function (s) {
+      var d = document.createElement('div');
+      d.innerHTML = '<span class="badge ' + s.status + '">' + s.status + '</span> ' + s.session_id +
+        '<br/><span class="muted">' + s.label + ' · ' + s.current_phase + '</span>';
+      d.onclick = function () { openSession(s.session_id); };
       el.appendChild(d);
     });
-    $('authErr').textContent = '';
+    $('authOk').textContent = 'Sessions loaded';
   } catch (e) {
     $('authErr').textContent = String(e.message || e);
   }
 }
 
-$('btnRefresh').onclick = refresh;
-$('btnCreate').onclick = async () => {
+$('btnRefresh').onclick = function () { refresh(); };
+$('btnCreate').onclick = async function () {
+  if (!token()) {
+    $('authErr').textContent = 'Enter API token and tap Save token first';
+    return;
+  }
   try {
-    const s = await api('/api/sessions', { method:'POST', body: JSON.stringify({ label: 'mobile-session' }) });
+    var s = await api('/api/sessions', {
+      method: 'POST',
+      body: JSON.stringify({ label: 'mobile-session' })
+    });
     await openSession(s.session_id);
-    refresh();
-  } catch (e) { $('authErr').textContent = String(e.message || e); }
+    await refresh();
+  } catch (e) {
+    $('authErr').textContent = String(e.message || e);
+  }
 };
 
 async function openSession(id) {
   currentId = id;
   $('sessionCard').classList.remove('hidden');
   if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(() => loadSession(id), 1000);
+  pollTimer = setInterval(function () { loadSession(id); }, 1000);
   await loadSession(id);
 }
 
 async function loadSession(id) {
   try {
-    const s = await api('/api/sessions/' + id);
+    var s = await api('/api/sessions/' + id);
     $('sid').textContent = s.session_id;
     $('sstatus').textContent = s.status;
     $('sstatus').className = 'badge ' + s.status;
-    $('sphase').textContent = 'Phase: ' + (s.current_phase || '-') + ' · hyp: ' + (s.current_hypothesis||'-') + ' · exp: ' + (s.current_experiment||'-');
-    $('smeta').textContent = 'Evidence: ' + s.evidence_count + ' · finding: ' + (s.latest_finding||'none') + ' · live_http: false';
-    const ev = await api('/api/sessions/' + id + '/events');
-    const box = $('events');
+    $('sphase').textContent = 'Phase: ' + (s.current_phase || '-') + ' · hyp: ' + (s.current_hypothesis || '-') + ' · exp: ' + (s.current_experiment || '-');
+    $('smeta').textContent = 'Evidence: ' + s.evidence_count + ' · finding: ' + (s.latest_finding || 'none') + ' · live_http: false';
+    var ev = await api('/api/sessions/' + id + '/events');
+    var box = $('events');
     box.innerHTML = '';
-    (ev.events || []).forEach(e => {
-      const d = document.createElement('div');
+    (ev.events || []).forEach(function (e) {
+      var d = document.createElement('div');
       d.className = 'ev';
-      d.innerHTML = `<span class="t">#${e.sequence}</span> <strong>${e.event_type}</strong> ${e.message||''}`;
+      d.innerHTML = '<span class="t">#' + e.sequence + '</span> <strong>' + e.event_type + '</strong> ' + (e.message || '');
       box.appendChild(d);
     });
     box.scrollTop = box.scrollHeight;
-    const rep = await api('/api/sessions/' + id + '/report');
+    var rep = await api('/api/sessions/' + id + '/report');
     $('report').textContent = JSON.stringify(rep, null, 2);
-    const running = s.status === 'RUNNING';
-    const ready = s.status === 'READY' || s.status === 'PAUSED' || s.status === 'CREATED';
+    var running = s.status === 'RUNNING';
+    var ready = s.status === 'READY' || s.status === 'PAUSED' || s.status === 'CREATED';
     $('btnStart').disabled = !ready;
     $('btnPause').disabled = !running;
     $('btnResume').disabled = s.status !== 'PAUSED';
-    $('btnStop').disabled = s.is_terminal || ['COMPLETED','FAILED','CANCELLED','BLOCKED','INCONCLUSIVE'].includes(s.status);
-  } catch (e) { $('authErr').textContent = String(e.message || e); }
+    $('btnStop').disabled = ['COMPLETED','FAILED','CANCELLED','BLOCKED','INCONCLUSIVE'].indexOf(s.status) >= 0;
+  } catch (e) {
+    $('authErr').textContent = String(e.message || e);
+  }
 }
 
 async function mut(op) {
   if (!currentId) return;
   if (op === 'stop' && !confirm('Stop this session?')) return;
   try {
-    await api('/api/sessions/' + currentId + '/' + op, { method:'POST', body:'{}' });
+    await api('/api/sessions/' + currentId + '/' + op, { method: 'POST', body: '{}' });
     await loadSession(currentId);
-    refresh();
-  } catch (e) { alert(e.message || e); }
+    await refresh();
+  } catch (e) {
+    alert(e.message || e);
+  }
 }
-$('btnStart').onclick = () => mut('start');
-$('btnPause').onclick = () => mut('pause');
-$('btnResume').onclick = () => mut('resume');
-$('btnStop').onclick = () => mut('stop');
+$('btnStart').onclick = function () { mut('start'); };
+$('btnPause').onclick = function () { mut('pause'); };
+$('btnResume').onclick = function () { mut('resume'); };
+$('btnStop').onclick = function () { mut('stop'); };
 
-refresh();
+/* Do NOT call protected APIs until a token is saved */
+if (token()) {
+  refresh();
+}
 </script>
 </body>
 </html>
