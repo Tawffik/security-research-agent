@@ -1,45 +1,63 @@
 # Mobile Control Plane
 
 ```
-Android browser → HTTPS → Control Plane API/UI → ResearchRuntime → ClosedLoopRunner (offline lab)
+Android browser → HTTPS (Codespaces) → Control Plane → ResearchRuntime → ClosedLoopRunner (offline)
 ```
 
-Phone is **control only**. Python/Playwright/research run on the remote host.
+Phone is **control only**. Python / tools / research run on the remote host.
 
-## Quick start
+## Quick start (Codespaces)
 
 ```bash
-export AGENT_API_TOKEN="$(openssl rand -hex 16)"   # min 16 chars
-export AGENT_SESSION_DB="$PWD/data/sessions.db"
-pip install -e '.[control]'   # fastapi uvicorn httpx
-# optional: pip install -e '.[browser]' from official PyPI if mirror fails
+# Token once per environment (already OK if /tmp/agent-token exists)
+# export AGENT_API_TOKEN="$(openssl rand -hex 16)"
+# printf '%s' "$AGENT_API_TOKEN" > /tmp/agent-token
+
+export AGENT_CONTROL_PLANE_AUTO_SESSION=1
+export AGENT_COOKIE_SECURE=1   # recommended for https://*.app.github.dev
 ./scripts/run_control_plane.sh
 ```
 
-Open `http://<host>:8080/` on the phone, paste the token, create a session, Start.
+Open the forwarded URL on the phone. **Do not paste the API token into the browser.**
 
-## Security
+Expected UI: `Auth: session active` → New session / Refresh.
 
-- Bearer token required for all `/api/*` mutating/read APIs
-- No `/exec`, `/shell`, `/python`, `/browser-any-url`
-- `live_http` is always false on this path (offline lab fixtures)
-- ScopeGuard remains authoritative inside ClosedLoopRunner
-- Knowledge/skill cannot grant execution via the UI
+## Authentication model
+
+| Client | Mechanism |
+|--------|-----------|
+| Browser / phone | HttpOnly cookie `sra_cp_session` (HMAC-signed, not the raw API token) |
+| CLI / automation | `Authorization: Bearer <AGENT_API_TOKEN>` |
+
+- `GET /` mints the session cookie when `AGENT_API_TOKEN` is configured and `AGENT_CONTROL_PLANE_AUTO_SESSION=1` (default).
+- `AGENT_CONTROL_PLANE_AUTO_SESSION=0` disables auto-bootstrap; Bearer required for `/api/auth/bootstrap`.
+- `AGENT_COOKIE_SECURE=1` forces Secure cookies; otherwise Secure is set when `X-Forwarded-Proto: https` or HTTPS scheme is detected.
+- Protected `/api/*` accept **Bearer or** valid session cookie; otherwise **401**.
+- `/health` remains unauthenticated (no secrets in the body).
+
+### Trust model (Codespaces)
+
+Auto-session assumes **single-user** access to the Codespace port (prefer **private** port visibility). Anyone who can reach the process can obtain a control session when auto-session is on. Do not expose the port publicly without turning auto-session off and using a stricter front door.
+
+### CSRF
+
+State-changing routes are same-origin only; the cookie is `SameSite=Lax`; the mobile UI uses relative same-origin `fetch` with `credentials: 'same-origin'`. There is no cross-origin credentialed API design. This is appropriate for the single-origin control plane; do not enable CORS with credentials for untrusted origins.
+
+### What must never leave the server
+
+`AGENT_API_TOKEN` must not appear in HTML, JS, localStorage, URL, cookie value, or API response bodies.
+
+## Security invariants (unchanged)
+
+- No `/exec`, `/shell`, `/python`, `/run-anything`, `/browser-any-url`
+- `live_http=false` on this path
+- ScopeGuard remains authoritative
+- Knowledge ≠ execution permission
 
 ## Persistence
 
-SQLite at `AGENT_SESSION_DB` stores sessions + ordered events. Survives process restart.
+SQLite at `AGENT_SESSION_DB` stores research sessions + ordered events.
 
 ## GitHub Actions
 
-CI only. Not the interactive agent runtime.
-
-
-## Authentication (mobile)
-
-Browser uses an **HttpOnly signed session cookie** (`sra_cp_session`), bootstrapped on `GET /` when `AGENT_API_TOKEN` is configured and `AGENT_CONTROL_PLANE_AUTO_SESSION=1` (default).
-
-- Long-lived `AGENT_API_TOKEN` stays on the server only.
-- Programmatic clients may still use `Authorization: Bearer <AGENT_API_TOKEN>`.
-- Set `AGENT_CONTROL_PLANE_AUTO_SESSION=0` to disable cookie auto-bootstrap (Bearer required for bootstrap).
-- Set `AGENT_COOKIE_SECURE=1` when serving over HTTPS (Codespaces forwarded URL).
+CI / temporary workers only — not the interactive mobile control-plane host.

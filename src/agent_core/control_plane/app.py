@@ -60,8 +60,19 @@ def _auto_session_enabled() -> bool:
     )
 
 
-def _cookie_secure() -> bool:
-    return os.environ.get("AGENT_COOKIE_SECURE", "").strip().lower() in ("1", "true", "yes")
+def _cookie_secure(request: Request | None = None) -> bool:
+    raw = os.environ.get("AGENT_COOKIE_SECURE", "").strip().lower()
+    if raw in ("1", "true", "yes"):
+        return True
+    if raw in ("0", "false", "no"):
+        return False
+    if request is not None:
+        xf = (request.headers.get("x-forwarded-proto") or "").split(",")[0].strip().lower()
+        if xf == "https":
+            return True
+        if str(request.url.scheme).lower() == "https":
+            return True
+    return False
 
 
 def build_app(runtime: ResearchRuntime | None = None) -> FastAPI:
@@ -81,7 +92,10 @@ def build_app(runtime: ResearchRuntime | None = None) -> FastAPI:
         if not is_authenticated(authorization_header=authorization, session_cookie=cookie):
             raise HTTPException(status_code=401, detail="unauthorized")
 
-    def _set_session_cookie(response: HTMLResponse | JSONResponse) -> None:
+    def _set_session_cookie(
+        response: HTMLResponse | JSONResponse,
+        request: Request | None = None,
+    ) -> None:
         if not token_configured():
             return
         response.set_cookie(
@@ -89,7 +103,7 @@ def build_app(runtime: ResearchRuntime | None = None) -> FastAPI:
             value=mint_session_cookie_value(),
             httponly=True,
             samesite="lax",
-            secure=_cookie_secure(),
+            secure=_cookie_secure(request),
             max_age=12 * 3600,
             path="/",
         )
@@ -114,7 +128,7 @@ def build_app(runtime: ResearchRuntime | None = None) -> FastAPI:
         if not _auto_session_enabled() and not verify_bearer(authorization):
             raise HTTPException(status_code=401, detail="unauthorized")
         resp = JSONResponse({"authenticated": True, "mode": "session_cookie"})
-        _set_session_cookie(resp)
+        _set_session_cookie(resp, request)
         return resp
 
     @app.get("/api/status")
@@ -259,7 +273,7 @@ def build_app(runtime: ResearchRuntime | None = None) -> FastAPI:
         if token_configured() and _auto_session_enabled():
             existing = request.cookies.get(COOKIE_NAME)
             if not verify_session_cookie_value(existing):
-                _set_session_cookie(resp)
+                _set_session_cookie(resp, request)
         return resp
 
     @app.api_route("/exec", methods=["GET", "POST"])
