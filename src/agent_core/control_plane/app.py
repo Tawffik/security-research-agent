@@ -160,8 +160,17 @@ def build_app(runtime: ResearchRuntime | None = None) -> FastAPI:
             label=str(data.get("label") or "research"),
             recon_path=str(data.get("recon_path") or ""),
             scope_path=str(data.get("scope_path") or ""),
+            target_label=str(data.get("target_label") or data.get("target") or ""),
         )
-        return sess.to_dict()
+        out = sess.to_dict()
+        # Optional auto-start for mobile one-tap flow
+        if data.get("auto_start") in (True, "1", "true", "yes"):
+            try:
+                out = rt.start(sess.session_id).to_dict()
+            except Exception as e:
+                out = sess.to_dict()
+                out["auto_start_error"] = str(e)[:200]
+        return out
 
     @app.get("/api/sessions")
     def list_sessions(request: Request, _: None = Depends(require_auth)) -> dict[str, Any]:

@@ -48,6 +48,9 @@ def list_recon_artifacts() -> list[dict[str, Any]]:
             suf = p.suffix.lower()
             if suf not in (".txt", ".json"):
                 continue
+            # skip non-recon dumps
+            if p.name in ("last_research_result.json",) or p.name.startswith("."):
+                continue
             kind = "bbci_live_txt" if suf == ".txt" else "recon_json"
             scope_hint = ""
             if kind == "bbci_live_txt":

@@ -58,6 +58,7 @@ button:disabled { opacity:0.4; }
   </select>
   <div class="row">
     <button id="btnCreate" type="button">New session</button>
+    <button id="btnCreateStart" type="button">Run on target</button>
     <button class="secondary" id="btnRefresh" type="button">Refresh</button>
   </div>
   <div id="sessions" class="list" style="margin-top:10px"></div>
@@ -80,7 +81,7 @@ button:disabled { opacity:0.4; }
 </section>
 
 <script>
-/* mobile-auth-v3 bbci-artifact-v1: HttpOnly session cookie — no long-lived server secret in JS or browser storage */
+/* mobile-auth-v3 bbci-artifact-v2: HttpOnly session cookie — no long-lived server secret in JS or browser storage */
 const $ = (id) => document.getElementById(id);
 let currentId = null;
 let pollTimer = null;
@@ -160,8 +161,10 @@ async function refresh() {
     el.innerHTML = '';
     (data.sessions || []).forEach(function (s) {
       var d = document.createElement('div');
+      var host = (s.meta && s.meta.primary_host) || (s.report && s.report.primary_host) || '';
+      var kind = (s.meta && s.meta.artifact_kind) || (s.report && s.report.artifact_kind) || '';
       d.innerHTML = '<span class="badge ' + s.status + '">' + s.status + '</span> ' + s.session_id +
-        '<br/><span class="muted">' + s.label + ' · ' + s.current_phase + '</span>';
+        '<br/><span class="muted">' + s.label + (host ? ' · ' + host : '') + (kind ? ' · ' + kind : '') + ' · ' + s.current_phase + '</span>';
       d.onclick = function () { openSession(s.session_id); };
       el.appendChild(d);
     });
@@ -173,24 +176,54 @@ async function refresh() {
 }
 
 $('btnRefresh').onclick = function () { refresh(); };
+function selectedArtifactBody(autoStart) {
+  var sel = $('artifactSelect');
+  var path = sel.value || '';
+  var scope = '';
+  var target = '';
+  if (sel.selectedOptions && sel.selectedOptions[0]) {
+    scope = sel.selectedOptions[0].dataset.scope || '';
+    target = (sel.selectedOptions[0].textContent || '').split(':').pop().trim();
+  }
+  var body = { label: 'mobile-session', target_label: target };
+  if (path) body.recon_path = path;
+  if (scope) body.scope_path = scope;
+  if (autoStart) body.auto_start = true;
+  return body;
+}
+
 $('btnCreate').onclick = async function () {
   if (!ready && !(await ensureSession())) return;
   try {
-    var sel = $('artifactSelect');
-    var path = sel.value || '';
-    var scope = '';
-    if (sel.selectedOptions && sel.selectedOptions[0]) {
-      scope = sel.selectedOptions[0].dataset.scope || '';
-    }
-    var body = { label: 'mobile-session' };
-    if (path) body.recon_path = path;
-    if (scope) body.scope_path = scope;
     var s = await api('/api/sessions', {
       method: 'POST',
-      body: JSON.stringify(body)
+      body: JSON.stringify(selectedArtifactBody(false))
     });
     await openSession(s.session_id);
     await refresh();
+  } catch (e) {
+    $('authErr').textContent = String(e.message || e);
+  }
+};
+
+$('btnCreateStart').onclick = async function () {
+  if (!ready && !(await ensureSession())) return;
+  try {
+    var s = await api('/api/sessions', {
+      method: 'POST',
+      body: JSON.stringify(selectedArtifactBody(true))
+    });
+    await openSession(s.session_id);
+    await refresh();
+    // poll while running
+    var sid = s.session_id;
+    for (var i = 0; i < 40; i++) {
+      await new Promise(function (r) { setTimeout(r, 500); });
+      await loadSession(sid);
+      await refresh();
+      var st = ($('sstatus').textContent || '');
+      if (['COMPLETED','FAILED','BLOCKED','INCONCLUSIVE','CANCELLED'].indexOf(st) >= 0) break;
+    }
   } catch (e) {
     $('authErr').textContent = String(e.message || e);
   }

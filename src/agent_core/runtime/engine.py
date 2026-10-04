@@ -39,15 +39,38 @@ class ResearchRuntime:
         self.store.append_event(ev)
         return ev
 
-    def create_session(self, *, label: str = "", recon_path: str = "", scope_path: str = "") -> ResearchSession:
+    def create_session(
+        self,
+        *,
+        label: str = "",
+        recon_path: str = "",
+        scope_path: str = "",
+        target_label: str = "",
+        meta: dict | None = None,
+    ) -> ResearchSession:
         recon = recon_path or str(self.default_recon)
         scope = scope_path or str(self.default_scope)
         # Fail closed: never accept live_http via create
-        sess = ResearchSession.new(label=label, recon_path=recon, scope_path=scope)
+        kind = "bbci_live_txt" if str(recon).lower().endswith(".txt") else "recon_json"
+        display = label or target_label or "research"
+        if target_label and target_label not in display:
+            display = f"{display}:{target_label}"
+        sess = ResearchSession.new(label=display, recon_path=recon, scope_path=scope)
         sess.status = SessionStatus.READY.value
         sess.live_http = False
+        sess.meta = {
+            "target_label": target_label or "",
+            "artifact_kind": kind,
+            "artifact_path": str(recon),
+            **(meta or {}),
+        }
         self.store.save_session(sess)
-        self.emit(sess, EventType.SESSION_CREATED, "session created", {"live_http": False})
+        self.emit(
+            sess,
+            EventType.SESSION_CREATED,
+            "session created",
+            {"live_http": False, "artifact_kind": kind, "target_label": target_label or ""},
+        )
         return sess
 
     def get(self, session_id: str) -> Optional[ResearchSession]:
@@ -174,6 +197,10 @@ class ResearchRuntime:
                     self.store.save_session(sess)
                     return
                 primary_host = report.primary_host
+                if primary_host:
+                    sess.meta["primary_host"] = primary_host
+                    if primary_host not in sess.label:
+                        sess.label = f"{sess.label}@{primary_host}"
                 evidence_ids = list(report.evidence_ids or [])
                 outcome = report.decision or ("ok" if report.ok else "failed")
                 stop_reason = report.stop_reason or ""

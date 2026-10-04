@@ -77,3 +77,34 @@ def test_artifacts_endpoint_requires_auth(tmp_path, monkeypatch):
     client, _ = _client(tmp_path, monkeypatch)
     # no cookie yet
     assert client.get("/api/artifacts").status_code == 401
+
+
+def test_auto_start_bbci_session(tmp_path, monkeypatch):
+    import time
+
+    client, _ = _client(tmp_path, monkeypatch)
+    client.get("/")
+    r = client.post(
+        "/api/sessions",
+        json={
+            "label": "auto",
+            "target_label": "oneplus.ch",
+            "recon_path": str(LIVE),
+            "scope_path": str(SCOPE),
+            "auto_start": True,
+        },
+    )
+    assert r.status_code == 200
+    sid = r.json()["session_id"]
+    # should leave READY quickly into RUNNING or terminal
+    terminal = {"COMPLETED", "FAILED", "BLOCKED", "INCONCLUSIVE", "CANCELLED", "RUNNING"}
+    status = client.get(f"/api/sessions/{sid}").json()["status"]
+    assert status in terminal
+    for _ in range(80):
+        time.sleep(0.25)
+        status = client.get(f"/api/sessions/{sid}").json()["status"]
+        if status in {"COMPLETED", "FAILED", "BLOCKED", "INCONCLUSIVE", "CANCELLED"}:
+            break
+    assert status in {"COMPLETED", "FAILED", "BLOCKED", "INCONCLUSIVE", "CANCELLED"}
+    s = client.get(f"/api/sessions/{sid}").json()
+    assert "oneplus" in (s.get("label") or "").lower() or s.get("meta", {}).get("target_label") == "oneplus.ch"
