@@ -61,3 +61,19 @@ SQLite at `AGENT_SESSION_DB` stores research sessions + ordered events.
 ## GitHub Actions
 
 CI / temporary workers only — not the interactive mobile control-plane host.
+
+## BugBountyCI artifacts (read-only)
+
+BugBountyCI is **not** modified by this agent.
+
+1. Export / copy a `*.live.txt` (or recon JSON) into a readable path, e.g.:
+   - `examples/fixtures/bbci/` in this repo, or
+   - any directory listed in `AGENT_RECON_DIR`
+2. From the mobile UI: pick the artifact in the dropdown → **New session** → **Start**.
+3. Execution stays `offline_lab` / `live_http=false` unless a future authorized live gate is enabled separately.
+
+API:
+
+- `GET /api/artifacts` — list available recon files + scope hints
+- `POST /api/sessions` with `recon_path` / `scope_path`
+

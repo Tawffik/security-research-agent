@@ -52,6 +52,10 @@ button:disabled { opacity:0.4; }
 </section>
 
 <section class="card">
+  <label class="muted" style="display:block;margin-bottom:6px">Recon artifact (from BBCI export or fixtures — read only)</label>
+  <select id="artifactSelect" style="width:100%;padding:10px;border-radius:8px;border:1px solid #2c3b52;background:#0f1419;color:#e7ecf3;margin-bottom:10px">
+    <option value="">Loading artifacts…</option>
+  </select>
   <div class="row">
     <button id="btnCreate" type="button">New session</button>
     <button class="secondary" id="btnRefresh" type="button">Refresh</button>
@@ -76,7 +80,7 @@ button:disabled { opacity:0.4; }
 </section>
 
 <script>
-/* mobile-auth-v3: HttpOnly session cookie — no long-lived server secret in JS or browser storage */
+/* mobile-auth-v3 bbci-artifact-v1: HttpOnly session cookie — no long-lived server secret in JS or browser storage */
 const $ = (id) => document.getElementById(id);
 let currentId = null;
 let pollTimer = null;
@@ -172,9 +176,18 @@ $('btnRefresh').onclick = function () { refresh(); };
 $('btnCreate').onclick = async function () {
   if (!ready && !(await ensureSession())) return;
   try {
+    var sel = $('artifactSelect');
+    var path = sel.value || '';
+    var scope = '';
+    if (sel.selectedOptions && sel.selectedOptions[0]) {
+      scope = sel.selectedOptions[0].dataset.scope || '';
+    }
+    var body = { label: 'mobile-session' };
+    if (path) body.recon_path = path;
+    if (scope) body.scope_path = scope;
     var s = await api('/api/sessions', {
       method: 'POST',
-      body: JSON.stringify({ label: 'mobile-session' })
+      body: JSON.stringify(body)
     });
     await openSession(s.session_id);
     await refresh();
@@ -238,8 +251,35 @@ $('btnPause').onclick = function () { mut('pause'); };
 $('btnResume').onclick = function () { mut('resume'); };
 $('btnStop').onclick = function () { mut('stop'); };
 
+async function loadArtifacts() {
+  try {
+    var data = await api('/api/artifacts');
+    var sel = $('artifactSelect');
+    sel.innerHTML = '';
+    (data.artifacts || []).forEach(function (a) {
+      var opt = document.createElement('option');
+      opt.value = a.path;
+      opt.textContent = a.label;
+      opt.dataset.scope = a.scope_hint || '';
+      opt.dataset.kind = a.kind || '';
+      sel.appendChild(opt);
+    });
+    if (!sel.options.length) {
+      var o = document.createElement('option');
+      o.value = '';
+      o.textContent = 'No artifacts found';
+      sel.appendChild(o);
+    }
+  } catch (e) {
+    $('authErr').textContent = 'Artifacts: ' + (e.message || e);
+  }
+}
+
 (async function boot() {
-  if (await ensureSession()) await refresh();
+  if (await ensureSession()) {
+    await loadArtifacts();
+    await refresh();
+  }
 })();
 </script>
 </body>

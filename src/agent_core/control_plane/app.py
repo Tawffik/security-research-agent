@@ -131,7 +131,13 @@ def build_app(runtime: ResearchRuntime | None = None) -> FastAPI:
         _set_session_cookie(resp, request)
         return resp
 
+    @app.get("/api/artifacts")
+    def list_artifacts(request: Request, _: None = Depends(require_auth)) -> dict[str, Any]:
+        """List readable recon artifacts (BBCI exports + fixtures). Read-only; does not call BBCI."""
+        return {"artifacts": rt.list_artifacts(), "live_http": False}
+
     @app.get("/api/status")
+
     def status(request: Request, _: None = Depends(require_auth)) -> dict[str, Any]:
         sessions = rt.list_sessions()
         active = [s.session_id for s in sessions if s.status == "RUNNING"]

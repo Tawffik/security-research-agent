@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 from agent_core.orchestrator.closed_loop import ClosedLoopRunner, secure_lab_scenario
+from agent_core.orchestrator.offline_bbci_episode import run_offline_bbci_episode
+from agent_core.runtime.artifacts import list_recon_artifacts, resolve_recon_path
 from agent_core.runtime.events import EventType, RuntimeEvent
 from agent_core.runtime.session import ResearchSession, SessionStatus
 from agent_core.runtime.store import SessionStore
@@ -130,33 +132,113 @@ class ResearchRuntime:
             self.store.save_session(sess)
             self.emit(sess, EventType.PHASE_CHANGED, "closed_loop", {"phase": "closed_loop"})
 
-            recon = Path(sess.recon_path)
+            recon = resolve_recon_path(sess.recon_path)
             scope = Path(sess.scope_path)
-            if not recon.exists() or not scope.exists():
-                raise FileNotFoundError("recon_or_scope_missing")
+            if not scope.exists():
+                # auto-pair offline scope for BBCI live.txt when possible
+                from agent_core.runtime.artifacts import list_recon_artifacts
+                for art in list_recon_artifacts():
+                    if Path(art["path"]) == recon and art.get("scope_hint"):
+                        scope = Path(art["scope_hint"])
+                        sess.scope_path = str(scope)
+                        break
+            if not scope.exists():
+                raise FileNotFoundError("scope_missing")
 
-            # Explicit: offline only
-            runner = ClosedLoopRunner(scope_path=scope, engagement_id=session_id)
-            result = runner.run(recon, scenario=secure_lab_scenario())
+            hyp_ids: list[str] = []
+            exp_ids: list[str] = []
+            evidence_ids: list[str] = []
+            outcome = ""
+            stop_reason = ""
+            finding_id = None
+            artifact_kind = "recon_json"
+            primary_host = ""
 
-            if stop_flag.is_set():
-                sess = self.store.get_session(session_id) or sess
-                sess.status = SessionStatus.CANCELLED.value
-                self.store.save_session(sess)
-                return
+            if recon.suffix.lower() == ".txt":
+                # BugBountyCI historical live.txt — offline episode only (no live HTTP)
+                artifact_kind = "bbci_live_txt"
+                self.emit(
+                    sess,
+                    EventType.PHASE_CHANGED,
+                    "bbci_offline_episode",
+                    {"artifact": str(recon), "live_http": False},
+                )
+                report = run_offline_bbci_episode(
+                    recon,
+                    scope_path=scope,
+                    engagement_id=session_id,
+                )
+                if stop_flag.is_set():
+                    sess = self.store.get_session(session_id) or sess
+                    sess.status = SessionStatus.CANCELLED.value
+                    self.store.save_session(sess)
+                    return
+                primary_host = report.primary_host
+                evidence_ids = list(report.evidence_ids or [])
+                outcome = report.decision or ("ok" if report.ok else "failed")
+                stop_reason = report.stop_reason or ""
+                cl = report.closed_loop
+                if cl is not None:
+                    hyp_ids = [getattr(h, "hypothesis_id", str(h)) for h in (getattr(cl.plan, "hypotheses", None) or [])][:8]
+                    exp_ids = [getattr(e, "experiment_id", str(e)) for e in (getattr(cl.plan, "experiments", None) or [])][:8]
+                    finding_id = getattr(cl, "finding_id", None)
+                    if not evidence_ids:
+                        evidence_ids = list(getattr(cl, "evidence_ids", None) or [])
+                    if not outcome:
+                        outcome = str(getattr(cl, "outcome", "") or "")
+                    if not stop_reason:
+                        stop_reason = str(getattr(cl, "stop_reason", "") or "")
+                sess.report = {
+                    "outcome": outcome,
+                    "stop_reason": stop_reason,
+                    "finding_id": finding_id,
+                    "evidence_ids": evidence_ids[:50],
+                    "hypothesis_ids": hyp_ids,
+                    "experiment_ids": exp_ids,
+                    "live_http": False,
+                    "execution_mode": "offline_lab",
+                    "artifact_kind": artifact_kind,
+                    "artifact_path": str(recon),
+                    "primary_host": primary_host,
+                    "bbci_stages": report.stages,
+                    "n_opportunities": report.n_opportunities,
+                    "contract_ok": report.contract_ok,
+                }
+            else:
+                # JSON recon fixture path
+                runner = ClosedLoopRunner(scope_path=scope, engagement_id=session_id)
+                result = runner.run(recon, scenario=secure_lab_scenario())
+                if stop_flag.is_set():
+                    sess = self.store.get_session(session_id) or sess
+                    sess.status = SessionStatus.CANCELLED.value
+                    self.store.save_session(sess)
+                    return
+                hyp_ids = [getattr(h, "hypothesis_id", str(h)) for h in (getattr(result.plan, "hypotheses", None) or [])][:8]
+                exp_ids = [getattr(e, "experiment_id", str(e)) for e in (getattr(result.plan, "experiments", None) or [])][:8]
+                evidence_ids = list(getattr(result, "evidence_ids", None) or [])
+                outcome = str(getattr(result, "outcome", "") or getattr(getattr(result, "episode", None), "outcome", "") or "")
+                stop_reason = str(getattr(result, "stop_reason", "") or "")
+                finding_id = getattr(result, "finding_id", None)
+                sess.report = {
+                    "outcome": outcome,
+                    "stop_reason": stop_reason,
+                    "finding_id": finding_id,
+                    "evidence_ids": evidence_ids[:50],
+                    "hypothesis_ids": hyp_ids,
+                    "experiment_ids": exp_ids,
+                    "live_http": False,
+                    "execution_mode": "offline_lab",
+                    "artifact_kind": artifact_kind,
+                    "artifact_path": str(recon),
+                }
 
-            hyp_ids = [getattr(h, "hypothesis_id", str(h)) for h in (getattr(result.plan, "hypotheses", None) or [])][:5]
             if hyp_ids:
                 sess.current_hypothesis = hyp_ids[0]
                 self.emit(sess, EventType.HYPOTHESIS_SELECTED, hyp_ids[0], {"hypothesis_ids": hyp_ids})
-
-            exp_ids = [getattr(e, "experiment_id", str(e)) for e in (getattr(result.plan, "experiments", None) or [])][:5]
             if exp_ids:
                 sess.current_experiment = exp_ids[0]
                 self.emit(sess, EventType.EXPERIMENT_SELECTED, exp_ids[0], {"experiment_ids": exp_ids})
                 self.emit(sess, EventType.EXPERIMENT_STARTED, exp_ids[0])
-
-            evidence_ids = list(getattr(result, "evidence_ids", None) or [])
             sess.evidence_count = len(evidence_ids)
             if evidence_ids:
                 sess.latest_evidence = evidence_ids[-1]
@@ -166,24 +248,13 @@ class ResearchRuntime:
                     f"{len(evidence_ids)} evidence ids",
                     {"evidence_ids": evidence_ids[:20]},
                 )
-
-            outcome = str(getattr(result, "outcome", "") or getattr(getattr(result, "episode", None), "outcome", "") or "")
-            stop_reason = str(getattr(result, "stop_reason", "") or "")
-            finding_id = getattr(result, "finding_id", None)
             sess.outcome = outcome
             sess.stop_reason = stop_reason
             sess.latest_finding = str(finding_id or "")
-            sess.trajectory_summary = f"outcome={outcome} stop={stop_reason} evidence={len(evidence_ids)}"
-            sess.report = {
-                "outcome": outcome,
-                "stop_reason": stop_reason,
-                "finding_id": finding_id,
-                "evidence_ids": evidence_ids[:50],
-                "hypothesis_ids": hyp_ids,
-                "experiment_ids": exp_ids,
-                "live_http": False,
-                "execution_mode": "offline_lab",
-            }
+            sess.trajectory_summary = (
+                f"kind={artifact_kind} host={primary_host} outcome={outcome} "
+                f"stop={stop_reason} evidence={len(evidence_ids)}"
+            )
 
             if finding_id:
                 self.emit(sess, EventType.FINDING_VERIFIED, str(finding_id), {"finding_id": finding_id})
@@ -217,6 +288,9 @@ class ResearchRuntime:
         finally:
             self._stop_flags.pop(session_id, None)
             self._threads.pop(session_id, None)
+
+    def list_artifacts(self) -> list[dict[str, Any]]:
+        return list_recon_artifacts()
 
     def health(self) -> dict[str, Any]:
         bh = check_browser_health(try_launch=False)
