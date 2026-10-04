@@ -7,6 +7,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 export PYTHONPATH="${ROOT}/src:${PYTHONPATH:-}"
+export AGENT_CONTROL_PLANE_AUTO_SESSION="${AGENT_CONTROL_PLANE_AUTO_SESSION:-1}"
 export AGENT_SESSION_DB="${AGENT_SESSION_DB:-$ROOT/data/sessions.db}"
 if [[ -z "${AGENT_API_TOKEN:-}" ]]; then
   echo "Set AGENT_API_TOKEN (min 16 chars) before starting." >&2

@@ -33,3 +33,13 @@ SQLite at `AGENT_SESSION_DB` stores sessions + ordered events. Survives process 
 ## GitHub Actions
 
 CI only. Not the interactive agent runtime.
+
+
+## Authentication (mobile)
+
+Browser uses an **HttpOnly signed session cookie** (`sra_cp_session`), bootstrapped on `GET /` when `AGENT_API_TOKEN` is configured and `AGENT_CONTROL_PLANE_AUTO_SESSION=1` (default).
+
+- Long-lived `AGENT_API_TOKEN` stays on the server only.
+- Programmatic clients may still use `Authorization: Bearer <AGENT_API_TOKEN>`.
+- Set `AGENT_CONTROL_PLANE_AUTO_SESSION=0` to disable cookie auto-bootstrap (Bearer required for bootstrap).
+- Set `AGENT_COOKIE_SECURE=1` when serving over HTTPS (Codespaces forwarded URL).

@@ -6,15 +6,13 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
 <title>SRA Control</title>
 <style>
-:root { --bg:#0f1419; --card:#1a2332; --fg:#e7ecf3; --muted:#8b9bb4; --acc:#3d8bfd; --ok:#3dd68c; --bad:#ff6b6b; --warn:#ffc857; }
+:root { --bg:#0f1419; --card:#1a2332; --fg:#e7ecf3; --muted:#8b9bb4; --acc:#3d8bfd; --ok:#3dd68c; --bad:#ff6b6b; }
 * { box-sizing:border-box; }
 body { margin:0; font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--fg); }
 header { padding:12px 16px; background:#121a24; border-bottom:1px solid #243044; position:sticky; top:0; z-index:2; }
 h1 { font-size:1.1rem; margin:0; }
 .muted { color:var(--muted); font-size:0.85rem; }
 .card { background:var(--card); margin:12px; padding:14px; border-radius:12px; }
-label { display:block; font-size:0.8rem; color:var(--muted); margin-bottom:4px; }
-input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #2c3b52; background:#0f1419; color:var(--fg); margin-bottom:10px; }
 .row { display:flex; gap:8px; flex-wrap:wrap; }
 button { flex:1; min-width:72px; padding:12px 10px; border:0; border-radius:10px; background:var(--acc); color:#fff; font-weight:600; }
 button.secondary { background:#2a3548; }
@@ -42,17 +40,15 @@ button:disabled { opacity:0.4; }
   <div class="muted">Phone = control · Research runs remotely · Live HTTP off by default</div>
 </header>
 
-<section class="card" id="authCard">
-  <label>API token (Bearer)</label>
-  <input id="token" type="password" autocomplete="off" placeholder="AGENT_API_TOKEN"/>
-  <div class="row">
-    <button id="btnSaveToken" type="button">Save token</button>
-    <button class="secondary" id="btnHealth" type="button">Health</button>
-  </div>
-  <div id="authState" class="muted" style="margin-top:8px">Auth: not set</div>
+<section class="card">
+  <div id="authState" class="muted">Connecting…</div>
   <div id="healthOut" class="muted" style="margin-top:8px"></div>
   <div id="authErr" class="err"></div>
   <div id="authOk" class="okmsg"></div>
+  <div class="row" style="margin-top:10px">
+    <button class="secondary" id="btnHealth" type="button">Health</button>
+    <button class="secondary" id="btnReconnect" type="button">Reconnect</button>
+  </div>
 </section>
 
 <section class="card">
@@ -80,50 +76,23 @@ button:disabled { opacity:0.4; }
 </section>
 
 <script>
-/* mobile-auth-v2: Bearer header uses string concat; no token in URL/logs */
+/* mobile-auth-v3: HttpOnly session cookie — no long-lived server secret in JS or browser storage */
 const $ = (id) => document.getElementById(id);
-const TOKEN_KEY = 'sra_token';
 let currentId = null;
 let pollTimer = null;
-
-function token() {
-  try {
-    return (localStorage.getItem(TOKEN_KEY) || '').trim();
-  } catch (e) {
-    return '';
-  }
-}
-
-function headers() {
-  var t = token();
-  return {
-    'Authorization': 'Bearer ' + t,
-    'Content-Type': 'application/json'
-  };
-}
-
-function setAuthState() {
-  var t = token();
-  var el = $('authState');
-  if (!t) {
-    el.innerHTML = 'Auth: <span class="badge bad">not set</span> — paste token then Save';
-  } else {
-    el.innerHTML = 'Auth: <span class="badge ok">token saved locally</span> (length ' + t.length + ')';
-  }
-}
+let ready = false;
 
 async function api(path, opts) {
   opts = opts || {};
-  var h = headers();
+  var headers = { 'Content-Type': 'application/json' };
   if (opts.headers) {
-    for (var k in opts.headers) {
-      if (Object.prototype.hasOwnProperty.call(opts.headers, k)) h[k] = opts.headers[k];
-    }
+    for (var k in opts.headers) headers[k] = opts.headers[k];
   }
   var r = await fetch(path, {
     method: opts.method || 'GET',
-    headers: h,
+    headers: headers,
     body: opts.body,
+    credentials: 'same-origin',
     cache: 'no-store'
   });
   var text = await r.text();
@@ -137,53 +106,50 @@ async function api(path, opts) {
   return data;
 }
 
-$('btnSaveToken').onclick = async function () {
+async function ensureSession() {
   $('authErr').textContent = '';
   $('authOk').textContent = '';
-  var value = ($('token').value || '').trim();
-  if (!value) {
-    $('authErr').textContent = 'Token is empty';
-    return;
-  }
-  if (value.length < 16) {
-    $('authErr').textContent = 'Token too short (server requires min 16 chars)';
-    return;
-  }
+  // GET / already sets cookie; bootstrap is belt-and-suspenders
   try {
-    localStorage.setItem(TOKEN_KEY, value);
-  } catch (e) {
-    $('authErr').textContent = 'Cannot store token in this browser';
-    return;
-  }
-  setAuthState();
+    await fetch('/', { credentials: 'same-origin', cache: 'no-store' });
+  } catch (e) {}
   try {
-    await api('/api/sessions');
-    $('authOk').textContent = 'Token accepted by server';
-    await refresh();
+    await api('/api/auth/bootstrap', { method: 'POST', body: '{}' });
   } catch (e) {
-    $('authErr').textContent = 'Saved locally but API rejected: ' + (e.message || e);
+    // may already be authenticated via cookie from GET /
   }
-};
-
-$('token').value = token();
-setAuthState();
+  var st = await api('/api/auth/session');
+  if (!st.authenticated) {
+    ready = false;
+    $('authState').innerHTML = 'Auth: <span class="badge bad">not authenticated</span>';
+    $('authErr').textContent = 'Control session not established. Restart the remote Control Plane, then tap Reconnect.';
+    return false;
+  }
+  ready = true;
+  $('authState').innerHTML = 'Auth: <span class="badge ok">session active</span>';
+  $('authOk').textContent = 'Ready — no API token required on the phone';
+  return true;
+}
 
 $('btnHealth').onclick = async function () {
   try {
-    var h = await fetch('/health', { cache: 'no-store' }).then(function (r) { return r.json(); });
-    $('healthOut').textContent = JSON.stringify(h);
+    var h = await fetch('/health', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.json(); });
+    $('healthOut').textContent = JSON.stringify({
+      agent: h.agent, auth_configured: h.auth_configured,
+      browser_session: h.browser_session, live_http_default: h.live_http_default
+    });
   } catch (e) {
     $('healthOut').textContent = String(e);
   }
 };
 
+$('btnReconnect').onclick = async function () {
+  if (await ensureSession()) await refresh();
+};
+
 async function refresh() {
   $('authErr').textContent = '';
-  if (!token()) {
-    $('authErr').textContent = 'Enter API token and tap Save token first';
-    $('sessions').innerHTML = '';
-    return;
-  }
+  if (!ready && !(await ensureSession())) return;
   try {
     var data = await api('/api/sessions');
     var el = $('sessions');
@@ -197,16 +163,14 @@ async function refresh() {
     });
     $('authOk').textContent = 'Sessions loaded';
   } catch (e) {
+    ready = false;
     $('authErr').textContent = String(e.message || e);
   }
 }
 
 $('btnRefresh').onclick = function () { refresh(); };
 $('btnCreate').onclick = async function () {
-  if (!token()) {
-    $('authErr').textContent = 'Enter API token and tap Save token first';
-    return;
-  }
+  if (!ready && !(await ensureSession())) return;
   try {
     var s = await api('/api/sessions', {
       method: 'POST',
@@ -248,8 +212,8 @@ async function loadSession(id) {
     var rep = await api('/api/sessions/' + id + '/report');
     $('report').textContent = JSON.stringify(rep, null, 2);
     var running = s.status === 'RUNNING';
-    var ready = s.status === 'READY' || s.status === 'PAUSED' || s.status === 'CREATED';
-    $('btnStart').disabled = !ready;
+    var readySt = s.status === 'READY' || s.status === 'PAUSED' || s.status === 'CREATED';
+    $('btnStart').disabled = !readySt;
     $('btnPause').disabled = !running;
     $('btnResume').disabled = s.status !== 'PAUSED';
     $('btnStop').disabled = ['COMPLETED','FAILED','CANCELLED','BLOCKED','INCONCLUSIVE'].indexOf(s.status) >= 0;
@@ -274,10 +238,9 @@ $('btnPause').onclick = function () { mut('pause'); };
 $('btnResume').onclick = function () { mut('resume'); };
 $('btnStop').onclick = function () { mut('stop'); };
 
-/* Do NOT call protected APIs until a token is saved */
-if (token()) {
-  refresh();
-}
+(async function boot() {
+  if (await ensureSession()) await refresh();
+})();
 </script>
 </body>
 </html>
