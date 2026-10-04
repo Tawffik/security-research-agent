@@ -321,10 +321,17 @@ class ResearchRuntime:
 
     def health(self) -> dict[str, Any]:
         bh = check_browser_health(try_launch=False)
+        try:
+            from agent_core.llm.openrouter import is_configured
+            llm_cfg = is_configured()
+        except Exception:
+            llm_cfg = False
         return {
             "agent": "ok",
             "runtime": "ok",
             "browser": bh.to_dict(),
             "live_http_default": False,
             "persistence": str(self.store.db_path),
+            "llm_configured": llm_cfg,
+            "llm_role": "assist_only",
         }

@@ -131,7 +131,48 @@ def build_app(runtime: ResearchRuntime | None = None) -> FastAPI:
         _set_session_cookie(resp, request)
         return resp
 
+    @app.get("/api/llm/status")
+    def llm_status(request: Request, _: None = Depends(require_auth)) -> dict[str, Any]:
+        """Probe optional OpenRouter assist. Never returns API key. Does not affect findings."""
+        from agent_core.llm.openrouter import probe_openrouter
+        live = (request.query_params.get("probe") or "0").strip() in ("1", "true", "yes")
+        st = probe_openrouter(live_call=live)
+        return {"llm": st.to_dict(), "role": "assist_only", "findings_source": "never_llm"}
+
+    @app.post("/api/llm/assist")
+    async def llm_assist(request: Request, _: None = Depends(require_auth)) -> dict[str, Any]:
+        """Optional research assist (suggestions only). Output is untrusted."""
+        from agent_core.llm.openrouter import OpenRouterClient
+        data = {}
+        try:
+            data = await request.json()
+        except Exception:
+            data = {}
+        prompt = str(data.get("prompt") or "").strip()
+        if not prompt or len(prompt) > 4000:
+            raise HTTPException(status_code=400, detail="prompt_required_or_too_long")
+        client = OpenRouterClient()
+        if not client.enabled:
+            raise HTTPException(status_code=503, detail="openrouter_not_configured")
+        system = (
+            "You assist a security researcher. Suggest competing hypotheses or next "
+            "discriminating questions only. Never claim a vulnerability is confirmed. "
+            "Never invent HTTP responses or evidence."
+        )
+        try:
+            text = client.simple_complete(prompt, system=system)
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"llm_error:{type(e).__name__}") from e
+        return {
+            "ok": True,
+            "untrusted": True,
+            "model": client.model,
+            "suggestion": text,
+            "note": "Assist only — not evidence, not a finding",
+        }
+
     @app.get("/api/artifacts")
+
     def list_artifacts(request: Request, _: None = Depends(require_auth)) -> dict[str, Any]:
         """List readable recon artifacts (BBCI exports + fixtures). Read-only; does not call BBCI."""
         return {"artifacts": rt.list_artifacts(), "live_http": False}

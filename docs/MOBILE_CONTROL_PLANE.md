@@ -77,3 +77,28 @@ API:
 - `GET /api/artifacts` — list available recon files + scope hints
 - `POST /api/sessions` with `recon_path` / `scope_path`
 
+
+## Codespaces: stop repeating setup
+
+On create/start, `.devcontainer` runs `scripts/codespace_bootstrap.sh`:
+- installs control-plane deps (postCreate)
+- ensures `/tmp/agent-token` and starts uvicorn on `:8080` (postStart)
+
+Manual recovery:
+```bash
+bash scripts/codespace_bootstrap.sh --start
+```
+
+## Optional OpenRouter (assist only)
+
+Set a **Codespace secret** (not in git, not in chat):
+```
+OPENROUTER_API_KEY=sk-or-...
+OPENROUTER_MODEL=meta-llama/llama-3.2-3b-instruct:free   # optional
+```
+
+- `GET /api/llm/status?probe=1` — connectivity check (no key in response)
+- `POST /api/llm/assist` — untrusted suggestions only
+- Research findings still come from evidence loop, never from the model alone
+- Without the key, the agent research loop works as before
+

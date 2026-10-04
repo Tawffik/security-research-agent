@@ -1,0 +1,23 @@
+{
+  "name": "security-research-agent",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "Control Plane",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "bash scripts/codespace_bootstrap.sh --install",
+  "postStartCommand": "bash scripts/codespace_bootstrap.sh --start",
+  "remoteEnv": {
+    "AGENT_CONTROL_PLANE_AUTO_SESSION": "1",
+    "AGENT_COOKIE_SECURE": "1",
+    "AGENT_REPO_ROOT": "${containerWorkspaceFolder}"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"]
+    }
+  }
+}
