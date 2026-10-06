@@ -246,6 +246,7 @@ class ResearchRuntime:
                 outcome = str(getattr(result, "outcome", "") or getattr(getattr(result, "episode", None), "outcome", "") or "")
                 stop_reason = str(getattr(result, "stop_reason", "") or "")
                 finding_id = getattr(result, "finding_id", None)
+                align = getattr(result, "experiment_alignment", None) or {}
                 sess.report = {
                     "outcome": outcome,
                     "stop_reason": stop_reason,
@@ -257,6 +258,9 @@ class ResearchRuntime:
                     "execution_mode": "offline_lab",
                     "artifact_kind": artifact_kind,
                     "artifact_path": str(recon),
+                    "verification_contracts": align.get("verification_contracts") or {},
+                    "final_status": getattr(result, "final_status", None),
+                    "referee_accepted": bool(getattr(result, "referee_accepted", False)),
                 }
 
             if hyp_ids:
