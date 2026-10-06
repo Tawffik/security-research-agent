@@ -43,3 +43,6 @@ See `METHODOLOGY.md` for source → filter → classify → promote (code-backed
 - Bulk primary bounty report ingest (quality filter first)
 - Full Notion writeup library extraction (human-paced)
 - Auto skill promotion without benchmark + review
+
+## Quality expansion (2026-10)
+Deepened SSRF/XSS; added authentication (JWT, CSRF, redirect), injection (SQLi differential), traversal — each with CASE+PAT+PROC and negatives where FP is common. **No payload catalogs.**

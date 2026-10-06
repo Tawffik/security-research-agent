@@ -25,3 +25,12 @@ Per Notion V3 source hierarchy. Discovery sources ≠ trusted knowledge until ex
 | SRC-0011 | B — Methodology | Business-logic race / check-then-act on benefits | Pattern | CASE-0015, PAT-0015 |
 | SRC-NEG-0003 | Negative knowledge | Status-only ≠ BOLA | Filter | NEG-0003 |
 | SRC-NEG-0004 | Negative knowledge | Introspection ≠ authz bypass | Filter | NEG-0004 |
+
+| SRC-0012 | B — Academy | PortSwigger SSRF | CASE-0010 deepened |
+| SRC-0013 | B — Class | Cloud metadata SSRF class | CASE-0010 |
+| SRC-0014 | B — Academy | PortSwigger XSS context | CASE-0013 deepened |
+| SRC-0015 | B — Academy | JWT verification attacks class | CASE-0016 |
+| SRC-0016 | B — Academy | CSRF | CASE-0017 |
+| SRC-0017 | B — Academy | SQLi (differential, no payload catalog) | CASE-0018 |
+| SRC-0018 | B — Academy | Directory traversal | CASE-0019 |
+| SRC-0019 | B — Academy | Open redirect / OAuth return URL | CASE-0020 |

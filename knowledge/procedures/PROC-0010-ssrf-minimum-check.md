@@ -2,20 +2,25 @@
 
 **Type:** PROCEDURE  
 **Domain:** ssrf  
-**Security property:** ssrf  
-**Tags:** ssrf, procedure
+**Status:** CURATED
 
-## Minimum experiment
-1. Baseline: request feature with a public allowed URL if permitted by scope  
-2. Challenge: substitute a non-routable probe host or documented lab collaborator URL only  
-3. Compare server behavior, errors, timing, and body markers  
+## Preconditions
+- ScopeGuard ALLOW for the feature action  
+- Program policy permits SSRF-class testing on this asset  
+- No authorization to scan arbitrary internal ranges
 
-## Evidence required
-- Scope ALLOW for the action  
-- Baseline and challenge observations  
-- No mass internal network scan  
+## Steps
+1. **baseline** — Invoke feature with an in-scope, policy-allowed public URL; store response class and body hash.  
+2. **challenge** — Substitute a single policy-approved probe (lab collaborator or explicitly allowed test host).  
+3. **compare** — Diff status, timing band, body markers; look for *internal content* reflected to client.  
+4. **observe** — Record whether fetch is blocked, generic-error, or content-leaking.
 
-## Stop when
-- Scope blocks  
-- Evidence sufficient for confirm or reject  
-- Risk policy forbids further probes  
+## Required evidence
+- Pair of observations with same feature path  
+- Scope decision artifacts  
+- No claim from timing alone without policy-approved OOB
+
+## Stop conditions
+- Scope deny  
+- Clear allowlist failure without leakage → likely not exploitable SSRF  
+- Content leakage of internal markers → promote to verification with skeptic questions

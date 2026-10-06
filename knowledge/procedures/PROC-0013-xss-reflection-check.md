@@ -1,25 +1,20 @@
-# PROC-0013 — Minimum XSS reflection differential
+# PROC-0013 — XSS reflection and context check
 
 **Type:** PROCEDURE  
 **Domain:** xss  
-**Security property:** xss  
-**Tags:** xss, procedure  
+**Status:** CURATED
 
-## Minimum experiment
-1. Baseline: unique benign token in parameter  
-2. Challenge: encoding-sensitive characters in same parameter  
-3. Compare reflection context and encoding in body  
+## Steps
+1. **baseline** — Inject unique marker; locate reflection; photograph context (HTML/attr/script).  
+2. **challenge** — Test whether special characters are encoded for that context.  
+3. **compare** — Encoded vs raw; note CSP/COOP confounders.  
+4. **observe** — Do not claim “XSS” from marker echo in JSON or logs alone.
 
-## Evidence required
-- Scope ALLOW  
-- Observed reflection context  
+## Required evidence
+- Response snippet with context  
 - Encoding behavior  
-
-## Preconditions
-- Parameter-influenced response body  
-- In-scope endpoint  
+- Impact path (execution or credible HTML injection under policy)
 
 ## Stop when
-- No reflection  
-- Encoding proven safe for context  
-- CSP conclusively blocks (when measured)  
+- Fully encoded in safe context  
+- No HTML document involved

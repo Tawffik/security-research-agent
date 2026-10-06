@@ -122,8 +122,20 @@ def parse_knowledge_markdown(path: Path, kind: str) -> Optional[KnowledgeRecord]
         domain = dm.group(1).strip().lower()
     elif "authorization" in text.lower() or "bola" in text.lower() or "idor" in text.lower():
         domain = "authorization"
-    elif "graphql" in text.lower():
+    elif "graphql" in text.lower() and "introspect" not in text.lower():
         domain = "authorization"  # GraphQL authz cases remain authorization family
+    elif "ssrf" in text.lower() or "metadata" in text.lower() and "server-side" in text.lower():
+        domain = "ssrf"
+    elif "xss" in text.lower() or "cross-site scripting" in text.lower():
+        domain = "xss"
+    elif "sql injection" in text.lower() or ( "sql" in text.lower() and "inject" in text.lower()):
+        domain = "injection"
+    elif "traversal" in text.lower() or "path join" in text.lower():
+        domain = "traversal"
+    elif "csrf" in text.lower() or "jwt" in text.lower() or "session fixation" in text.lower():
+        domain = "authentication"
+    elif "business" in text.lower() or "coupon" in text.lower() or "race" in text.lower():
+        domain = "business_logic"
 
     sec = _section(text, "Security property", "security property")
     if not sec:
