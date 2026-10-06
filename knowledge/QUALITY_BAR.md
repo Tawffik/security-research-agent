@@ -20,3 +20,10 @@ PROCEDUREs state when/preconditions/hypothesis/steps/evidence/disproof/stop.
 NEGATIVEs kill common false leads.
 
 Forbidden in trusted knowledge: payload encyclopedias, bulk scrape dumps, universal claims.
+
+## Empirical BOLA families (research-aligned)
+1. Direct object reference (read) — CASE-0001 family  
+2. **Action-level object** — CASE-0033  
+3. **Vertical object** — CASE-0034  
+4. GraphQL Global ID / node — CASE-0035  
+5. Function-level — CASE-0029  

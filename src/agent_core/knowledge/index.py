@@ -146,6 +146,14 @@ def parse_knowledge_markdown(path: Path, kind: str) -> Optional[KnowledgeRecord]
         domain = "injection"
     elif "ssti" in text.lower() or "template injection" in text.lower():
         domain = "injection"
+    elif "smuggling" in text.lower() or "desync" in text.lower() or "cl.te" in text.lower():
+        domain = "smuggling"
+    elif "cors" in text.lower() and "origin" in text.lower():
+        domain = "authentication"
+    elif "websocket" in text.lower() or "web socket" in text.lower():
+        domain = "authorization"
+    elif "clickjack" in text.lower() or "frame-ancestors" in text.lower() or "x-frame-options" in text.lower():
+        domain = "ui_security"
 
     sec = _section(text, "Security property", "security property")
     if not sec:

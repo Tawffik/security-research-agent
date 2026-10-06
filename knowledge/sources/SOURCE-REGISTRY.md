@@ -47,3 +47,11 @@ Per Notion V3 source hierarchy. Discovery sources ≠ trusted knowledge until ex
 | SRC-0029 | A/B lesson | UUID obscurity ≠ authz | CASE-0030 NEG-0011 |
 | SRC-0030 | B — XSS stored | Privileged HTML sink | CASE-0031 |
 | SRC-0031 | B — Business logic | Inventory race oversell | CASE-0032 |
+
+| SRC-0032 | A — Empirical | BOLA-in-the-wild taxonomy (action-level dominant) | CASE-0033..0035 |
+
+| SRC-0033 | B — Academy | HTTP request smuggling | CASE-0036 |
+| SRC-0034 | B — Methodology | CORS credentialed reflection | CASE-0037 |
+| SRC-0035 | B — Methodology | WebSocket object authz | CASE-0038 |
+| SRC-0036 | B — Methodology | Second-order injection | CASE-0039 |
+| SRC-0037 | B — Methodology | UI framing / clickjacking class | CASE-0040 |

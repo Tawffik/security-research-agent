@@ -46,3 +46,10 @@ See `METHODOLOGY.md` for source → filter → classify → promote (code-backed
 
 ## Quality expansion (2026-10)
 Deepened SSRF/XSS; added authentication (JWT, CSRF, redirect), injection (SQLi differential), traversal — each with CASE+PAT+PROC and negatives where FP is common. **No payload catalogs.**
+
+## Multi-class coverage (research-aligned)
+Authorization (object/action/vertical/GraphQL/function), authentication (JWT/CSRF/OAuth/CORS/reset),
+ssrf, xss, injection (SQL/XXE/SSTI/second-order), business_logic, cache, traversal, upload,
+deserialization, smuggling, ui_security, websocket authz.
+
+Same QUALITY_BAR for every class — see STRAT-0100.
