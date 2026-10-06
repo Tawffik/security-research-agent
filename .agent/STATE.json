@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "mobile_control_plane",
-  "current_task": "Mobile session-cookie auth; restart control plane on Codespaces to pick up 87f414b",
+  "current_gate": "verification_contracts_p0",
+  "current_task": "Falsification + evidence sufficiency + evidence package + loss attribution",
   "current_commit": "87f414b240db35f1bd8d35145d6f86f0d871259e",
   "last_verified_commit": "87f414b240db35f1bd8d35145d6f86f0d871259e",
   "last_test": {
-    "passed": 385,
+    "passed": 415,
     "failed": 0,
     "skipped": 8
   },
@@ -63,7 +63,14 @@
     "session_sqlite_persistence",
     "control_plane_api_auth",
     "mobile_ui_static",
-    "control_plane_e2e_offline"
+    "control_plane_e2e_offline",
+    "falsification_contract",
+    "evidence_sufficiency_ladder",
+    "independent_evidence_package",
+    "loss_point_attribution",
+    "bbci_mobile_artifact_sessions",
+    "openrouter_assist_optional",
+    "codespace_auto_bootstrap"
   ],
   "in_progress": [],
   "deferred": [],

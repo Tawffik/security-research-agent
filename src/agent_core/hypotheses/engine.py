@@ -300,9 +300,22 @@ class HypothesisEngine:
         confidence: float,
         related_unknown_ids: Optional[list[str]] = None,
         related_opportunity_ids: Optional[list[str]] = None,
+        expected_security_property: str = "",
+        falsification_condition: str = "",
     ) -> Hypothesis:
+        from agent_core.research.falsification import (
+            default_authz_falsification,
+            ensure_falsification_fields,
+        )
+
         self._counter += 1
         hid = f"hyp_{self._counter}"
+        prop, cond = expected_security_property, falsification_condition
+        if not prop or not cond:
+            # Benign competing explanations get a mild default too
+            dprop, dcond = default_authz_falsification(statement)
+            prop = prop or dprop
+            cond = cond or dcond
         h = Hypothesis(
             hypothesis_id=hid,
             statement=statement,
@@ -312,7 +325,10 @@ class HypothesisEngine:
             status=HypothesisStatus.OPEN,
             related_unknown_ids=list(related_unknown_ids or []),
             related_opportunity_ids=list(related_opportunity_ids or []),
+            expected_security_property=prop,
+            falsification_condition=cond,
         )
+        h = ensure_falsification_fields(h)
         self._portfolio[hid] = h
         return h
 

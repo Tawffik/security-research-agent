@@ -76,7 +76,12 @@ class HypothesisStatus(str, Enum):
 
 
 class Hypothesis(BaseModel):
-    """Competing explanation branch (V2 §13–14)."""
+    """Competing explanation branch (V2 §13–14).
+
+    Falsification contract (P0): every meaningful hypothesis should state
+    what observation would prove it wrong — confirmation is not the absence
+    of a crash; it is survival of an explicit falsification attempt.
+    """
 
     hypothesis_id: str
     statement: str
@@ -88,6 +93,10 @@ class Hypothesis(BaseModel):
     related_opportunity_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     parent_hypothesis_id: Optional[str] = None
+    # Explicit falsification contract
+    expected_security_property: str = ""
+    falsification_condition: str = ""
+    falsification_evidence_ids: list[str] = Field(default_factory=list)
 
 
 class ExperimentStepRole(str, Enum):
