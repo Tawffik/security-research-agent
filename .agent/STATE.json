@@ -2,8 +2,8 @@
   "campaign_status": "IN_PROGRESS",
   "current_gate": "verification_contracts_p0",
   "current_task": "Falsification + evidence sufficiency + evidence package + loss attribution",
-  "current_commit": "87f414b240db35f1bd8d35145d6f86f0d871259e",
-  "last_verified_commit": "87f414b240db35f1bd8d35145d6f86f0d871259e",
+  "current_commit": "8fb627d18e0a17f78ebb47cb435ba1be28dc79db",
+  "last_verified_commit": "8fb627d18e0a17f78ebb47cb435ba1be28dc79db",
   "last_test": {
     "passed": 415,
     "failed": 0,
