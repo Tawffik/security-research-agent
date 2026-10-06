@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
   "current_gate": "verification_contracts_p0",
-  "current_task": "Falsification + evidence sufficiency + evidence package + loss attribution",
-  "current_commit": "8fb627d18e0a17f78ebb47cb435ba1be28dc79db",
-  "last_verified_commit": "8fb627d18e0a17f78ebb47cb435ba1be28dc79db",
+  "current_task": "verification_contracts_wired_into_closed_loop",
+  "current_commit": "3792c170f5ab196fe393718d9fa833206486a801",
+  "last_verified_commit": "3792c170f5ab196fe393718d9fa833206486a801",
   "last_test": {
-    "passed": 415,
+    "passed": 416,
     "failed": 0,
     "skipped": 8
   },
@@ -70,7 +70,11 @@
     "loss_point_attribution",
     "bbci_mobile_artifact_sessions",
     "openrouter_assist_optional",
-    "codespace_auto_bootstrap"
+    "codespace_auto_bootstrap",
+    "closed_loop_falsification_wire",
+    "closed_loop_sufficiency_wire",
+    "executable_sufficiency_crosscheck",
+    "bbci_loss_attribution"
   ],
   "in_progress": [],
   "deferred": [],
