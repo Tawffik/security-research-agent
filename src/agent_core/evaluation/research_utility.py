@@ -24,6 +24,9 @@ from agent_core.orchestrator.closed_loop import (
     hard_authz_lab_scenario,
     business_logic_coupon_lab_scenario,
     hard_ssrf_lab_scenario,
+    action_level_bola_lab_scenario,
+    vertical_object_lab_scenario,
+    graphql_global_id_lab_scenario,
 )
 
 
@@ -111,6 +114,12 @@ def _scenario(name: str) -> LabScenario:
         return business_logic_coupon_lab_scenario()
     if name == "hard_ssrf":
         return hard_ssrf_lab_scenario()
+    if name == "action_level_bola":
+        return action_level_bola_lab_scenario()
+    if name == "vertical_object":
+        return vertical_object_lab_scenario()
+    if name == "graphql_global_id":
+        return graphql_global_id_lab_scenario()
     raise ValueError(name)
 
 
@@ -118,6 +127,9 @@ HARD_SCENARIOS = [
     ScenarioSpec("hard_authz", "hard_authz", "vulnerable", "confirmed"),
     ScenarioSpec("business_logic", "business_logic", "vulnerable", "confirmed"),
     ScenarioSpec("hard_ssrf", "hard_ssrf", "vulnerable", "confirmed"),
+    ScenarioSpec("action_level_bola", "action_level_bola", "vulnerable", "confirmed"),
+    ScenarioSpec("vertical_object", "vertical_object", "vulnerable", "confirmed"),
+    ScenarioSpec("graphql_global_id", "graphql_global_id", "vulnerable", "confirmed"),
 ]
 
 

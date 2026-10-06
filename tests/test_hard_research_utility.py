@@ -132,3 +132,59 @@ def test_hard_ablation_suite():
     )
     assert hard_none["false_negative"] is True
     assert hard_cur["true_positive"] is True
+
+
+def test_action_level_bola_none_fn_curated_tp():
+    from agent_core.evaluation.research_utility import (
+        KnowledgeCondition,
+        ScenarioSpec,
+        run_condition,
+    )
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    sc = ScenarioSpec("action_level_bola", "action_level_bola", "vulnerable", "confirmed")
+    tr_n, m_n, _ = run_condition(
+        condition=KnowledgeCondition.NONE,
+        scenario=sc,
+        recon_path=root / "examples" / "fixtures" / "sample_recon.json",
+        scope_path=root / "examples" / "demo_program_scope.yaml",
+        knowledge_root=root / "knowledge",
+        engagement_suffix="_al_none",
+    )
+    tr_c, m_c, _ = run_condition(
+        condition=KnowledgeCondition.CURATED,
+        scenario=sc,
+        recon_path=root / "examples" / "fixtures" / "sample_recon.json",
+        scope_path=root / "examples" / "demo_program_scope.yaml",
+        knowledge_root=root / "knowledge",
+        engagement_suffix="_al_cur",
+    )
+    # Knowledge procedure gate: none should not confirm; curated should TP
+    assert m_n.false_negative is True or m_n.true_positive is False
+    assert m_c.true_positive is True, (m_c, tr_c.procedure_ids, tr_c.influence_class)
+
+
+def test_vertical_and_graphql_curated_tp():
+    from agent_core.evaluation.research_utility import (
+        KnowledgeCondition,
+        ScenarioSpec,
+        run_condition,
+    )
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    for sid, factory in (
+        ("vertical_object", "vertical_object"),
+        ("graphql_global_id", "graphql_global_id"),
+    ):
+        sc = ScenarioSpec(sid, factory, "vulnerable", "confirmed")
+        _, m_c, _ = run_condition(
+            condition=KnowledgeCondition.CURATED,
+            scenario=sc,
+            recon_path=root / "examples" / "fixtures" / "sample_recon.json",
+            scope_path=root / "examples" / "demo_program_scope.yaml",
+            knowledge_root=root / "knowledge",
+            engagement_suffix=f"_{sid}_cur",
+        )
+        assert m_c.true_positive is True, (sid, m_c)

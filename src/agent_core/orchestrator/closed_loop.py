@@ -302,6 +302,109 @@ def hard_ssrf_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
     )
 
 
+
+def action_level_bola_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """
+    Action-level object BOLA: peer mutates owner's object (state change), not merely GET.
+    requires_knowledge_procedure so confirmation needs procedure-driven experiment.
+    """
+    return LabScenario(
+        name="lab_action_level_object_mutate",
+        expected_if_secure="Non-owner must not cancel/mutate foreign object",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="authorization",
+        observations=[
+            LabObservation(
+                identity="user_a",
+                method="POST",
+                path="/api/orders/1001/cancel",
+                host=host,
+                status=200,
+                body='{"id":1001,"owner":"user_a","status":"CANCELLED","side_effect":"state_changed"}',
+                notes="owner cancel baseline",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="user_b",
+                method="POST",
+                path="/api/orders/1001/cancel",
+                host=host,
+                status=200,
+                body='{"id":1001,"owner":"user_a","status":"CANCELLED","side_effect":"state_changed"}',
+                notes="peer cancelled owner object — action-level BOLA",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def vertical_object_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Vertical: low-privilege identity reads admin-shaped object."""
+    return LabScenario(
+        name="lab_vertical_admin_object",
+        expected_if_secure="Low role denied admin object",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="authorization",
+        observations=[
+            LabObservation(
+                identity="admin",
+                method="GET",
+                path="/api/admin/users/42",
+                host=host,
+                status=200,
+                body='{"id":42,"role":"admin","email":"admin@acme.test","secrets":"x"}',
+                notes="admin baseline",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="user_b",
+                method="GET",
+                path="/api/admin/users/42",
+                host=host,
+                status=200,
+                body='{"id":42,"role":"admin","email":"admin@acme.test","secrets":"x"}',
+                notes="customer role received admin object",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def graphql_global_id_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """GraphQL node(Global ID) cross-identity private field leak."""
+    return LabScenario(
+        name="lab_graphql_global_id_node",
+        expected_if_secure="Foreign Global ID returns null/forbidden",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="authorization",
+        observations=[
+            LabObservation(
+                identity="user_a",
+                method="POST",
+                path="/graphql",
+                host=host,
+                status=200,
+                body='{"data":{"node":{"__typename":"Order","id":"T3JkZXI6MTAwMQ==","owner":"user_a","amount":42}}}',
+                notes="owner node query",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="user_b",
+                method="POST",
+                path="/graphql",
+                host=host,
+                status=200,
+                body='{"data":{"node":{"__typename":"Order","id":"T3JkZXI6MTAwMQ==","owner":"user_a","amount":42}}}',
+                notes="peer node(GlobalID of A) returned private fields",
+                role="challenge",
+            ),
+        ],
+    )
+
+
 def ambiguous_incomplete_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
     """Incomplete evidence: only baseline observation — agent must not confirm."""
     return LabScenario(
