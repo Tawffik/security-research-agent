@@ -136,6 +136,16 @@ def parse_knowledge_markdown(path: Path, kind: str) -> Optional[KnowledgeRecord]
         domain = "authentication"
     elif "business" in text.lower() or "coupon" in text.lower() or "race" in text.lower():
         domain = "business_logic"
+    elif "cache" in text.lower() and ("deception" in text.lower() or "cdn" in text.lower() or "cache-control" in text.lower()):
+        domain = "cache"
+    elif "deserial" in text.lower() or "pickle" in text.lower() or "objectinputstream" in text.lower():
+        domain = "deserialization"
+    elif "upload" in text.lower() and ("file" in text.lower() or "content-type" in text.lower()):
+        domain = "upload"
+    elif "xxe" in text.lower() or "external entity" in text.lower():
+        domain = "injection"
+    elif "ssti" in text.lower() or "template injection" in text.lower():
+        domain = "injection"
 
     sec = _section(text, "Security property", "security property")
     if not sec:

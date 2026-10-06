@@ -34,3 +34,12 @@ Per Notion V3 source hierarchy. Discovery sources ≠ trusted knowledge until ex
 | SRC-0017 | B — Academy | SQLi (differential, no payload catalog) | CASE-0018 |
 | SRC-0018 | B — Academy | Directory traversal | CASE-0019 |
 | SRC-0019 | B — Academy | Open redirect / OAuth return URL | CASE-0020 |
+
+| SRC-0020 | B — Research class | Web cache deception | CASE-0021 |
+| SRC-0021 | B — Methodology | Insecure deserialization | CASE-0022 |
+| SRC-0022 | B — GraphQL | Batch/alias authz | CASE-0023 |
+| SRC-0023 | B — OAuth | redirect_uri validation | CASE-0024 |
+| SRC-0024 | B — Host header | Password reset poisoning | CASE-0025 |
+| SRC-0025 | B — XXE | External entities | CASE-0026 |
+| SRC-0026 | B — SSTI | Template evaluation | CASE-0027 |
+| SRC-0027 | B — Upload | Type/path controls | CASE-0028 |
