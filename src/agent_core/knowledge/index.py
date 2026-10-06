@@ -50,7 +50,7 @@ class KnowledgeRecord:
         }
 
 
-_ID_RE = re.compile(r"\b((?:CASE|PAT|PROC|STRAT)-\d{4}[A-Za-z0-9-]*)\b", re.I)
+_ID_RE = re.compile(r"\b((?:CASE|PAT|PROC|STRAT|NEG|TIP)-\d{4}[A-Za-z0-9-]*)\b", re.I)
 _HEADING_RE = re.compile(r"^#\s+(.+)$", re.M)
 
 

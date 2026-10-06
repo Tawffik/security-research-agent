@@ -20,3 +20,8 @@ Per Notion V3 source hierarchy. Discovery sources ≠ trusted knowledge until ex
 
 | SRC-FX-0001 | A — Fixture writeup | Offline BOLA writeup sample | Case extraction | ACCEPTED offline |
 | SRC-FX-0002 | A — Fixture writeup | Offline SSRF writeup sample | Case extraction | ACCEPTED offline |
+
+| SRC-0010 | B — Standards | OWASP Mass Assignment / excessive binding concepts | Pattern | PAT-0014, CASE-0014, PROC-0014 |
+| SRC-0011 | B — Methodology | Business-logic race / check-then-act on benefits | Pattern | CASE-0015, PAT-0015 |
+| SRC-NEG-0003 | Negative knowledge | Status-only ≠ BOLA | Filter | NEG-0003 |
+| SRC-NEG-0004 | Negative knowledge | Introspection ≠ authz bypass | Filter | NEG-0004 |

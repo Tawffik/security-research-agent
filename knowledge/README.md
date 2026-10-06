@@ -28,5 +28,18 @@ SOURCE (tiered) → CASE → PATTERN → PROCEDURE → STRATEGY
 - Recon hosts alone ≠ authorization evidence  
 - Tier C discovery feeds leads only  
 
+## Methodology
+See `METHODOLOGY.md` for source → filter → classify → promote (code-backed).
+
+## Recent curated additions
+| ID | Kind | Domain |
+|----|------|--------|
+| CASE-0014 / PAT-0014 / PROC-0014 | mass assignment privilege fields | authorization |
+| CASE-0015 / PAT-0015 | benefit race check-then-act | business_logic |
+| NEG-0003 / NEG-0004 | status-only / introspection false leads | negative |
+| STRAT-0014 | allowlist writable fields | authorization |
+
 ## Not done yet
-Automated Knowledge Compiler, primary bounty report bulk ingest, skill promotion.
+- Bulk primary bounty report ingest (quality filter first)
+- Full Notion writeup library extraction (human-paced)
+- Auto skill promotion without benchmark + review
