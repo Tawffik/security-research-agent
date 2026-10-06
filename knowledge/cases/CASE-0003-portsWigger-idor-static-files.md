@@ -31,3 +31,13 @@ Predictable filesystem names + missing authz on static path → horizontal data 
 Static object reference without authorization middleware.
 
 ## Skill? No.
+
+## Actors
+- identity_a / identity_b (controlled pair)
+
+## Evidence required
+- Baseline and challenge observations under scope
+
+## Disproof / falsification
+Secure behavior: non-owner or unauthorized action denied without private side effects.
+

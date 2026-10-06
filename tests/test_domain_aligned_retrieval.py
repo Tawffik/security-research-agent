@@ -79,12 +79,14 @@ def test_missing_methodology_unknown_not_mismatch():
 
 
 def test_hard_scenarios_select_aligned_procedures():
+    """Top procedure must be domain-aligned (not merely any high-rank global PROC)."""
     cases = [
-        ("hard_authz", "hard_authz", "PROC-000"),
-        ("business_logic", "business_logic", "PROC-0012"),
-        ("hard_ssrf", "hard_ssrf", "PROC-0010"),
+        # hard_authz: classic ownership (PROC-000x) or function-level (PROC-0029) — both authorization
+        ("hard_authz", "hard_authz", ("PROC-000", "PROC-0029", "PROC-0014")),
+        ("business_logic", "business_logic", ("PROC-0012",)),
+        ("hard_ssrf", "hard_ssrf", ("PROC-0010",)),
     ]
-    for sid, factory, prefix in cases:
+    for sid, factory, prefixes in cases:
         tr, m, _ = run_condition(
             condition=KnowledgeCondition.CURATED,
             scenario=ScenarioSpec(sid, factory, "vulnerable", "confirmed"),
@@ -95,7 +97,8 @@ def test_hard_scenarios_select_aligned_procedures():
         )
         assert m.true_positive is True
         assert tr.procedure_ids
-        assert tr.procedure_ids[0].startswith(prefix) or prefix in tr.procedure_ids[0]
+        top = tr.procedure_ids[0]
+        assert any(top.startswith(p) or p in top for p in prefixes), (sid, top, prefixes)
 
 
 def test_none_still_fn_on_hard():

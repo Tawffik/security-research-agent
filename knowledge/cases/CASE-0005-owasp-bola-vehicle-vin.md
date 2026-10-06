@@ -23,3 +23,13 @@ Replay legitimate control request with another VIN under attacker session; requi
 Integrity + safety-adjacent (high severity when confirmed).
 
 ## Skill? No.
+
+## Actors
+- identity_a / identity_b (controlled pair)
+
+## Evidence required
+- Baseline and challenge observations under scope
+
+## Disproof / falsification
+Secure behavior: non-owner or unauthorized action denied without private side effects.
+

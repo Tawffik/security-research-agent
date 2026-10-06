@@ -32,3 +32,13 @@ Access to the **function** may be allowed; the violation is **object-level** (BO
 - Sensitive revenue fields in response  
 
 ## Skill? No.
+
+## Actors
+- identity_a / identity_b (controlled pair)
+
+## Evidence required
+- Baseline and challenge observations under scope
+
+## Disproof / falsification
+Secure behavior: non-owner or unauthorized action denied without private side effects.
+

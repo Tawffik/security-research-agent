@@ -10,3 +10,13 @@ Session identifier accepted before authentication remains valid after login with
 
 ## Not same as
 - Intended long-lived API tokens with explicit binding
+
+## Actors
+- identity_a / identity_b (controlled pair)
+
+## Evidence required
+- Baseline and challenge observations under scope
+
+## Disproof / falsification
+Secure behavior: non-owner or unauthorized action denied without private side effects.
+

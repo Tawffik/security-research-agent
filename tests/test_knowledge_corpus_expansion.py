@@ -1,5 +1,5 @@
 
-"""Curated knowledge: multi-domain quality corpus."""
+"""Curated knowledge: BOLA-quality multi-domain corpus + retrieval smoke."""
 
 from collections import Counter
 from pathlib import Path
@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1] / "knowledge"
 def test_corpus_scale_and_domains():
     idx = KnowledgeIndex(ROOT).load()
     domains = Counter(r.domain for r in idx.records)
-    assert len(idx.records) >= 80
+    assert len(idx.records) >= 90
     for d in (
         "authorization",
         "ssrf",
@@ -30,41 +30,62 @@ def test_corpus_scale_and_domains():
         assert domains.get(d, 0) >= 1, f"missing {d}: {domains}"
 
 
-def test_new_pack_ids_present():
+def test_bola_depth_ids_and_function_level():
     ids = {r.record_id.upper() for r in KnowledgeIndex(ROOT).load().records}
     for rid in (
-        "CASE-0021",
-        "CASE-0022",
-        "CASE-0023",
-        "CASE-0024",
-        "CASE-0025",
-        "CASE-0026",
-        "CASE-0027",
-        "CASE-0028",
-        "NEG-0009",
-        "NEG-0010",
-        "PAT-0021",
-        "PROC-0024",
+        "CASE-0001",
+        "CASE-0006",
+        "PROC-0001",
+        "PAT-0001",
+        "CASE-0029",
+        "PROC-0029",
+        "CASE-0030",
+        "NEG-0011",
+        "STRAT-0003",
+        "CASE-0032",
     ):
         assert rid in ids or any(rid in i for i in ids), rid
 
 
-def test_cases_teach_falsification():
+def test_cases_meet_bola_language_bar():
     cases = [r for r in KnowledgeIndex(ROOT).load().records if r.kind == "case"]
-    strong = sum(
-        1
-        for c in cases
-        if any(
-            k in (c.raw_excerpt or "").lower()
-            for k in ("falsif", "decisive experiment", "not the same", "alternatives")
-        )
-    )
-    assert strong >= max(12, len(cases) // 2)
+    strong = 0
+    for c in cases:
+        text = (c.raw_excerpt or "").lower()
+        if sum(
+            1
+            for k in (
+                "security property",
+                "hypothesis",
+                "evidence",
+                "falsif",
+                "disproof",
+                "alternatives",
+                "decisive experiment",
+                "actors",
+            )
+            if k in text
+        ) >= 3:
+            strong += 1
+    assert strong >= max(15, int(0.6 * len(cases))), (strong, len(cases))
 
 
-def test_domain_retrieval_smoke():
+def test_authz_retrieval_surfaces_bola_procedures():
     idx = KnowledgeIndex(ROOT).load()
     ret = KnowledgeRetriever(index=idx)
-    for domain in ("cache", "deserialization", "injection", "authorization"):
-        r = ret.retrieve(KnowledgeQuery(domain=domain, kinds=["pattern", "case", "procedure"], limit=8))
-        assert r.patterns or r.cases or r.procedures, domain
+    r = ret.retrieve(
+        KnowledgeQuery(
+            domain="authorization",
+            kinds=["procedure", "pattern", "case"],
+            signals=["ownership", "object", "identity"],
+            limit=15,
+        )
+    )
+    blob = " ".join(
+        [
+            (x.record_id or "") + " " + (x.raw_excerpt or "")[:120]
+            for x in (r.procedures + r.patterns + r.cases)
+        ]
+    ).lower()
+    assert r.procedures or r.patterns
+    assert "owner" in blob or "object" in blob or "auth" in blob

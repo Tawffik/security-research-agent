@@ -43,3 +43,7 @@ Per Notion V3 source hierarchy. Discovery sources ≠ trusted knowledge until ex
 | SRC-0025 | B — XXE | External entities | CASE-0026 |
 | SRC-0026 | B — SSTI | Template evaluation | CASE-0027 |
 | SRC-0027 | B — Upload | Type/path controls | CASE-0028 |
+| SRC-0028 | B — OWASP API5 | Function-level authorization | CASE-0029 |
+| SRC-0029 | A/B lesson | UUID obscurity ≠ authz | CASE-0030 NEG-0011 |
+| SRC-0030 | B — XSS stored | Privileged HTML sink | CASE-0031 |
+| SRC-0031 | B — Business logic | Inventory race oversell | CASE-0032 |
