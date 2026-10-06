@@ -56,6 +56,7 @@ class OfflineBBCIEpisodeReport:
     stages: dict[str, bool] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
     closed_loop: Optional[ClosedLoopResult] = None
+    loss_attribution: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -306,4 +307,24 @@ def run_offline_bbci_episode(
         stages=stages,
         notes=notes,
         closed_loop=result,
+        loss_attribution=_bbci_loss_attribution(stages),
     )
+
+
+def _bbci_loss_attribution(stages: dict[str, bool]) -> dict:
+    """Diagnostic only — attribute first missing offline BBCI stage."""
+    from agent_core.evaluation.loss_attribution import StagePresence, attribute_loss
+    present = StagePresence(
+        recon=bool(stages.get("ingestion")),
+        adapter=bool(stages.get("adaptation")),
+        modeling=bool(stages.get("opportunity")),
+        hypothesis=bool(stages.get("hypotheses")),
+        experiment_selected=bool(stages.get("selection")),
+        executed=bool(stages.get("execution_boundary")),
+        observation=bool(stages.get("observation")),
+        interpretation=bool(stages.get("differential")),
+        falsification_evaluated=bool(stages.get("evidence")),
+        verification=bool(stages.get("verification")),
+        promoted=bool(stages.get("decision")),
+    )
+    return attribute_loss("bbci_offline", present).to_dict()

@@ -689,6 +689,93 @@ class ClosedLoopRunner:
         )
         ruling = loop.run(hypothesis_id=hyp_id, target=f"{host}/api/orders/1001")
 
+        # --- P0 contracts: falsification + sufficiency + evidence package (offline) ---
+        evid_objs = []
+        try:
+            for e in self.evidence.list_evidence():
+                if e.evidence_id in set(evidence_ids):
+                    evid_objs.append(e)
+        except Exception:
+            evid_objs = []
+
+        primary_hyp = None
+        for h in (plan.hypotheses or []):
+            if getattr(h, "hypothesis_id", None) == hyp_id:
+                primary_hyp = h
+                break
+        if primary_hyp is None and (plan.hypotheses or []):
+            primary_hyp = plan.hypotheses[0]
+
+        falsification_meta: dict = {}
+        if primary_hyp is not None:
+            from agent_core.research.falsification import (
+                evaluate_falsification,
+                apply_falsification_to_hypothesis,
+            )
+            fres = evaluate_falsification(primary_hyp, evid_objs)
+            falsification_meta = fres.to_dict()
+            if fres.falsified:
+                # Explicit falsification beats researcher enthusiasm
+                class _FalsifiedRuling:
+                    accepted = False
+                    final_status = FindingStatus.REJECTED
+                    finding_id = None
+                    reason = "falsification_condition_met:" + fres.reason
+                ruling = _FalsifiedRuling()  # type: ignore
+                try:
+                    apply_falsification_to_hypothesis(primary_hyp, evid_objs)
+                    self.research.hypothesis_engine.update_status(
+                        primary_hyp.hypothesis_id, HypothesisStatus.REJECTED
+                    )
+                except Exception:
+                    pass
+                limitations.append("falsification_condition_met")
+
+        from agent_core.evidence.sufficiency import assess_evidence_sufficiency
+        from agent_core.verification.evidence_package import build_evidence_package
+
+        pkg = build_evidence_package(
+            package_id=f"pkg-{self.engagement_id[:12]}",
+            hypothesis_id=str(hyp_id),
+            hypothesis_statement=getattr(primary_hyp, "statement", "") if primary_hyp else "",
+            claim=str(getattr(ruling, "reason", "") or ""),
+            supporting_evidence_ids=list(evidence_ids),
+            counter_evidence_ids=list(falsification_meta.get("matching_evidence_ids") or []),
+            expected_security_property=getattr(primary_hyp, "expected_security_property", "") if primary_hyp else "",
+            falsification_condition=getattr(primary_hyp, "falsification_condition", "") if primary_hyp else "",
+            target=f"{host}/api/orders/1001",
+            experiment_ids=[getattr(selected_experiment, "experiment_id", "")] if selected_experiment else [],
+            researcher_confidence=float(getattr(primary_hyp, "confidence", 0.0) or 0.0) if primary_hyp else 0.0,
+            proposed_verdict="candidate",
+        )
+        # claim text filled after claim_text is known — store package skeleton now
+        sufficiency = assess_evidence_sufficiency(
+            evid_objs,
+            disproof_attempted=True,
+            verification_accepted=bool(getattr(ruling, "accepted", False)),
+            min_positive_for_confirm=1,
+            require_disproof_for_confirm=True,
+        )
+        if getattr(ruling, "accepted", False) and not sufficiency.can_confirm:
+            # Do not allow confidence/acceptance without sufficiency gates
+            class _InsuffRuling:
+                accepted = False
+                final_status = FindingStatus.CANDIDATE
+                finding_id = None
+                reason = "evidence_sufficiency_blocked:" + ",".join(sufficiency.reasons[:3])
+            ruling = _InsuffRuling()  # type: ignore
+            limitations.append("evidence_sufficiency_blocked_confirm")
+        # stash for report/alignment
+        contract_meta = {
+            "falsification": falsification_meta,
+            "sufficiency": sufficiency.to_dict(),
+            "evidence_package_id": pkg.package_id,
+            "evidence_package_verifiable": pkg.is_verifiable(),
+        }
+        if isinstance(getattr(self, "_last_contract_meta", None), dict):
+            pass
+        self._last_contract_meta = contract_meta
+
         # Hard-scenario gate: require procedure-driven experiment for confirmation
         knowledge_driven = bool(
             getattr(self.research.experiment_designer, "last_procedure_ids", None)
@@ -801,7 +888,8 @@ class ClosedLoopRunner:
             f"stop={stop_reason} report_blocked={report.report_blocked} "
             f"root_cause={root_cause.root_cause_id if root_cause else None} "
             f"variants={len(variants)} "
-            f"poc={poc.poc_id if poc else None}"
+            f"poc={poc.poc_id if poc else None} "
+            f"sufficiency={(getattr(self, '_last_contract_meta', {}) or {}).get('sufficiency', {}).get('level')}"
         )
 
         out = ClosedLoopResult(
@@ -828,7 +916,14 @@ class ClosedLoopRunner:
             evidence_graph=[r.to_dict() for r in (evidence_graph.relations if evidence_graph else [])],
             experiments_designed=len(plan.experiments or []),
             max_experiments_budget=getattr(self, "max_experiments_budget", None),
-            experiment_alignment=alignment.to_dict(),
+            experiment_alignment=(
+                {
+                    **(alignment.to_dict() if alignment is not None else {}),
+                    "verification_contracts": getattr(self, "_last_contract_meta", {}),
+                }
+                if alignment is not None
+                else {"verification_contracts": getattr(self, "_last_contract_meta", {})}
+            ),
         )
         # M11: normalize lab observations (not findings)
         base_lab = None

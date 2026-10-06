@@ -180,3 +180,21 @@ def test_loss_attribution_full_pipeline():
     )
     rep = attribute_loss("cand-2", present)
     assert rep.loss_stage == LossStage.NONE.value
+
+
+def test_closed_loop_attaches_verification_contracts():
+    from pathlib import Path
+    from agent_core.orchestrator.closed_loop import ClosedLoopRunner, secure_lab_scenario, default_idor_lab_scenario
+
+    root = Path(__file__).resolve().parents[1]
+    scope = root / "examples" / "demo_program_scope.yaml"
+    recon = root / "examples" / "fixtures" / "sample_recon.json"
+    runner = ClosedLoopRunner(scope_path=scope, engagement_id="contract-wire")
+    # secure path — should falsify or reject authz issue claim
+    result = runner.run(recon, scenario=secure_lab_scenario())
+    align = result.experiment_alignment or {}
+    assert "verification_contracts" in align
+    vc = align["verification_contracts"]
+    assert "sufficiency" in vc
+    assert "falsification" in vc
+    assert "evidence_package_id" in vc

@@ -217,6 +217,33 @@ class ExecutableVerifier:
             self.history.append(result)
             return result
 
+        # Cross-check shared sufficiency ladder (confidence never promotes alone)
+        from agent_core.evidence.sufficiency import assess_evidence_sufficiency
+
+        all_ev = list(positive) + list(negative) + list(neutral)
+        suff = assess_evidence_sufficiency(
+            all_ev,
+            disproof_attempted=True,  # executable path assumes requirements encode disproof
+            verification_accepted=True,
+            min_positive_for_confirm=max(1, contract.min_positive),
+            require_disproof_for_confirm=False,  # requirements already encode gates
+        )
+        if not suff.can_confirm:
+            result = VerificationResult(
+                result_id=f"vr-{uuid4().hex[:10]}",
+                outcome=VerificationOutcome.INCONCLUSIVE.value,
+                claim=contract.claim,
+                hypothesis_id=hyp,
+                evidence_ids=evidence_ids,
+                requirements_met=met,
+                requirements_unmet=unmet + list(suff.reasons),
+                finding_status=FindingStatus.CANDIDATE.value,
+                reason="sufficiency_ladder_blocked:" + ",".join(suff.reasons[:3]),
+                cannot_become_confirmed=True,
+            )
+            self.history.append(result)
+            return result
+
         result = VerificationResult(
             result_id=f"vr-{uuid4().hex[:10]}",
             outcome=VerificationOutcome.CONFIRMED.value,
