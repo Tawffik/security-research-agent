@@ -311,6 +311,54 @@ def run_offline_bbci_episode(
     )
 
 
+
+
+def run_offline_sra_handoff_adapt(
+    handoff_path: Union[str, Path],
+    *,
+    engagement_id: str = "bbci_sra_handoff_adapt",
+) -> OfflineBBCIEpisodeReport:
+    """Deterministic BBCI sra_handoff.json → contract → ReconResultAdapter (no live HTTP).
+
+    Completes the producer→consumer adapt stage without requiring live.txt.
+    Does not claim full research episode stages beyond adaptation.
+    """
+    import json
+    from agent_core.recon.adapter import adapt_bbci_artifact
+
+    path = Path(handoff_path)
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    stages = {k: False for k in (
+        "ingestion", "adaptation", "opportunity", "knowledge", "hypotheses",
+        "experiments", "selection", "execution_boundary", "observation",
+        "differential", "evidence", "verification", "episode", "decision",
+    )}
+    notes = ["execution_mode=offline_lab", "no_live_http", "artifact=sra_handoff.v1"]
+    try:
+        adapted, contract = adapt_bbci_artifact(engagement_id, raw)
+    except ValueError as e:
+        return OfflineBBCIEpisodeReport(
+            ok=False,
+            artifact_path=str(path),
+            contract_ok=False,
+            stages=stages,
+            notes=notes + [str(e)],
+        )
+    ctx, graph, meta = adapted
+    stages["ingestion"] = True
+    stages["adaptation"] = bool(contract.ok and ctx.primary_host)
+    return OfflineBBCIEpisodeReport(
+        ok=bool(contract.ok and ctx.primary_host and ctx.endpoints),
+        artifact_path=str(path),
+        artifact_provenance={"source_shape": contract.source_shape, "schema": raw.get("schema")},
+        contract_ok=contract.ok,
+        primary_host=ctx.primary_host,
+        n_endpoints=len(ctx.endpoints or []),
+        stages=stages,
+        notes=notes,
+        decision="adapt_only",
+    )
+
 def _bbci_loss_attribution(stages: dict[str, bool]) -> dict:
     """Diagnostic only — attribute first missing offline BBCI stage."""
     from agent_core.evaluation.loss_attribution import StagePresence, attribute_loss

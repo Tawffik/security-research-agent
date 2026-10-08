@@ -28,3 +28,13 @@ def test_sra_handoff_contract_and_adapt():
     assert ctx.primary_host == "capital.com"
     assert len(ctx.endpoints) >= 5
     assert contract2.ok
+
+
+def test_offline_sra_handoff_adapt_report():
+    from agent_core.orchestrator.offline_bbci_episode import run_offline_sra_handoff_adapt
+    report = run_offline_sra_handoff_adapt(FIXTURE)
+    assert report.ok
+    assert report.contract_ok
+    assert report.primary_host == "capital.com"
+    assert report.n_endpoints >= 5
+    assert report.stages.get("adaptation") is True
