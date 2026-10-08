@@ -1,0 +1,322 @@
+{
+  "schema": "bugbountyci.sra_handoff.v1",
+  "recon_id": "37693581179-135",
+  "source": "bugbountyci.recon_export.v1",
+  "primary_host": "capital.com",
+  "hosts": [
+    "academy.capital.com",
+    "affiliates.capital.com",
+    "api-website.capital.com",
+    "api.mycapital.capital.com",
+    "apitradedoc.capital.com",
+    "capital.com",
+    "career.capital.com",
+    "click.capital.com",
+    "click.mg.capital.com",
+    "click.test.capital.com",
+    "cmp.capital.com",
+    "csp-prod.capital.com",
+    "csp-test.capital.com",
+    "devby.capital.com",
+    "edu.capital.com",
+    "go.capital.com",
+    "ib.capital.com",
+    "join-cyprus.capital.com",
+    "register.capital.com",
+    "relocate-with-us.capital.com",
+    "shares.capital.com",
+    "static.capital.com",
+    "test-affiliates.capital.com",
+    "test-api-website.capital.com",
+    "test-api-website1.capital.com",
+    "test-ib.capital.com",
+    "tradingview.capital.com",
+    "translate.capital.com",
+    "ww.capital.com",
+    "www.capital.com",
+    "zendesk1.capital.com",
+    "zendesk2.capital.com",
+    "zendesk3.capital.com",
+    "zendesk4.capital.com",
+    "45.60.62.207",
+    "45.60.62.21",
+    "45.60.63.108",
+    "45.60.73.105",
+    "45.60.86.80",
+    "mt5cy.capital.com",
+    "mt5demoau.capital.com",
+    "mt5ke.capital.com",
+    "104.18.39.7",
+    "104.21.42.3",
+    "104.26.14.179",
+    "104.26.15.179",
+    "172.64.148.249",
+    "172.67.197.222",
+    "172.67.75.65",
+    "18.203.17.4"
+  ],
+  "technologies": [],
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/*",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "detection/parameter_intelligence.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/service-point/sync",
+      "host": "api-website.capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2",
+      "host": "api-website.capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/api",
+      "host": "cmp.capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/api",
+      "host": "test-cmp.capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/trading/v1/quoteCurrent",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/trading/v1/quoteHistory",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/trading/v1/quoteMinichart",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/ums/user/v1/confirmDeletion",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/auth.apple.login.token",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/auth.authToken.generate",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/auth.authToken.login",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/auth.google.login.code",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/auth.login",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/auth.login.2fa",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/country.detect/",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/country.find/",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/country.getAll.v2/",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/instrument.sentiment.get",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/user.email.confirm",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/user.forgotPassword",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/user.forgotPassword.change",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/user.profile.get",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/api/user.register",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1",
+      "host": "api-website.capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/api",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    },
+    {
+      "method": "GET",
+      "path": "/api/",
+      "host": "capital.com",
+      "auth_required": null,
+      "parameters": [],
+      "provenance": "js_deep/linkfinder_normalized.jsonl"
+    }
+  ],
+  "urls": [
+    "http://104.18.39.7",
+    "http://104.18.39.7/.well-known/security.txt",
+    "http://104.18.39.7/robots.txt",
+    "http://104.18.39.7/sitemap.xml",
+    "http://104.21.42.3",
+    "http://104.21.42.3/.well-known/security.txt",
+    "http://104.21.42.3/robots.txt",
+    "http://104.21.42.3/sitemap.xml",
+    "http://104.26.14.179",
+    "http://104.26.14.179/.well-known/security.txt",
+    "http://104.26.14.179/robots.txt",
+    "http://104.26.14.179/sitemap.xml",
+    "http://104.26.15.179",
+    "http://104.26.15.179/.well-known/security.txt",
+    "http://104.26.15.179/robots.txt",
+    "http://104.26.15.179/sitemap.xml",
+    "http://172.64.148.249",
+    "http://172.64.148.249/.well-known/security.txt",
+    "http://172.64.148.249/robots.txt",
+    "http://172.64.148.249/sitemap.xml",
+    "http://172.67.197.222",
+    "http://172.67.197.222/.well-known/security.txt",
+    "http://172.67.197.222/robots.txt",
+    "http://172.67.197.222/sitemap.xml",
+    "http://172.67.75.65",
+    "http://172.67.75.65/.well-known/security.txt",
+    "http://172.67.75.65/robots.txt",
+    "http://172.67.75.65/sitemap.xml",
+    "http://18.203.17.4",
+    "http://18.203.17.4/.well-known/security.txt"
+  ],
+  "actors": [],
+  "resources": [],
+  "engine_health_overall": "\ud83d\udfe1 DEGRADED - see flags below, results may be incomplete",
+  "limitations": [
+    "Arjun phase=ERROR \u2014 tool crash (see arjun.log); params=0",
+    "Nuclei phase=PARTIAL \u2014 findings=n/a, error_rate=46.2, synthesized_after_timeout=true"
+  ],
+  "boundary": "BugBountyCI producer projection only; not SRA reasoning",
+  "bbci_artifacts": {
+    "recon_export": "meta/recon_export.json",
+    "target_profile": "meta/target_profile.json",
+    "hunter_queue": "detection/hunter_queue.md"
+  }
+}

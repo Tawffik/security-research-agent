@@ -85,15 +85,25 @@ def normalize_bbci_artifact(raw: dict[str, Any]) -> BBCIContractResult:
             path = item.get("path") or item.get("url") or item.get("uri") or ""
             method = item.get("method") or item.get("verb") or "GET"
             if path:
+                host = str(item.get("host") or "").strip()
                 # strip scheme/host if full URL
                 if path.startswith("http"):
                     try:
                         from urllib.parse import urlparse
 
-                        path = urlparse(path).path or "/"
+                        parsed = urlparse(path)
+                        path = parsed.path or "/"
+                        host = host or (parsed.hostname or "")
                     except Exception:
                         pass
-                endpoints.append({"method": str(method).upper(), "path": str(path)})
+                ep = {"method": str(method).upper(), "path": str(path)}
+                if host:
+                    ep["host"] = host
+                if item.get("parameters"):
+                    ep["parameters"] = list(item.get("parameters") or [])
+                if item.get("provenance"):
+                    ep["provenance"] = str(item.get("provenance"))[:200]
+                endpoints.append(ep)
         else:
             issues.append(ContractIssue("warning", "skip_endpoint", f"skipped endpoint entry type={type(item).__name__}"))
 
@@ -132,9 +142,19 @@ def normalize_bbci_artifact(raw: dict[str, Any]) -> BBCIContractResult:
 
     technologies = list(dict.fromkeys(_as_list(data.get("technologies") or data.get("tech") or [])))
 
-    shape = "agent_fixture" if "primary_host" in raw else "bbci_like"
+    schema = str(raw.get("schema") or data.get("schema") or "")
+    if schema == "bugbountyci.sra_handoff.v1":
+        shape = "sra_handoff_v1"
+    elif "primary_host" in raw:
+        shape = "agent_fixture"
+    else:
+        shape = "bbci_like"
+    hosts = [str(h) for h in _as_list(data.get("hosts") or []) if h]
+    if host and host not in hosts:
+        hosts = [host] + hosts
     normalized = {
         "primary_host": host,
+        "hosts": hosts,
         "technologies": [str(t) for t in technologies],
         "endpoints": endpoints,
         "actors": actors,
@@ -143,6 +163,7 @@ def normalize_bbci_artifact(raw: dict[str, Any]) -> BBCIContractResult:
         "provenance": {
             "contract": "bbci_recon_v1",
             "source_shape": shape,
+            "bbci_schema": schema or None,
         },
     }
 
