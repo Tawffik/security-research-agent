@@ -38,3 +38,17 @@ def test_offline_sra_handoff_adapt_report():
     assert report.primary_host == "capital.com"
     assert report.n_endpoints >= 5
     assert report.stages.get("adaptation") is True
+
+
+def test_offline_sra_handoff_closed_loop_episode():
+    from agent_core.orchestrator.offline_bbci_episode import run_offline_sra_handoff_episode
+    scope = Path(__file__).resolve().parents[1] / "examples" / "fixtures" / "bbci" / "capital_offline_scope.yaml"
+    report = run_offline_sra_handoff_episode(FIXTURE, scope_path=scope)
+    assert report.contract_ok
+    assert report.primary_host == "capital.com"
+    assert report.n_endpoints >= 5
+    assert report.stages.get("ingestion") is True
+    assert report.stages.get("adaptation") is True
+    # ClosedLoop may omit some stages depending on plan emptiness — record honestly
+    assert report.execution_mode == "offline_lab"
+    assert "no_live_http" in report.notes

@@ -1,0 +1,9 @@
+# Offline lab scope for capital.com sra_handoff fixture — not live authorization.
+program: capital-com-offline-handoff
+allowed_hosts:
+  - capital.com
+  - "*.capital.com"
+  - api-website.capital.com
+  - cmp.capital.com
+  - test-cmp.capital.com
+blocked_hosts: []

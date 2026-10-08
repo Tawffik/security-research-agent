@@ -359,6 +359,194 @@ def run_offline_sra_handoff_adapt(
         decision="adapt_only",
     )
 
+
+def lab_scenario_from_sra_handoff(raw: dict, *, primary_host: str) -> LabScenario:
+    """Synthetic offline lab pair from handoff endpoints — no live HTTP."""
+    observations: list[LabObservation] = []
+    endpoints = list(raw.get("endpoints") or [])[:4]
+    for i, ep in enumerate(endpoints):
+        if not isinstance(ep, dict):
+            continue
+        path = str(ep.get("path") or "/")
+        host = str(ep.get("host") or primary_host)
+        method = str(ep.get("method") or "GET")
+        role = "baseline" if i == 0 else ("challenge" if i == 1 else "observe")
+        observations.append(
+            LabObservation(
+                identity=f"handoff_{i}",
+                method=method,
+                path=path,
+                host=host,
+                status=200 if i == 0 else 403,
+                body=f"offline_handoff_{role}",
+                notes="sra_handoff_synthetic_lab",
+                role=role if i < 2 else "observe",
+            )
+        )
+    if len(observations) < 2:
+        observations = [
+            LabObservation(
+                identity="handoff_a",
+                method="GET",
+                path="/",
+                host=primary_host,
+                status=200,
+                body="bbci_handoff_baseline",
+                notes="sra_handoff_synthetic_pair",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="handoff_b",
+                method="GET",
+                path="/",
+                host=primary_host,
+                status=403,
+                body="bbci_handoff_challenge",
+                notes="sra_handoff_synthetic_pair",
+                role="challenge",
+            ),
+        ]
+    return LabScenario(
+        name="bbci_sra_handoff_offline",
+        observations=observations,
+        expected_if_secure="challenge_denied_or_distinct",
+        suggests_authz_issue=False,
+        methodology="offline_fixture",
+    )
+
+
+def run_offline_sra_handoff_episode(
+    handoff_path: Union[str, Path],
+    *,
+    scope_path: Union[str, Path],
+    engagement_id: str = "bbci_sra_handoff_ep",
+) -> OfflineBBCIEpisodeReport:
+    """Full offline path: sra_handoff.json → adapt → opportunities → ClosedLoop (no live HTTP)."""
+    import json
+    import tempfile
+    from agent_core.recon.adapter import adapt_bbci_artifact
+
+    path = Path(handoff_path)
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    stages = {k: False for k in (
+        "ingestion", "adaptation", "opportunity", "knowledge", "hypotheses",
+        "experiments", "selection", "execution_boundary", "observation",
+        "differential", "evidence", "verification", "episode", "decision",
+    )}
+    notes: list[str] = ["execution_mode=offline_lab", "no_live_http", "artifact=sra_handoff.v1"]
+
+    try:
+        adapted, contract = adapt_bbci_artifact(engagement_id, raw)
+    except ValueError as e:
+        return OfflineBBCIEpisodeReport(
+            ok=False,
+            artifact_path=str(path),
+            contract_ok=False,
+            stages=stages,
+            notes=notes + [str(e)],
+        )
+    ctx, graph, meta = adapted
+    stages["ingestion"] = True
+    stages["adaptation"] = bool(contract.ok and ctx.primary_host)
+    primary = ctx.primary_host
+
+    opps = OpportunityEngine(engagement_id).rank(ctx, graph)
+    stages["opportunity"] = True
+    notes.append(f"n_opportunities={len(opps)}")
+
+    scenario = lab_scenario_from_sra_handoff(raw, primary_host=primary)
+    recon = dict(contract.normalized)
+    recon["engagement_id"] = engagement_id
+    recon["source"] = "bbci_sra_handoff"
+    recon["provenance"] = dict(contract.normalized.get("provenance") or {})
+    recon["provenance"]["artifact_path"] = str(path)
+
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump(recon, f)
+        recon_path = Path(f.name)
+
+    runner = ClosedLoopRunner(scope_path=scope_path, engagement_id=engagement_id)
+    result = runner.run(recon_path, scenario=scenario)
+
+    stages["knowledge"] = bool(getattr(runner.research, "last_retrieval", None))
+    stages["hypotheses"] = bool(result.plan and result.plan.hypotheses)
+    stages["experiments"] = bool(result.plan and result.plan.experiments)
+    stages["selection"] = bool(result.selected_experiment_id)
+    stages["execution_boundary"] = True
+    stages["observation"] = bool(result.observations)
+    stages["differential"] = bool(result.differential_result)
+    stages["evidence"] = bool(result.evidence_ids)
+    stages["verification"] = bool(result.final_status)
+    stages["episode"] = bool(getattr(result.episode, "episode_id", None))
+    stages["decision"] = bool(result.stop_reason or result.final_status)
+
+    util_reasons: list[str] = []
+    if result.plan and result.plan.experiments:
+        _, scores = select_by_utility(
+            list(result.plan.experiments),
+            hypotheses=list(result.plan.hypotheses or []),
+        )
+        if scores:
+            util_reasons = list(getattr(scores[0], "reasons", []) or [])
+
+    brief = compile_brief_from_closed_loop(result, engagement_id=engagement_id)
+    traj = evaluate_trajectory(
+        episode_id=getattr(result.episode, "episode_id", "") or engagement_id,
+        experiment_ids=[result.selected_experiment_id or ""],
+        observation_count=len(result.observations or []),
+        evidence_polarities=["neutral"] * len(result.evidence_ids or []),
+        branch_count=1,
+        backtrack_count=0,
+        stop_reason=result.stop_reason or "",
+        discriminating_experiment_ids=[result.selected_experiment_id]
+        if result.selected_experiment_id
+        else [],
+        tried_experiment_ids=[result.selected_experiment_id or ""],
+    )
+    decision = brief.next_decision or result.stop_reason or result.final_status or "unknown"
+    ok = all(
+        stages[s]
+        for s in (
+            "ingestion",
+            "adaptation",
+            "observation",
+            "evidence",
+            "verification",
+            "episode",
+            "execution_boundary",
+        )
+    )
+    return OfflineBBCIEpisodeReport(
+        ok=ok,
+        artifact_path=str(path),
+        artifact_provenance=dict(recon.get("provenance") or {}),
+        contract_ok=True,
+        primary_host=primary,
+        n_endpoints=len(ctx.endpoints or []),
+        n_opportunities=len(opps),
+        n_hypotheses=len(result.plan.hypotheses) if result.plan else 0,
+        n_experiments=len(result.plan.experiments) if result.plan else 0,
+        selected_experiment_id=result.selected_experiment_id or "",
+        utility_reasons=util_reasons,
+        scope_allowed=result.scope_allowed,
+        execution_mode="offline_lab",
+        differential_change_kind=(result.differential_result or {}).get("change_kind", ""),
+        evidence_ids=list(result.evidence_ids or []),
+        evidence_graph_edges=len(result.evidence_graph or []),
+        verification_status=str(result.final_status or ""),
+        episode_id=getattr(result.episode, "episode_id", "") or "",
+        stop_reason=result.stop_reason or "",
+        decision=str(decision),
+        brief=brief.to_dict(),
+        trajectory=traj.to_dict() if hasattr(traj, "to_dict") else {},
+        stages=stages,
+        notes=notes,
+        closed_loop=result,
+        loss_attribution=_bbci_loss_attribution(stages),
+    )
+
+
+
 def _bbci_loss_attribution(stages: dict[str, bool]) -> dict:
     """Diagnostic only — attribute first missing offline BBCI stage."""
     from agent_core.evaluation.loss_attribution import StagePresence, attribute_loss
