@@ -1,0 +1,13 @@
+{
+  "_comment": "Example MCP entries. Loopback only. No secrets.",
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--headless", "--port", "8931"]
+    },
+    "burp": {
+      "_comment": "Use PortSwigger extension stdio proxy or SSE on loopback",
+      "url": "http://127.0.0.1:9876/mcp"
+    }
+  }
+}
