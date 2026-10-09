@@ -1,0 +1,160 @@
+# Bounded remote-execution validation on Sengi (temporary worker, not a persistent VPS).
+# Manual only. Does not expose services publicly. Does not scan external targets.
+name: Remote Execution Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_opencode_install:
+        description: "Attempt OpenCode install on runner (may fail if network/policy blocks)"
+        type: boolean
+        default: false
+      run_playwright_mcp_probe:
+        description: "Attempt short Playwright MCP npx probe (Node required)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  remote-execution-validation:
+    runs-on: sengi-standard-2-ubuntu-2404
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Runner diagnostics
+        run: |
+          set -euo pipefail
+          {
+            echo "=== runner diagnostics ==="
+            echo "GITHUB_RUN_ID=${GITHUB_RUN_ID:-}"
+            echo "GITHUB_SHA=${GITHUB_SHA:-}"
+            echo "RUNNER_NAME=${RUNNER_NAME:-}"
+            echo "RUNNER_OS=${RUNNER_OS:-}"
+            echo "RUNNER_ARCH=${RUNNER_ARCH:-}"
+            uname -a
+            cat /etc/os-release || true
+            nproc || true
+            free -h || true
+            df -h / || true
+            python3 --version || true
+            node -v || true
+            npm -v || true
+            npx -v || true
+            git --version || true
+            java -version 2>&1 | head -1 || true
+            which google-chrome chromium chromium-browser 2>/dev/null || true
+          } | tee runner-diagnostics.txt
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package extras
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install -e ".[control]"
+          pip install -e ".[browser]"
+
+      - name: Shell script syntax
+        run: |
+          set -euo pipefail
+          for f in scripts/remote/*.sh scripts/run_control_plane.sh scripts/codespace_bootstrap.sh; do
+            [ -f "$f" ] || continue
+            bash -n "$f"
+            echo "syntax_ok $f"
+          done
+
+      - name: Remote scripts (check mode)
+        run: |
+          set -euo pipefail
+          export PYTHONPATH=src
+          bash scripts/remote/inspect_vps.sh | tee inspect-vps.log
+          bash scripts/remote/setup_burp_mcp.sh --check | tee burp-prereq.log
+          bash scripts/remote/setup_playwright.sh --check | tee playwright-check.log || true
+          bash scripts/remote/setup_opencode.sh --check | tee opencode-check.log || true
+          bash scripts/remote/healthcheck.sh | tee healthcheck.log
+
+      - name: MCP adapter unit tests
+        run: |
+          set -euo pipefail
+          export PYTHONPATH=src
+          pytest tests/test_mcp_adapters.py -v --tb=short | tee mcp-adapters.log
+
+      - name: Full regression suite
+        run: |
+          set -euo pipefail
+          export PYTHONPATH=src
+          pytest -q --tb=line | tee pytest-full.log
+
+      - name: OpenCode install (optional)
+        if: ${{ inputs.run_opencode_install }}
+        run: |
+          set -euo pipefail
+          bash scripts/remote/setup_opencode.sh --install | tee opencode-install.log
+          # Controlled loopback health only — no public bind
+          OPENCODE_SERVER_PASSWORD="ci-temp-$(head -c 16 /dev/urandom | xxd -p)" \
+            timeout 25s opencode serve --hostname 127.0.0.1 --port 4096 > opencode-serve.log 2>&1 &
+          OPID=$!
+          sleep 5
+          if curl -sf http://127.0.0.1:4096/global/health >/dev/null; then
+            echo "OPENCODE_HEALTH_PASS" | tee -a opencode-serve.log
+          else
+            echo "OPENCODE_HEALTH_FAIL" | tee -a opencode-serve.log
+            cat opencode-serve.log || true
+            kill $OPID 2>/dev/null || true
+            exit 1
+          fi
+          kill $OPID 2>/dev/null || true
+          wait $OPID 2>/dev/null || true
+
+      - name: Playwright MCP short probe (optional)
+        if: ${{ inputs.run_playwright_mcp_probe }}
+        run: |
+          set -euo pipefail
+          if ! command -v npx >/dev/null; then
+            echo "npx missing — skipping MCP process probe"
+            echo "PLAYWRIGHT_MCP_PROBE=SKIPPED" | tee playwright-mcp-probe.log
+            exit 0
+          fi
+          # Bounded process start; do not assume /mcp is REST health
+          timeout 40s npx --yes @playwright/mcp@latest --help > playwright-mcp-help.log 2>&1 || true
+          if grep -qi "Usage\|playwright\|mcp" playwright-mcp-help.log; then
+            echo "PLAYWRIGHT_MCP_PACKAGE_OK" | tee playwright-mcp-probe.log
+          else
+            echo "PLAYWRIGHT_MCP_PACKAGE_UNKNOWN" | tee playwright-mcp-probe.log
+            cat playwright-mcp-help.log || true
+          fi
+
+      - name: Burp prerequisite summary
+        run: |
+          set -euo pipefail
+          bash scripts/remote/setup_burp_mcp.sh --check | tee burp-summary.log
+          echo "BURP_LIVE=NOT_APPLICABLE_ON_EPHEMERAL_RUNNER" | tee -a burp-summary.log
+
+      - name: Upload sanitized diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remote-execution-validation-${{ github.run_id }}
+          path: |
+            runner-diagnostics.txt
+            inspect-vps.log
+            burp-prereq.log
+            burp-summary.log
+            playwright-check.log
+            playwright-mcp-probe.log
+            playwright-mcp-help.log
+            opencode-check.log
+            opencode-install.log
+            opencode-serve.log
+            healthcheck.log
+            mcp-adapters.log
+            pytest-full.log
+          if-no-files-found: ignore

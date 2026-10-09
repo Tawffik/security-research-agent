@@ -23,13 +23,32 @@ case "$MODE" in
     command -v opencode >/dev/null 2>&1 || { echo "install failed" >&2; exit 1; }
     echo "opencode install ok"
     ;;
+  --serve-smoke)
+    if ! command -v opencode >/dev/null 2>&1; then
+      echo "opencode missing" >&2
+      exit 1
+    fi
+    PASS="smoke-$(head -c 8 /dev/urandom | xxd -p 2>/dev/null || echo temp)"
+    OPENCODE_SERVER_PASSWORD="$PASS" timeout 20s opencode serve --hostname 127.0.0.1 --port 4096 >/tmp/opencode-smoke.log 2>&1 &
+    OPID=$!
+    sleep 4
+    if curl -sf http://127.0.0.1:4096/global/health >/dev/null; then
+      echo "opencode_smoke: PASS"
+      kill $OPID 2>/dev/null || true
+      exit 0
+    fi
+    echo "opencode_smoke: FAIL" >&2
+    cat /tmp/opencode-smoke.log 2>/dev/null || true
+    kill $OPID 2>/dev/null || true
+    exit 1
+    ;;
   --serve-help)
     echo "OPENCODE_SERVER_PASSWORD=... opencode serve --hostname 127.0.0.1 --port 4096"
     echo "Health: curl -s http://127.0.0.1:4096/global/health"
     echo "Do not bind 0.0.0.0 publicly. Use Tailscale/private VPN for Android."
     ;;
   *)
-    echo "usage: $0 --check | --install | --serve-help" >&2
+    echo "usage: $0 --check | --install | --serve-help | --serve-smoke" >&2
     exit 2
     ;;
 esac
