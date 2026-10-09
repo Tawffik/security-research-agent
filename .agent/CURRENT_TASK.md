@@ -1,18 +1,21 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS
-**Focus:** P0 verification contracts (falsification, sufficiency, evidence package, loss attribution)
+**Focus:** Codespaces + SRA MCP gateway executable path (no VPS)
 
 ## Completed this cycle
-- Explicit falsification fields on Hypothesis + engine wiring
-- Evidence sufficiency ladder (candidate→likely→confirmed→rejected)
-- Independent EvidencePackage for verifier input
-- Loss-point attribution (evaluation only)
+- SraMcpGateway: authorize → SyntheticBrowserRuntime execute
+- Allowlist tools: sra_scope_status / browser_* / burp_*
+- Fail-closed: unknown tool, OOS, live_mode, budget, privilege keys, redirect OOS
+- mcp_stdio_server probe (--list-tools / --call / optional --stdio)
+- OpenCode example config uses `mcp` schema; raw Playwright/Burp disabled
+- Tests: 13 gateway + prior adapters; full suite 448 passed / 8 skipped
 
 ## Still blocked (external/human)
-- Gate 6B live BBCI E2E
-- Live browser network research (authorized target)
-- OpenRouter live probe (requires Codespace secret OPENROUTER_API_KEY)
+- OpenCode install + model provider auth inside a live Codespace
+- Burp Community/Pro + PortSwigger MCP extension (GUI/license)
+- Real Playwright MCP process handshake (optional; synthetic path VERIFIED)
+- Gate 6B live authorized target
 
 ## Next resume
-Wire falsification/sufficiency into ClosedLoopRunner verdict path without weakening ScopeGuard
+User: open Codespace → run mcp_stdio_server probe → optional install OpenCode + provider key in Codespaces secrets

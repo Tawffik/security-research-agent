@@ -1,13 +1,39 @@
 {
-  "_comment": "Example MCP entries. Loopback only. No secrets.",
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest", "--headless", "--port", "8931"]
+  "$schema": "https://opencode.ai/config.json",
+  "_comment": "Target-testing profile. Loopback only. No secrets. Prefer SRA gateway over raw Playwright/Burp.",
+  "mcp": {
+    "sra-gateway": {
+      "type": "local",
+      "command": [
+        "python3",
+        "-m",
+        "agent_core.integrations.mcp_stdio_server"
+      ],
+      "enabled": true,
+      "environment": {
+        "PYTHONPATH": "src",
+        "SRA_SCOPE_FILE": "examples/demo_program_scope.yaml",
+        "SRA_MCP_ENABLED": "1"
+      }
     },
-    "burp": {
-      "_comment": "Use PortSwigger extension stdio proxy or SSE on loopback",
-      "url": "http://127.0.0.1:9876/mcp"
+    "playwright-raw": {
+      "_comment": "DISABLED in target-testing — use sra-gateway only.",
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp@latest", "--headless"],
+      "enabled": false
+    },
+    "burp-raw": {
+      "_comment": "DISABLED — requires Burp + PortSwigger MCP extension.",
+      "type": "remote",
+      "url": "http://127.0.0.1:9876/mcp",
+      "enabled": false
     }
+  },
+  "permission": {
+    "bash": "ask",
+    "edit": "ask",
+    "sra-gateway_*": "ask",
+    "playwright-raw_*": "deny",
+    "burp-raw_*": "deny"
   }
 }

@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "verification_contracts_p0",
-  "current_task": "verification_contracts_wired_into_closed_loop",
-  "current_commit": "3792c170f5ab196fe393718d9fa833206486a801",
+  "current_gate": "codespaces_opencode_mcp_gateway",
+  "current_task": "sra_mcp_gateway_synthetic_e2e",
+  "current_commit": "PENDING",
   "last_verified_commit": "3792c170f5ab196fe393718d9fa833206486a801",
   "last_test": {
-    "passed": 416,
+    "passed": 448,
     "failed": 0,
     "skipped": 8
   },
@@ -74,7 +74,12 @@
     "closed_loop_falsification_wire",
     "closed_loop_sufficiency_wire",
     "executable_sufficiency_crosscheck",
-    "bbci_loss_attribution"
+    "bbci_loss_attribution",
+    "sra_mcp_gateway_executable_path",
+    "sra_mcp_stdio_probe",
+    "opencode_mcp_schema_config",
+    "mcp_gateway_redirect_oos_guard",
+    "mcp_gateway_budget_guard"
   ],
   "in_progress": [],
   "deferred": [],
