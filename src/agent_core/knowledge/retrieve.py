@@ -156,6 +156,9 @@ def _score_record(rec: KnowledgeRecord, query: KnowledgeQuery) -> float:
         # methodology token in signal
         if sig and (sig in domain or sig in (rec.security_property or "").lower()):
             s += 0.8
+        # Surface-tech alignment: when target exposes GraphQL/WS, prefer matching tags
+        if sig in ("graphql", "websocket", "gql") and sig in tags:
+            s += 2.5
 
     for prop in query.security_properties:
         pl = prop.lower()
@@ -292,7 +295,8 @@ class KnowledgeRetriever:
         tips = take("tip")
         negatives = take("negative")
 
-        # Prefer procedures that match tags_prefer among all procedures in index
+        # Prefer records matching tags_prefer, then re-rank by score.
+        # (insert(0) in score-descending order would reverse rank — do not do that.)
         if query.tags_prefer:
             prefer = {t.lower() for t in query.tags_prefer}
             preferred_procs = [
@@ -300,23 +304,23 @@ class KnowledgeRetriever:
                 for r in self.index.records
                 if r.kind == "procedure" and prefer.intersection(t.lower() for t in r.tags)
             ]
-            preferred_procs.sort(
-                key=lambda r: _score_record(r, query), reverse=True
-            )
+            merged_procs = list(procedures)
             for p in preferred_procs:
-                if p not in procedures:
-                    procedures.insert(0, p)
-            procedures = procedures[:limit]
+                if p not in merged_procs:
+                    merged_procs.append(p)
+            merged_procs.sort(key=lambda r: _score_record(r, query), reverse=True)
+            procedures = merged_procs[:limit]
             preferred_pats = [
                 r
                 for r in self.index.records
                 if r.kind == "pattern" and prefer.intersection(t.lower() for t in r.tags)
             ]
-            preferred_pats.sort(key=lambda r: _score_record(r, query), reverse=True)
+            merged_pats = list(patterns)
             for p in preferred_pats:
-                if p not in patterns:
-                    patterns.insert(0, p)
-            patterns = patterns[:limit]
+                if p not in merged_pats:
+                    merged_pats.append(p)
+            merged_pats.sort(key=lambda r: _score_record(r, query), reverse=True)
+            patterns = merged_pats[:limit]
 
         competing: list[str] = []
         for p in patterns + cases:

@@ -40,11 +40,22 @@ def build_authz_query(
         signals.append("authorization_opportunity")
         tags_any.extend(["bola", "idor", "authorization"])
 
+    saw_object_path = False
     for ep in ctx.endpoints:
         path = (ep.path or "").lower()
-        if "{id}" in path or "order" in path or "user" in path:
+        if not saw_object_path and (
+            "{id}" in path or "order" in path or "user" in path
+        ):
             signals.append("object_path")
-            break
+            saw_object_path = True
+        # Path-derived surface tech (ranking only — never execution permission).
+        if "graphql" in path or path.rstrip("/").endswith("/gql"):
+            signals.append("graphql")
+            tags_prefer.append("graphql")
+            tags_any.append("graphql")
+        if "websocket" in path or path.startswith("/ws"):
+            signals.append("websocket")
+            tags_prefer.append("websocket")
 
     # Target technologies as soft signals (ranking only; not execution permission)
     for tech in list(getattr(ctx, "technologies", None) or [])[:8]:
@@ -52,6 +63,10 @@ def build_authz_query(
         if tname:
             signals.append(f"tech:{tname}")
             tags_prefer.append(tname)
+            if tname in ("graphql", "gql"):
+                tags_any.append("graphql")
+                tags_prefer.append("graphql")
+                signals.append("graphql")
 
     if getattr(ctx, "primary_host", None):
         signals.append("host_context")

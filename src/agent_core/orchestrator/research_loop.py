@@ -60,6 +60,8 @@ class ResearchLoop:
         self.jev = JEV(engagement_id)
         self.last_retrieval = None
         self.preferred_methodology: str | None = None
+        # Lab/observation-derived tech names for ranking only (never execution permission).
+        self.extra_tech_signals: list[str] = []
         self.evidence_gaps: list[str] = []
         self.prior_experiment_ids: list[str] = []
         self.last_knowledge_contract = None
@@ -75,6 +77,20 @@ class ResearchLoop:
 
     def run(self, recon: RawRecon) -> ResearchLoopResult:
         ctx, graph, normalized = self.adapter.adapt(recon)
+
+        # Merge observation/lab tech hints into TargetContext for retrieval ranking.
+        # Knowledge ranking only — never grants tool or live execution permission.
+        if self.extra_tech_signals:
+            existing = [str(t).lower() for t in (getattr(ctx, "technologies", None) or [])]
+            merged = list(existing)
+            for t in self.extra_tech_signals:
+                tl = str(t).strip().lower()
+                if tl and tl not in merged:
+                    merged.append(tl)
+            try:
+                ctx.technologies = merged
+            except Exception:
+                pass
 
         opportunities = self.opportunity_engine.rank(ctx, graph)
         unknowns = self.unknown_engine.seed_from_opportunities(opportunities, ctx)

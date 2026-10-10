@@ -514,6 +514,17 @@ class ClosedLoopRunner:
         if getattr(scenario, "methodology", None):
             self.research.preferred_methodology = scenario.methodology
 
+        # Derive ranking-only tech signals from lab observation paths (e.g. /graphql).
+        tech_hints: list[str] = []
+        for obs in getattr(scenario, "observations", None) or []:
+            path = (getattr(obs, "path", "") or "").lower()
+            if "graphql" in path or path.rstrip("/").endswith("/gql"):
+                tech_hints.append("graphql")
+            if "websocket" in path or path.startswith("/ws"):
+                tech_hints.append("websocket")
+        if tech_hints:
+            self.research.extra_tech_signals = list(dict.fromkeys(tech_hints))
+
         if skip_research and prior_plan is not None:
             plan = prior_plan
         else:

@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "codespaces_opencode_mcp_gateway",
-  "current_task": "sra_mcp_gateway_synthetic_e2e",
-  "current_commit": "5994fb8c9b63a69f8838be6765ba65f23b3a7ee4",
-  "last_verified_commit": "5994fb8c9b63a69f8838be6765ba65f23b3a7ee4",
+  "current_gate": "knowledge_surface_aligned_retrieval",
+  "current_task": "graphql_surface_tech_ranking_fix",
+  "current_commit": "e78b5e4c7cbb2861153093c6855596101c9be917",
+  "last_verified_commit": "pending_local",
   "last_test": {
-    "passed": 448,
+    "passed": 449,
     "failed": 0,
     "skipped": 8
   },
@@ -79,7 +79,10 @@
     "sra_mcp_stdio_probe",
     "opencode_mcp_schema_config",
     "mcp_gateway_redirect_oos_guard",
-    "mcp_gateway_budget_guard"
+    "mcp_gateway_budget_guard",
+    "tags_prefer_merge_score_order_fix",
+    "lab_surface_tech_signals_for_retrieval",
+    "graphql_procedure_ranking_utility"
   ],
   "in_progress": [],
   "deferred": [],
@@ -114,13 +117,25 @@
     "browser_live_ui_authorization"
   ],
   "next_dependencies": [
-    "gate6b_when_authorized"
+    "gate6b_when_authorized",
+    "skill_to_research_loop_wiring_if_measured_gap"
   ],
+  "benchmark_snapshot": {
+    "date": "2026-10-10",
+    "default": {
+      "none_pos_fn": true,
+      "curated_pos_tp": true,
+      "irrelevant_secure_fp": false,
+      "curated_retrieval_effect": true
+    },
+    "hard": {
+      "none_all_fn": true,
+      "curated_all_tp": true,
+      "note": "Knowledge utility proven across authz/BL/SSRF/BOLA variants offline"
+    }
+  },
   "environment_audit": {
-    "playwright": "1.63.0 importable",
-    "install_path": "https://pypi.org/simple (internal mirror 502)",
-    "chrome": "/usr/bin/google-chrome channel=chrome",
-    "health": "BROWSER_RUNTIME_READY",
-    "tests": "386 passed 0 skipped"
+    "playwright": "optional",
+    "tests": "449 passed 8 skipped"
   }
 }
