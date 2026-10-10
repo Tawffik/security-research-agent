@@ -161,3 +161,21 @@ def test_missing_identity_pair_marks_insufficient_when_skills_enabled():
     assert identity_missing, f"expected missing identity-pair req, got {reqs}"
     assert ad.get("experiment_sufficiency") == "insufficient"
     assert r.referee_accepted is False
+
+
+def test_ssrf_experiments_do_not_get_recon_packaging_requirements():
+    """Recon-js evidence requirements must not attach to SSRF procedure experiments."""
+    from agent_core.orchestrator.closed_loop import hard_ssrf_lab_scenario
+
+    ret = build_retriever(KnowledgeCondition.CURATED, KROOT)
+    runner = ClosedLoopRunner(
+        scope_path=SCOPE,
+        engagement_id="ssrf_no_recon_req",
+        knowledge_retriever=ret,
+        enable_skills=True,
+    )
+    r = runner.run(FIXTURE, scenario=hard_ssrf_lab_scenario())
+    for exp in r.plan.experiments or []:
+        reqs = [str(x) for x in (exp.required_evidence or [])]
+        assert not any(x.startswith("skill_req:") for x in reqs), reqs
+        assert "every_discovered_endpoint" not in " ".join(reqs)

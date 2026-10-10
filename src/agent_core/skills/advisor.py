@@ -252,11 +252,12 @@ class SkillDecisionAdvisor:
                 continue
             if sk.metadata.vulnerability_classes:
                 vuln_reqs.extend(sk.metadata.evidence_requirements or [])
-        texts = vuln_reqs or list(advice.evidence_requirements or [])
-        tokens = self.normalize_evidence_requirements(texts)
-        # Drop free-text skill_req noise from non-vuln skills when vuln_reqs present
-        if vuln_reqs:
-            tokens = [t for t in tokens if not t.startswith("skill_req:")]
+        # Only vulnerability-class skills may attach experiment evidence gates.
+        # Recon packaging requirements must not inflate SSRF/business-logic labs.
+        if not vuln_reqs:
+            return 0
+        tokens = self.normalize_evidence_requirements(vuln_reqs)
+        tokens = [t for t in tokens if not t.startswith("skill_req:")]
         if not tokens:
             return 0
         added = 0
