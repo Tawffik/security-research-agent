@@ -2,8 +2,8 @@
   "campaign_status": "IN_PROGRESS",
   "current_gate": "phase_offline_capability_expansion",
   "current_task": "offline_lab_expansion_traversal_upload_deser",
-  "current_commit": "ad1b6700d78c674ef7bd67a2c0aff851686c4172",
-  "last_verified_commit": "ad1b6700d78c674ef7bd67a2c0aff851686c4172",
+  "current_commit": "5659ff356049d8ca26f7bbac819cf72236601651",
+  "last_verified_commit": "5659ff356049d8ca26f7bbac819cf72236601651",
   "last_test": {
     "passed": 489,
     "failed": 0,
