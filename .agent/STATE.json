@@ -2,8 +2,8 @@
   "campaign_status": "IN_PROGRESS",
   "current_gate": "phase_a_inventory_plus_injection_xss_slice",
   "current_task": "capability_inventory_injection_xss_labs",
-  "current_commit": "b6247c777e9ca55928c79e5ca8554e5db34d65af",
-  "last_verified_commit": "b6247c777e9ca55928c79e5ca8554e5db34d65af",
+  "current_commit": "5e07e3eb472a9534cbf6cacd42cf6bf6fb66b8c3",
+  "last_verified_commit": "5e07e3eb472a9534cbf6cacd42cf6bf6fb66b8c3",
   "last_test": {
     "passed": 471,
     "failed": 0,
