@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "verification_contracts_p0",
-  "current_task": "verification_contracts_wired_into_closed_loop",
-  "current_commit": "3792c170f5ab196fe393718d9fa833206486a801",
-  "last_verified_commit": "3792c170f5ab196fe393718d9fa833206486a801",
+  "current_gate": "knowledge_integrity_and_cache",
+  "current_task": "p0_integrity_cache_slice",
+  "current_commit": "96285483e202ae3786ac33d816299a04cada686f",
+  "last_verified_commit": "96285483e202ae3786ac33d816299a04cada686f",
   "last_test": {
-    "passed": 416,
+    "passed": 494,
     "failed": 0,
     "skipped": 8
   },
@@ -74,7 +74,43 @@
     "closed_loop_falsification_wire",
     "closed_loop_sufficiency_wire",
     "executable_sufficiency_crosscheck",
-    "bbci_loss_attribution"
+    "bbci_loss_attribution",
+    "sra_mcp_gateway_executable_path",
+    "sra_mcp_stdio_probe",
+    "opencode_mcp_schema_config",
+    "mcp_gateway_redirect_oos_guard",
+    "mcp_gateway_budget_guard",
+    "tags_prefer_merge_score_order_fix",
+    "lab_surface_tech_signals_for_retrieval",
+    "graphql_procedure_ranking_utility",
+    "skill_decision_advisor",
+    "skill_research_loop_opt_in",
+    "skill_ab_utility_benchmark",
+    "skill_evidence_req_on_experiments",
+    "skill_evidence_decision_benchmark",
+    "identity_pair_sufficiency_gate",
+    "evidence_requirement_decision_benchmark",
+    "evidence_requirement_decision_impact_audit",
+    "recon_req_not_on_ssrf_experiments",
+    "state_head_reconcile_dfa7f8e",
+    "capability_readiness_matrix",
+    "hard_sqli_lab",
+    "hard_xss_lab",
+    "secure_injection_xss_polarity",
+    "injection_xss_utility_tests",
+    "hard_jwt_csrf_labs",
+    "authentication_domain_readiness",
+    "path_traversal_offline_labs",
+    "upload_offline_labs",
+    "deserialization_offline_labs",
+    "heldout_injection_xss",
+    "taxonomy_traversal_alias",
+    "benchmark_leakage_audit_note",
+    "methodology_propagation_fix",
+    "readiness_vocabulary_honest",
+    "cache_offline_labs",
+    "candidate_security_property_from_scenario",
+    "state_head_reconcile"
   ],
   "in_progress": [],
   "deferred": [],
@@ -109,13 +145,25 @@
     "browser_live_ui_authorization"
   ],
   "next_dependencies": [
-    "gate6b_when_authorized"
+    "gate6b_when_authorized",
+    "skill_to_research_loop_wiring_if_measured_gap"
   ],
+  "benchmark_snapshot": {
+    "date": "2026-10-10",
+    "default": {
+      "none_pos_fn": true,
+      "curated_pos_tp": true,
+      "irrelevant_secure_fp": false,
+      "curated_retrieval_effect": true
+    },
+    "hard": {
+      "none_all_fn": true,
+      "curated_all_tp": true,
+      "note": "Knowledge utility proven across authz/BL/SSRF/BOLA variants offline"
+    }
+  },
   "environment_audit": {
-    "playwright": "1.63.0 importable",
-    "install_path": "https://pypi.org/simple (internal mirror 502)",
-    "chrome": "/usr/bin/google-chrome channel=chrome",
-    "health": "BROWSER_RUNTIME_READY",
-    "tests": "386 passed 0 skipped"
+    "playwright": "optional",
+    "tests": "449 passed 8 skipped"
   }
 }

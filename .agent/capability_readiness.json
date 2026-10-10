@@ -1,0 +1,405 @@
+{
+  "authentication": {
+    "benchmark_scenarios": [
+      "hard_jwt",
+      "hard_csrf"
+    ],
+    "domain": "authentication",
+    "evidence_notes": [
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
+    ],
+    "knowledge_cases": 7,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 7,
+    "knowledge_procedures": 6,
+    "lab_scenarios": [
+      "hard_jwt_lab_scenario",
+      "secure_jwt_lab_scenario",
+      "hard_csrf_lab_scenario",
+      "secure_csrf_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
+    "skills": []
+  },
+  "authorization": {
+    "benchmark_scenarios": [
+      "pos_authz",
+      "secure_authz",
+      "public_res",
+      "shared_res",
+      "hard_authz",
+      "action_level_bola",
+      "vertical_object",
+      "graphql_global_id"
+    ],
+    "domain": "authorization",
+    "evidence_notes": [
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
+    ],
+    "knowledge_cases": 15,
+    "knowledge_negatives": 5,
+    "knowledge_patterns": 11,
+    "knowledge_procedures": 10,
+    "lab_scenarios": [
+      "default_idor_lab_scenario",
+      "secure_lab_scenario",
+      "public_resource_lab_scenario",
+      "shared_object_lab_scenario",
+      "hard_authz_lab_scenario",
+      "action_level_bola_lab_scenario",
+      "vertical_object_lab_scenario",
+      "graphql_global_id_lab_scenario",
+      "ambiguous_incomplete_lab_scenario",
+      "role_authorized_lab_scenario",
+      "cache_artifact_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
+    "skills": [
+      "authz-idor-analysis",
+      "authz-idor-analysis",
+      "recon-js-surface",
+      "report-generator"
+    ]
+  },
+  "business_logic": {
+    "benchmark_scenarios": [
+      "business_logic"
+    ],
+    "domain": "business_logic",
+    "evidence_notes": [
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
+    ],
+    "knowledge_cases": 3,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 2,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "business_logic_coupon_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
+    "skills": [
+      "authz-idor-analysis"
+    ]
+  },
+  "cache": {
+    "benchmark_scenarios": [
+      "hard_cache"
+    ],
+    "domain": "cache",
+    "evidence_notes": [
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
+    ],
+    "knowledge_cases": 1,
+    "knowledge_negatives": 1,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "hard_cache_lab_scenario",
+      "secure_cache_lab_scenario",
+      "ambiguous_cache_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
+    "skills": []
+  },
+  "cors": {
+    "benchmark_scenarios": [],
+    "domain": "cors",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "csrf": {
+    "benchmark_scenarios": [],
+    "domain": "csrf",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "deserialization": {
+    "benchmark_scenarios": [
+      "hard_deserialization"
+    ],
+    "domain": "deserialization",
+    "evidence_notes": [
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
+    ],
+    "knowledge_cases": 1,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "hard_deserialization_lab_scenario",
+      "secure_deserialization_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
+    "skills": []
+  },
+  "graphql": {
+    "benchmark_scenarios": [],
+    "domain": "graphql",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "http_desync": {
+    "benchmark_scenarios": [],
+    "domain": "http_desync",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "injection": {
+    "benchmark_scenarios": [
+      "hard_sqli",
+      "heldout_sqli"
+    ],
+    "domain": "injection",
+    "evidence_notes": [
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
+    ],
+    "knowledge_cases": 4,
+    "knowledge_negatives": 2,
+    "knowledge_patterns": 4,
+    "knowledge_procedures": 4,
+    "lab_scenarios": [
+      "hard_sqli_lab_scenario",
+      "secure_sqli_lab_scenario",
+      "heldout_sqli_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
+    "skills": []
+  },
+  "jwt": {
+    "benchmark_scenarios": [],
+    "domain": "jwt",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "oauth": {
+    "benchmark_scenarios": [],
+    "domain": "oauth",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "other": {
+    "benchmark_scenarios": [],
+    "domain": "other",
+    "evidence_notes": [
+      "curated knowledge present; no lab factory"
+    ],
+    "knowledge_cases": 2,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 2,
+    "knowledge_procedures": 2,
+    "lab_scenarios": [],
+    "next_dependency": "offline_lab_scenario",
+    "readiness": "KNOWLEDGE_ONLY",
+    "skills": []
+  },
+  "path_traversal": {
+    "benchmark_scenarios": [],
+    "domain": "path_traversal",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "redirect": {
+    "benchmark_scenarios": [],
+    "domain": "redirect",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "session": {
+    "benchmark_scenarios": [],
+    "domain": "session",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": [
+      "recon-js-surface"
+    ]
+  },
+  "ssrf": {
+    "benchmark_scenarios": [
+      "hard_ssrf"
+    ],
+    "domain": "ssrf",
+    "evidence_notes": [
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
+    ],
+    "knowledge_cases": 1,
+    "knowledge_negatives": 2,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "hard_ssrf_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
+    "skills": []
+  },
+  "ssti": {
+    "benchmark_scenarios": [],
+    "domain": "ssti",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "traversal": {
+    "benchmark_scenarios": [
+      "hard_path_traversal"
+    ],
+    "domain": "traversal",
+    "evidence_notes": [
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
+    ],
+    "knowledge_cases": 1,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "hard_path_traversal_lab_scenario",
+      "secure_path_traversal_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
+    "skills": []
+  },
+  "upload": {
+    "benchmark_scenarios": [
+      "hard_upload"
+    ],
+    "domain": "upload",
+    "evidence_notes": [
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
+    ],
+    "knowledge_cases": 1,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "hard_upload_lab_scenario",
+      "secure_upload_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
+    "skills": []
+  },
+  "websocket": {
+    "benchmark_scenarios": [],
+    "domain": "websocket",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "xss": {
+    "benchmark_scenarios": [
+      "hard_xss",
+      "heldout_xss"
+    ],
+    "domain": "xss",
+    "evidence_notes": [
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
+    ],
+    "knowledge_cases": 2,
+    "knowledge_negatives": 2,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "hard_xss_lab_scenario",
+      "secure_xss_lab_scenario",
+      "heldout_xss_lab_scenario",
+      "heldout_secure_xss_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
+    "skills": []
+  },
+  "xxe": {
+    "benchmark_scenarios": [],
+    "domain": "xxe",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  }
+}

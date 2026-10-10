@@ -85,7 +85,7 @@ def normalize_bbci_artifact(raw: dict[str, Any]) -> BBCIContractResult:
             path = item.get("path") or item.get("url") or item.get("uri") or ""
             method = item.get("method") or item.get("verb") or "GET"
             if path:
-                host = str(item.get("host") or "").strip()
+                ep_host = str(item.get("host") or "").strip()
                 # strip scheme/host if full URL
                 if path.startswith("http"):
                     try:
@@ -93,12 +93,12 @@ def normalize_bbci_artifact(raw: dict[str, Any]) -> BBCIContractResult:
 
                         parsed = urlparse(path)
                         path = parsed.path or "/"
-                        host = host or (parsed.hostname or "")
+                        ep_host = ep_host or (parsed.hostname or "")
                     except Exception:
                         pass
                 ep = {"method": str(method).upper(), "path": str(path)}
-                if host:
-                    ep["host"] = host
+                if ep_host:
+                    ep["host"] = ep_host
                 if item.get("parameters"):
                     ep["parameters"] = list(item.get("parameters") or [])
                 if item.get("provenance"):

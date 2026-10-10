@@ -26,6 +26,7 @@ from agent_core.recon.adapter import RawRecon, ReconResultAdapter
 from agent_core.schemas.research import Decision, Experiment, Hypothesis, Opportunity
 from agent_core.schemas.target import TargetContext, TargetGraph
 from agent_core.target.opportunity import OpportunityEngine
+from agent_core.skills.advisor import SkillDecisionAdvisor
 
 
 @dataclass
@@ -48,6 +49,8 @@ class ResearchLoop:
         self,
         engagement_id: str = "eng_offline_001",
         knowledge_retriever: Optional[KnowledgeRetriever] = None,
+        skill_advisor: Optional[SkillDecisionAdvisor] = None,
+        enable_skills: bool = False,
     ):
         self.engagement_id = engagement_id
         self.adapter = ReconResultAdapter(engagement_id)
@@ -60,11 +63,19 @@ class ResearchLoop:
         self.jev = JEV(engagement_id)
         self.last_retrieval = None
         self.preferred_methodology: str | None = None
+        # Lab/observation-derived tech names for ranking only (never execution permission).
+        self.extra_tech_signals: list[str] = []
         self.evidence_gaps: list[str] = []
         self.prior_experiment_ids: list[str] = []
         self.last_knowledge_contract = None
         self.last_discrimination_scores = []
         self.last_utility_scores = []
+        # Skills: opt-in decision-policy injection only (never execution permission).
+        self.enable_skills = bool(enable_skills)
+        self.skill_advisor = skill_advisor
+        if self.enable_skills and self.skill_advisor is None:
+            self.skill_advisor = SkillDecisionAdvisor()
+        self.last_skill_advice = None
 
     def run_from_recon_file(self, path: Union[str, Path]) -> ResearchLoopResult:
         recon = RawRecon.from_file(path)
@@ -75,6 +86,20 @@ class ResearchLoop:
 
     def run(self, recon: RawRecon) -> ResearchLoopResult:
         ctx, graph, normalized = self.adapter.adapt(recon)
+
+        # Merge observation/lab tech hints into TargetContext for retrieval ranking.
+        # Knowledge ranking only — never grants tool or live execution permission.
+        if self.extra_tech_signals:
+            existing = [str(t).lower() for t in (getattr(ctx, "technologies", None) or [])]
+            merged = list(existing)
+            for t in self.extra_tech_signals:
+                tl = str(t).strip().lower()
+                if tl and tl not in merged:
+                    merged.append(tl)
+            try:
+                ctx.technologies = merged
+            except Exception:
+                pass
 
         opportunities = self.opportunity_engine.rank(ctx, graph)
         unknowns = self.unknown_engine.seed_from_opportunities(opportunities, ctx)
@@ -149,10 +174,36 @@ class ResearchLoop:
                     if note not in retrieval.competing_explanations:
                         retrieval.competing_explanations.append(note)
 
+        # Optional skill policy injection (competing explanations / evidence hints).
+        self.last_skill_advice = None
+        if self.enable_skills and self.skill_advisor is not None:
+            techs = [str(t) for t in (getattr(ctx, "technologies", None) or [])]
+            advice = self.skill_advisor.advise(
+                methodology=meth or self.preferred_methodology,
+                technologies=techs,
+                vulnerability_hint=None,
+            )
+            added = self.skill_advisor.apply_to_retrieval(retrieval, advice)
+            self.last_skill_advice = advice
+            if added and retrieval is not None:
+                # Re-generate hypotheses so skill competitors are visible in portfolio
+                hypotheses = self.hypothesis_engine.generate_from_unknowns(
+                    unknowns, opportunities, ctx, retrieval=retrieval
+                )
+
         self.last_retrieval = retrieval
         experiments = self.experiment_designer.design_portfolio(
             hypotheses, ctx, retrieval=retrieval
         )
+        # Attach skill evidence requirements onto experiments (policy only).
+        if (
+            self.enable_skills
+            and self.skill_advisor is not None
+            and self.last_skill_advice is not None
+        ):
+            self.skill_advisor.apply_to_experiments(
+                experiments, self.last_skill_advice
+            )
         self.last_knowledge_contract = contract_from_retrieval(
             retrieval, property_hint=self.preferred_methodology or ""
         )

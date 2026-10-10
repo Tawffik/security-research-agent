@@ -1,18 +1,19 @@
 # Current Task
 
-**Campaign:** IN_PROGRESS
-**Focus:** P0 verification contracts (falsification, sufficiency, evidence package, loss attribution)
+**Campaign:** IN_PROGRESS  
+**Focus:** P0 knowledge integrity + cache offline slice
 
-## Completed this cycle
-- Explicit falsification fields on Hypothesis + engine wiring
-- Evidence sufficiency ladder (candidate→likely→confirmed→rejected)
-- Independent EvidencePackage for verifier input
-- Loss-point attribution (evaluation only)
+## Verified
+- Methodology no longer defaults candidates/episodes to authorization
+- LabScenario default methodology=unknown; authz labs set explicitly
+- Readiness: LAB_WIRED / BENCHMARK_WIRED (not executed/held-out claims)
+- Cache hard/secure/ambiguous labs + utility behavior
+- Tests: 494 passed / 8 skipped
 
-## Still blocked (external/human)
-- Gate 6B live BBCI E2E
-- Live browser network research (authorized target)
-- OpenRouter live probe (requires Codespace secret OPENROUTER_API_KEY)
+## BLOCKED
+- Gate 6B live authorization
 
-## Next resume
-Wire falsification/sufficiency into ClosedLoopRunner verdict path without weakening ScopeGuard
+## READY next
+- BENCHMARK_EXECUTED evidence attachment for measured domains
+- residual other taxonomy
+- retrieval ranking quality tests

@@ -81,7 +81,7 @@ class LabScenario:
     suggests_authz_issue: bool = False
     # Hard-scenario: confirm only if selected experiment is knowledge/procedure-driven
     requires_knowledge_procedure: bool = False
-    methodology: str = "authorization"
+    methodology: str = "unknown"
 
 
 @dataclass
@@ -115,6 +115,7 @@ class ClosedLoopResult:
     knowledge_candidates: list = field(default_factory=list)
     normalized_observations: list = field(default_factory=list)
     structured_case: object = None  # episode → case candidate (untrusted)
+    methodology: str = "unknown"
 
 
 def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
@@ -123,6 +124,7 @@ def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
         name="lab_idor_order_cross_identity",
         expected_if_secure="Non-owner must receive 403/404; owner may receive 200 for own object",
         suggests_authz_issue=True,
+        methodology="authorization",
         observations=[
             LabObservation(
                 identity="user_a",
@@ -152,6 +154,7 @@ def secure_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
         name="lab_secure_ownership",
         expected_if_secure="Non-owner blocked",
         suggests_authz_issue=False,
+        methodology="authorization",
         observations=[
             LabObservation(
                 identity="user_a",
@@ -179,6 +182,7 @@ def public_resource_lab_scenario(host: str = "api.acme-demo.test") -> LabScenari
         name="lab_public_resource",
         expected_if_secure="Public catalog is readable by any authenticated user — not IDOR",
         suggests_authz_issue=False,
+        methodology="authorization",
         observations=[
             LabObservation(
                 identity="user_a",
@@ -208,6 +212,7 @@ def shared_object_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
         name="lab_shared_acl_object",
         expected_if_secure="Shared ACL grants both identities access — not horizontal IDOR",
         suggests_authz_issue=False,
+        methodology="authorization",
         observations=[
             LabObservation(
                 identity="user_a",
@@ -468,6 +473,589 @@ def cache_artifact_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario
     )
 
 
+def hard_sqli_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """
+    Injection boolean-pair lab: stable content differential under paired predicates.
+    Requires knowledge procedure (PROC-0018 family) for confirmation.
+    """
+    return LabScenario(
+        name="lab_hard_sqli_boolean_pair",
+        expected_if_secure="No stable differential between paired predicates",
+        suggests_authz_issue=True,  # issue path for lab referee (not literal authz)
+        requires_knowledge_procedure=True,
+        methodology="injection",
+        observations=[
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/search?q=widget",
+                host=host,
+                status=200,
+                body='{"count":3,"items":["a","b","c"],"hash":"baseline"}',
+                notes="baseline neutral filter",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/search?q=widget'+OR+'1'='1",
+                host=host,
+                status=200,
+                body='{"count":50,"items":["a","b","c","d","e"],"hash":"tautology"}',
+                notes="challenge true-like predicate differential",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_sqli_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Parameterized / whitelist search: paired probes do not change result set."""
+    return LabScenario(
+        name="lab_secure_sqli_parameterized",
+        expected_if_secure="Paired predicates yield identical result hashes",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="injection",
+        observations=[
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/search?q=widget",
+                host=host,
+                status=200,
+                body='{"count":3,"items":["a","b","c"],"hash":"same"}',
+                notes="baseline",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/search?q=widget'+OR+'1'='1",
+                host=host,
+                status=200,
+                body='{"count":3,"items":["a","b","c"],"hash":"same"}',
+                notes="challenge treated as literal string — no differential",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def hard_xss_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """
+    Reflected XSS context lab: unique marker reflected unencoded in HTML body.
+    Requires knowledge procedure (PROC-0013 family) for confirmation.
+    """
+    return LabScenario(
+        name="lab_hard_xss_reflection",
+        expected_if_secure="Marker encoded or not in executable HTML context",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="xss",
+        observations=[
+            LabObservation(
+                identity="victim",
+                method="GET",
+                path="/search?q=safe",
+                host=host,
+                status=200,
+                body="<html><body><p>Results for safe</p></body></html>",
+                notes="baseline safe query",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="victim",
+                method="GET",
+                path="/search?q=xssmark<script>",
+                host=host,
+                status=200,
+                body="<html><body><p>Results for xssmark<script></p></body></html>",
+                notes="challenge marker unencoded in HTML text context",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_xss_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Encoded reflection: marker appears only entity-encoded."""
+    return LabScenario(
+        name="lab_secure_xss_encoded",
+        expected_if_secure="Special characters encoded in HTML context",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="xss",
+        observations=[
+            LabObservation(
+                identity="victim",
+                method="GET",
+                path="/search?q=safe",
+                host=host,
+                status=200,
+                body="<html><body><p>Results for safe</p></body></html>",
+                notes="baseline",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="victim",
+                method="GET",
+                path="/search?q=xssmark<script>",
+                host=host,
+                status=200,
+                body="<html><body><p>Results for xssmark&lt;script&gt;</p></body></html>",
+                notes="challenge fully encoded",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def hard_jwt_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """JWT verification gap: challenge with broken signature still accepted."""
+    return LabScenario(
+        name="lab_hard_jwt_alg_confusion",
+        expected_if_secure="Invalid signature rejected",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="authentication",
+        observations=[
+            LabObservation(
+                identity="user_a",
+                method="GET",
+                path="/api/me",
+                host=host,
+                status=200,
+                body='{"sub":"user_a","ok":true,"sig":"valid"}',
+                notes="baseline valid token",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/me",
+                host=host,
+                status=200,
+                body='{"sub":"admin","ok":true,"sig":"none_or_confused"}',
+                notes="challenge weakened verification accepted",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_jwt_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """JWT verification: invalid signature denied."""
+    return LabScenario(
+        name="lab_secure_jwt_signature_checked",
+        expected_if_secure="Invalid signature rejected",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="authentication",
+        observations=[
+            LabObservation(
+                identity="user_a",
+                method="GET",
+                path="/api/me",
+                host=host,
+                status=200,
+                body='{"sub":"user_a","ok":true,"sig":"valid"}',
+                notes="baseline valid token",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/me",
+                host=host,
+                status=401,
+                body='{"error":"invalid_token"}',
+                notes="challenge broken signature denied",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def hard_csrf_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """CSRF: state-changing POST without binding token still mutates resource."""
+    return LabScenario(
+        name="lab_hard_csrf_state_change",
+        expected_if_secure="Cross-site/state change without CSRF binding rejected",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="authentication",
+        observations=[
+            LabObservation(
+                identity="victim",
+                method="POST",
+                path="/api/email",
+                host=host,
+                status=200,
+                body='{"email":"old@ex.com","csrf":"present","changed":false}',
+                notes="baseline with binding",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="victim",
+                method="POST",
+                path="/api/email",
+                host=host,
+                status=200,
+                body='{"email":"evil@ex.com","csrf":"absent","changed":true}',
+                notes="challenge without CSRF token still changes state",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_csrf_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """CSRF control: missing token rejected; state unchanged."""
+    return LabScenario(
+        name="lab_secure_csrf_token_required",
+        expected_if_secure="Missing CSRF token rejected",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="authentication",
+        observations=[
+            LabObservation(
+                identity="victim",
+                method="POST",
+                path="/api/email",
+                host=host,
+                status=200,
+                body='{"email":"old@ex.com","csrf":"present","changed":false}',
+                notes="baseline with binding",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="victim",
+                method="POST",
+                path="/api/email",
+                host=host,
+                status=403,
+                body='{"error":"csrf_required","changed":false}',
+                notes="challenge missing token denied",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+
+
+def hard_path_traversal_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Unauthorized file read via traversal; content identity proves boundary escape."""
+    return LabScenario(
+        name="lab_hard_path_traversal_file_read",
+        expected_if_secure="Traversal contained; no foreign file content",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="traversal",
+        observations=[
+            LabObservation(
+                identity="user_a", method="GET", path="/api/files?name=report.pdf", host=host,
+                status=200, body='{"name":"report.pdf","content":"INVOICE-OK"}',
+                notes="baseline allowed object", role="baseline",
+            ),
+            LabObservation(
+                identity="user_a", method="GET", path="/api/files?name=../../etc/passwd", host=host,
+                status=200, body='{"name":"../../etc/passwd","content":"root:x:0:0:root:/root:"}',
+                notes="challenge traversal returns foreign file content", role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_path_traversal_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Normalization/containment: traversal string does not yield foreign content."""
+    return LabScenario(
+        name="lab_secure_path_traversal_contained",
+        expected_if_secure="Traversal rejected or contained to allowed root",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="traversal",
+        observations=[
+            LabObservation(
+                identity="user_a", method="GET", path="/api/files?name=report.pdf", host=host,
+                status=200, body='{"name":"report.pdf","content":"INVOICE-OK"}',
+                notes="baseline allowed object", role="baseline",
+            ),
+            LabObservation(
+                identity="user_a", method="GET", path="/api/files?name=../../etc/passwd", host=host,
+                status=403, body='{"error":"path_outside_root"}',
+                notes="challenge traversal blocked", role="challenge",
+            ),
+        ],
+    )
+
+
+def hard_upload_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Upload accepted and stored under web-executable path (dangerous handling)."""
+    return LabScenario(
+        name="lab_hard_upload_executable_path",
+        expected_if_secure="Dangerous type/path rejected or stored non-executable",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="upload",
+        observations=[
+            LabObservation(
+                identity="user_a", method="POST", path="/api/upload", host=host,
+                status=200, body='{"stored":"/uploads/photo.png","exec":false}',
+                notes="baseline allowed image", role="baseline",
+            ),
+            LabObservation(
+                identity="user_a", method="POST", path="/api/upload", host=host,
+                status=200, body='{"stored":"/var/www/html/shell.php","exec":true,"retrieved":"<?php"}',
+                notes="challenge dangerous type stored executable", role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_upload_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Type/path validated; dangerous upload rejected."""
+    return LabScenario(
+        name="lab_secure_upload_type_rejected",
+        expected_if_secure="Dangerous extension/path rejected",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="upload",
+        observations=[
+            LabObservation(
+                identity="user_a", method="POST", path="/api/upload", host=host,
+                status=200, body='{"stored":"/uploads/photo.png","exec":false}',
+                notes="baseline allowed image", role="baseline",
+            ),
+            LabObservation(
+                identity="user_a", method="POST", path="/api/upload", host=host,
+                status=403, body='{"error":"type_not_allowed","exec":false}',
+                notes="challenge rejected", role="challenge",
+            ),
+        ],
+    )
+
+
+def hard_deserialization_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Unsafe reconstruction: malformed blob still applied (impact signal in body)."""
+    return LabScenario(
+        name="lab_hard_insecure_deserialization",
+        expected_if_secure="Malformed blob rejected fail-closed",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="deserialization",
+        observations=[
+            LabObservation(
+                identity="user_a", method="POST", path="/api/session", host=host,
+                status=200, body='{"session":"valid","role":"user"}',
+                notes="baseline valid blob", role="baseline",
+            ),
+            LabObservation(
+                identity="attacker", method="POST", path="/api/session", host=host,
+                status=200, body='{"session":"tampered","role":"admin","gadget":"applied"}',
+                notes="challenge bit-flip accepted with privilege impact", role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_deserialization_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Fail-closed on tampered blob; no privilege change."""
+    return LabScenario(
+        name="lab_secure_deserialization_reject",
+        expected_if_secure="Tampered blob rejected",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="deserialization",
+        observations=[
+            LabObservation(
+                identity="user_a", method="POST", path="/api/session", host=host,
+                status=200, body='{"session":"valid","role":"user"}',
+                notes="baseline valid blob", role="baseline",
+            ),
+            LabObservation(
+                identity="attacker", method="POST", path="/api/session", host=host,
+                status=400, body='{"error":"invalid_session_blob"}',
+                notes="challenge fail-closed", role="challenge",
+            ),
+        ],
+    )
+
+
+def heldout_sqli_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Held-out injection: different surface (sort param) with count differential."""
+    return LabScenario(
+        name="lab_heldout_sqli_sort_param",
+        expected_if_secure="No stable differential on sort predicate pair",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="injection",
+        observations=[
+            LabObservation(
+                identity="attacker", method="GET", path="/api/items?sort=name", host=host,
+                status=200, body='{"rows":2,"digest":"abc"}',
+                notes="baseline sort", role="baseline",
+            ),
+            LabObservation(
+                identity="attacker", method="GET", path="/api/items?sort=name);SELECT", host=host,
+                status=200, body='{"rows":99,"digest":"xyz"}',
+                notes="challenge structural break differential", role="challenge",
+            ),
+        ],
+    )
+
+
+def heldout_xss_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Held-out XSS: attribute context unencoded reflection (not HTML text)."""
+    return LabScenario(
+        name="lab_heldout_xss_attr_context",
+        expected_if_secure="Attribute values encoded",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="xss",
+        observations=[
+            LabObservation(
+                identity="victim", method="GET", path="/profile?title=hello", host=host,
+                status=200, body='<html><input value="hello"></html>',
+                notes="baseline", role="baseline",
+            ),
+            LabObservation(
+                identity="victim", method="GET", path='/profile?title=x" onfocus=alert(1)', host=host,
+                status=200, body='<html><input value="x" onfocus=alert(1)"></html>',
+                notes="challenge attribute breakout unencoded", role="challenge",
+            ),
+        ],
+    )
+
+
+def heldout_secure_xss_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Held-out secure XSS: attribute encoded."""
+    return LabScenario(
+        name="lab_heldout_secure_xss_attr_encoded",
+        expected_if_secure="Attribute values encoded",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="xss",
+        observations=[
+            LabObservation(
+                identity="victim", method="GET", path="/profile?title=hello", host=host,
+                status=200, body='<html><input value="hello"></html>',
+                notes="baseline", role="baseline",
+            ),
+            LabObservation(
+                identity="victim", method="GET", path='/profile?title=x" onfocus=alert(1)', host=host,
+                status=200, body='<html><input value="x&quot; onfocus=alert(1)"></html>',
+                notes="challenge encoded quotes", role="challenge",
+            ),
+        ],
+    )
+
+
+
+
+def hard_cache_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """
+    Web cache deception: unauthenticated client receives authenticated body
+    under attacker-influenced cache key. Impact = private fields in second client.
+    """
+    return LabScenario(
+        name="lab_hard_cache_deception",
+        expected_if_secure="Unauthenticated fetch must not receive private body",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="cache",
+        observations=[
+            LabObservation(
+                identity="victim_auth",
+                method="GET",
+                path="/account/settings",
+                host=host,
+                status=200,
+                body='{"email":"victim@ex.com","ssn_last4":"1234","cache":"miss"}',
+                notes="baseline authenticated private body",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker_anon",
+                method="GET",
+                path="/account/settings/..css",
+                host=host,
+                status=200,
+                body='{"email":"victim@ex.com","ssn_last4":"1234","cache":"hit","via":"cdn"}',
+                notes="challenge unauth client receives private markers via cache key",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_cache_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Cache correctly separates personalized responses; anon gets no private fields."""
+    return LabScenario(
+        name="lab_secure_cache_no_private_leak",
+        expected_if_secure="Unauthenticated path returns no private markers",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="cache",
+        observations=[
+            LabObservation(
+                identity="victim_auth",
+                method="GET",
+                path="/account/settings",
+                host=host,
+                status=200,
+                body='{"email":"victim@ex.com","ssn_last4":"1234","cache-control":"private"}',
+                notes="baseline authenticated",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker_anon",
+                method="GET",
+                path="/account/settings/..css",
+                host=host,
+                status=403,
+                body='{"error":"login_required"}',
+                notes="challenge no private body",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def ambiguous_cache_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Cache-Control differs but no private field leakage — inconclusive for deception."""
+    return LabScenario(
+        name="lab_ambiguous_cache_headers_only",
+        expected_if_secure="Header difference alone is not private data exposure",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="cache",
+        observations=[
+            LabObservation(
+                identity="victim_auth",
+                method="GET",
+                path="/account/settings",
+                host=host,
+                status=200,
+                body='{"ok":true,"cache-control":"private"}',
+                notes="baseline",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker_anon",
+                method="GET",
+                path="/account/settings/static.css",
+                host=host,
+                status=200,
+                body='{"ok":true,"cache-control":"public","body":"/* css */}',
+                notes="challenge public static — no private fields",
+                role="challenge",
+            ),
+        ],
+    )
+
+
 
 class ClosedLoopRunner:
     """
@@ -484,6 +1072,7 @@ class ClosedLoopRunner:
         data_dir: Optional[Path] = None,
         knowledge_retriever=None,
         max_experiments_budget: Optional[int] = None,
+        enable_skills: bool = False,
     ):
         self.engagement_id = engagement_id
         self.scope_path = Path(scope_path)
@@ -494,6 +1083,7 @@ class ClosedLoopRunner:
         self.research = ResearchLoop(
             engagement_id=engagement_id,
             knowledge_retriever=knowledge_retriever,
+            enable_skills=enable_skills,
         )
         self.max_experiments_budget = max_experiments_budget
 
@@ -513,6 +1103,17 @@ class ClosedLoopRunner:
         scenario = scenario or default_idor_lab_scenario(host_hint)
         if getattr(scenario, "methodology", None):
             self.research.preferred_methodology = scenario.methodology
+
+        # Derive ranking-only tech signals from lab observation paths (e.g. /graphql).
+        tech_hints: list[str] = []
+        for obs in getattr(scenario, "observations", None) or []:
+            path = (getattr(obs, "path", "") or "").lower()
+            if "graphql" in path or path.rstrip("/").endswith("/gql"):
+                tech_hints.append("graphql")
+            if "websocket" in path or path.startswith("/ws"):
+                tech_hints.append("websocket")
+        if tech_hints:
+            self.research.extra_tech_signals = list(dict.fromkeys(tech_hints))
 
         if skip_research and prior_plan is not None:
             plan = prior_plan
@@ -587,11 +1188,81 @@ class ClosedLoopRunner:
             )
             # Polarity from observation statuses (role-aware), NOT from fixture oracle label.
             # suggests_authz_issue is lab metadata for scenario design only — not a polarity source.
+            meth = (getattr(scenario, "methodology", "") or "").lower()
             if is_challenge:
-                if obs.status == 200:
-                    polarity = EvidencePolarity.POSITIVE  # unexpected success on challenge identity
-                elif obs.status in (401, 403, 404):
+                if obs.status in (401, 403, 404):
                     polarity = EvidencePolarity.NEGATIVE  # access denied on challenge
+                elif obs.status == 200:
+                    if meth == "xss":
+                        # Encoded reflection is negative; raw script/event handlers are positive.
+                        body = obs.body or ""
+                        body_l = body.lower()
+                        if "&lt;" in body or "&#" in body or "&quot;" in body:
+                            polarity = EvidencePolarity.NEGATIVE
+                        elif (
+                            "<script" in body_l
+                            or "onerror=" in body_l
+                            or "onfocus=" in body_l
+                            or "javascript:" in body_l
+                        ):
+                            polarity = EvidencePolarity.POSITIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    elif meth == "injection":
+                        baseline_obs = next(
+                            (
+                                o
+                                for o in scenario.observations
+                                if (getattr(o, "role", "") or "") == "baseline"
+                            ),
+                            None,
+                        )
+                        if baseline_obs is not None and (obs.body or "") == (baseline_obs.body or ""):
+                            polarity = EvidencePolarity.NEGATIVE
+                        elif baseline_obs is not None and (obs.body or "") != (baseline_obs.body or ""):
+                            polarity = EvidencePolarity.POSITIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    elif meth == "traversal":
+                        body_l = (obs.body or "").lower()
+                        # Foreign file content markers — not mere presence of ../ in the request path.
+                        if "root:x:" in body_l or "/etc/passwd" in body_l and "content" in body_l:
+                            polarity = EvidencePolarity.POSITIVE
+                        elif obs.status in (401, 403, 404) or "path_outside" in body_l:
+                            polarity = EvidencePolarity.NEGATIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    elif meth == "upload":
+                        body_l = (obs.body or "").lower()
+                        if '"exec":true' in body_l or "shell.php" in body_l or "<?php" in body_l:
+                            polarity = EvidencePolarity.POSITIVE
+                        elif "type_not_allowed" in body_l or obs.status in (401, 403, 404):
+                            polarity = EvidencePolarity.NEGATIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    elif meth == "cache":
+                        body_l = (obs.body or "").lower()
+                        # Private field markers on anon client = positive impact.
+                        if "ssn_last4" in body_l or (
+                            "email" in body_l and "victim@" in body_l and "cache" in body_l and "hit" in body_l
+                        ):
+                            polarity = EvidencePolarity.POSITIVE
+                        elif "login_required" in body_l or obs.status in (401, 403, 404):
+                            polarity = EvidencePolarity.NEGATIVE
+                        elif "/* css" in body_l or "cache-control" in body_l:
+                            polarity = EvidencePolarity.NEUTRAL
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    elif meth == "deserialization":
+                        body_l = (obs.body or "").lower()
+                        if '"gadget":"applied"' in body_l or '"role":"admin"' in body_l:
+                            polarity = EvidencePolarity.POSITIVE
+                        elif "invalid_session" in body_l or obs.status in (400, 401, 403):
+                            polarity = EvidencePolarity.NEGATIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    else:
+                        polarity = EvidencePolarity.POSITIVE  # unexpected success on challenge identity
             # Experiment-aware adjustment: incomplete required evidence → down-weight to NEUTRAL
             if alignment.required_evidence and not all(
                 r.status == "satisfied" for r in alignment.required_evidence
@@ -1047,6 +1718,7 @@ class ClosedLoopRunner:
             )
             for i, lo in enumerate(out.observations or [])
         ]
+        out.methodology = getattr(scenario, "methodology", None) or "unknown"
         out.episode = EpisodeRecorder(self.engagement_id).from_closed_loop(out)
         out.knowledge_candidates = KnowledgeCandidateFactory(self.engagement_id).from_closed_loop(
             out, episode_id=getattr(out.episode, "episode_id", "")

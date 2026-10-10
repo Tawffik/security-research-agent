@@ -102,3 +102,41 @@ OPENROUTER_MODEL=meta-llama/llama-3.2-3b-instruct:free   # optional
 - Research findings still come from evidence loop, never from the model alone
 - Without the key, the agent research loop works as before
 
+
+## Codespaces + OpenCode + SRA MCP Gateway (no VPS)
+
+### Android path (free Codespaces)
+
+1. Open `https://github.com/Tawffik/security-research-agent` in Chrome on Android.
+2. **Code → Codespaces → Create / Resume**.
+3. Wait for `postCreate` / `postStart` (control plane on port 8080).
+4. In the Codespace terminal:
+
+```bash
+export PYTHONPATH=src
+python3 -m agent_core.integrations.mcp_stdio_server --list-tools
+python3 -m agent_core.integrations.mcp_stdio_server --call sra_browser_navigate \
+  '{"url":"https://api.acme-demo.test/orders/1","experiment_id":"exp-demo"}'
+```
+
+5. Optional OpenCode (if installed in the Codespace):
+
+```bash
+# Install once per Codespace (official installer — check opencode.ai/docs)
+# Then copy config:
+cp config/remote/opencode-mcp.example.json opencode.json
+# Launch TUI / web UI via Codespaces terminal; use private port forward only.
+```
+
+6. Control plane UI: open forwarded **8080** (private) → cookie session auto-auth.
+
+### Defaults
+
+- MCP gateway tools only: `sra_*` allowlist
+- Raw Playwright/Burp MCP **disabled** in the example profile
+- `live_mode=false` — no live target traffic
+- Synthetic browser pages for offline E2E
+
+### Live target
+
+Do **not** enable live mode until you supply an authorized program scope file and explicit approval.

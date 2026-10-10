@@ -191,3 +191,39 @@ def test_xss_methodology_ranks_xss_procedure():
     assert res.procedure_ids[0].startswith("PROC-0013") or any(
         "0013" in x for x in res.procedure_ids
     )
+
+
+def test_graphql_lab_surface_prefers_graphql_tagged_procedure():
+    """Lab observations on /graphql must bias ranking toward GraphQL-tagged procedures."""
+    from pathlib import Path
+    from agent_core.evaluation.research_utility import (
+        KnowledgeCondition,
+        ScenarioSpec,
+        run_condition,
+    )
+
+    root = Path(__file__).resolve().parents[1]
+    tr, m, result = run_condition(
+        condition=KnowledgeCondition.CURATED,
+        scenario=ScenarioSpec(
+            "graphql_global_id", "graphql_global_id", "vulnerable", "confirmed"
+        ),
+        recon_path=root / "examples" / "fixtures" / "sample_recon.json",
+        scope_path=root / "examples" / "demo_program_scope.yaml",
+        knowledge_root=root / "knowledge",
+        engagement_suffix="_gql_rank",
+    )
+    assert m.true_positive is True
+    assert m.retrieval_had_effect is True
+    # GraphQL-tagged procedures should rank above generic function-level admin
+    assert tr.procedure_ids, "expected retrieved procedures"
+    gql_procs = {"PROC-0035", "PROC-0023"}
+    top3 = tr.procedure_ids[:3]
+    assert gql_procs.intersection(top3), (
+        f"expected GraphQL-tagged procedure in top-3, got {top3}"
+    )
+    if "PROC-0029" in tr.procedure_ids and gql_procs.intersection(tr.procedure_ids):
+        gql_idx = min(
+            tr.procedure_ids.index(p) for p in tr.procedure_ids if p in gql_procs
+        )
+        assert gql_idx < tr.procedure_ids.index("PROC-0029")
