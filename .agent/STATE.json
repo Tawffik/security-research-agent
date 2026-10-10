@@ -2,8 +2,8 @@
   "campaign_status": "IN_PROGRESS",
   "current_gate": "knowledge_surface_aligned_retrieval",
   "current_task": "graphql_surface_tech_ranking_fix",
-  "current_commit": "e78b5e4c7cbb2861153093c6855596101c9be917",
-  "last_verified_commit": "pending_local",
+  "current_commit": "045d1d7845564cdbbdfd75569e9df5110725b213",
+  "last_verified_commit": "045d1d7845564cdbbdfd75569e9df5110725b213",
   "last_test": {
     "passed": 449,
     "failed": 0,
