@@ -44,6 +44,9 @@ from agent_core.orchestrator.closed_loop import (
     heldout_sqli_lab_scenario,
     heldout_xss_lab_scenario,
     heldout_secure_xss_lab_scenario,
+    hard_cache_lab_scenario,
+    secure_cache_lab_scenario,
+    ambiguous_cache_lab_scenario,
 )
 
 
@@ -175,6 +178,12 @@ def _scenario(name: str) -> LabScenario:
         return heldout_xss_lab_scenario()
     if name == "heldout_secure_xss":
         return heldout_secure_xss_lab_scenario()
+    if name == "hard_cache":
+        return hard_cache_lab_scenario()
+    if name == "secure_cache":
+        return secure_cache_lab_scenario()
+    if name == "ambiguous_cache":
+        return ambiguous_cache_lab_scenario()
     raise ValueError(name)
 
 
@@ -194,6 +203,7 @@ HARD_SCENARIOS = [
     ScenarioSpec("hard_deserialization", "hard_deserialization", "vulnerable", "confirmed"),
     ScenarioSpec("heldout_sqli", "heldout_sqli", "vulnerable", "confirmed"),
     ScenarioSpec("heldout_xss", "heldout_xss", "vulnerable", "confirmed"),
+    ScenarioSpec("hard_cache", "hard_cache", "vulnerable", "confirmed"),
 ]
 
 

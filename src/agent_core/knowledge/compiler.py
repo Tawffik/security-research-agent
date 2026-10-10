@@ -215,7 +215,7 @@ class KnowledgeCompiler:
                     unit_id=r.record_id,
                     kind=r.kind,
                     title=r.title,
-                    domain=r.domain or "authorization",
+                    domain=r.domain or "unknown",
                     security_property=r.security_property or "authorization",
                     technologies=_tech_from_record(r),
                     tags=list(r.tags or []),

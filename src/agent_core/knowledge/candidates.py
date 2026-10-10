@@ -41,7 +41,7 @@ class KnowledgeCandidate:
     experiment_id: str = ""
     hypothesis_id: str = ""
     evidence_ids: list[str] = field(default_factory=list)
-    security_property: str = "authorization"
+    security_property: str = "unknown"
     target_host: str = ""
     context_notes: str = ""
     confidence: float = 0.4
@@ -118,6 +118,13 @@ class KnowledgeCandidateFactory:
         exp_id = getattr(closed, "selected_experiment_id", None) or align.get("experiment_id") or ""
         hyp_id = align.get("hypothesis_id") or ""
         evidence = list(getattr(closed, "evidence_ids", None) or [])
+        # Propagate methodology from scenario/result — never invent authorization.
+        prop = (
+            getattr(closed, "methodology", None)
+            or align.get("methodology")
+            or ""
+        )
+        prop = str(prop).strip().lower() or "unknown"
 
         # Positive candidate only as context-bound, non-universal
         if getattr(closed, "referee_accepted", False):
@@ -128,7 +135,7 @@ class KnowledgeCandidateFactory:
                     kind=CandidateKind.POSITIVE,
                     status=CandidateStatus.PROPOSED,
                     summary=(
-                        "Context-bound authorization finding candidate from lab episode; "
+                        f"Context-bound {prop} finding candidate from lab episode; "
                         "not a global vulnerability pattern"
                     ),
                     episode_id=ep_id,
@@ -136,7 +143,7 @@ class KnowledgeCandidateFactory:
                     experiment_id=str(exp_id),
                     hypothesis_id=str(hyp_id),
                     evidence_ids=evidence,
-                    security_property="authorization",
+                    security_property=prop,
                     target_host=host,
                     context_notes="lab fixture; requires independent validation before promotion",
                     confidence=0.55,
@@ -180,7 +187,7 @@ class KnowledgeCandidateFactory:
                         experiment_id=str(exp_id),
                         hypothesis_id=str(hyp_id),
                         evidence_ids=evidence,
-                        security_property="authorization",
+                        security_property=prop,
                         target_host=host,
                         context_notes="negative result is scoped to this engagement/fixture only",
                         confidence=0.5,

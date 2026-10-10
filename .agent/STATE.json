@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "phase_offline_capability_expansion",
-  "current_task": "offline_lab_expansion_traversal_upload_deser",
+  "current_gate": "knowledge_integrity_and_cache",
+  "current_task": "p0_integrity_cache_slice",
   "current_commit": "5659ff356049d8ca26f7bbac819cf72236601651",
   "last_verified_commit": "5659ff356049d8ca26f7bbac819cf72236601651",
   "last_test": {
-    "passed": 489,
+    "passed": 494,
     "failed": 0,
     "skipped": 8
   },
@@ -105,7 +105,12 @@
     "deserialization_offline_labs",
     "heldout_injection_xss",
     "taxonomy_traversal_alias",
-    "benchmark_leakage_audit_note"
+    "benchmark_leakage_audit_note",
+    "methodology_propagation_fix",
+    "readiness_vocabulary_honest",
+    "cache_offline_labs",
+    "candidate_security_property_from_scenario",
+    "state_head_reconcile"
   ],
   "in_progress": [],
   "deferred": [],

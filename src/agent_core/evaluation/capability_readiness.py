@@ -119,6 +119,9 @@ LAB_REGISTRY: dict[str, str] = {
     "heldout_sqli_lab_scenario": "injection",
     "heldout_xss_lab_scenario": "xss",
     "heldout_secure_xss_lab_scenario": "xss",
+    "hard_cache_lab_scenario": "cache",
+    "secure_cache_lab_scenario": "cache",
+    "ambiguous_cache_lab_scenario": "cache",
 }
 
 
@@ -142,6 +145,7 @@ BENCHMARK_REGISTRY: dict[str, str] = {
     "hard_deserialization": "deserialization",
     "heldout_sqli": "injection",
     "heldout_xss": "xss",
+    "hard_cache": "cache",
 }
 
 
@@ -211,14 +215,19 @@ def build_readiness_matrix(
             slot.next_dependency = "offline_lab_scenario"
             slot.evidence_notes.append("curated knowledge present; no lab factory")
         elif has_lab and not has_bench:
-            slot.readiness = "LAB_TESTED"
+            # Lab factory exists — wiring only, not an executed measurement.
+            slot.readiness = "LAB_WIRED"
             slot.next_dependency = "utility_benchmark_row"
-        elif has_lab and has_bench:
-            # LAB + benchmark harness wired; not automatically HELD_OUT_VALIDATED
-            slot.readiness = "BENCHMARKED"
-            slot.next_dependency = "held_out_or_authorized_e2e"
             slot.evidence_notes.append(
-                "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+                "lab factory present; not proof of executed utility measurement"
+            )
+        elif has_lab and has_bench:
+            # Registry + lab only: BENCHMARK_WIRED, not executed/held-out validated.
+            slot.readiness = "BENCHMARK_WIRED"
+            slot.next_dependency = "execute_utility_and_heldout"
+            slot.evidence_notes.append(
+                "lab+registry wired; require executed utility/held-out evidence "
+                "before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
             )
         else:
             slot.readiness = "PARTIAL_IMPLEMENTATION"

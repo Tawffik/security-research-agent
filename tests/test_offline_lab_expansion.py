@@ -119,6 +119,45 @@ def test_readiness_includes_new_domains():
     assert m["traversal"].lab_scenarios
     assert m["upload"].lab_scenarios
     assert m["deserialization"].lab_scenarios
-    assert m["traversal"].readiness in ("LAB_TESTED", "BENCHMARKED")
+    assert m["traversal"].readiness in ("LAB_WIRED", "BENCHMARK_WIRED", "LAB_TESTED", "BENCHMARKED")
     # path_traversal alias should not leave proc-only in other if domain is traversal
     assert m["traversal"].knowledge_procedures >= 1 or m["other"].knowledge_procedures >= 0
+
+
+def test_hard_cache_curated_confirms():
+    from agent_core.orchestrator.closed_loop import hard_cache_lab_scenario
+
+    r = _run("cache_curated", hard_cache_lab_scenario(), KnowledgeCondition.CURATED)
+    assert r.final_status == "confirmed"
+    assert r.referee_accepted is True
+    assert r.methodology == "cache"
+
+
+def test_hard_cache_none_blocked():
+    from agent_core.orchestrator.closed_loop import hard_cache_lab_scenario
+
+    r = _run("cache_none", hard_cache_lab_scenario(), KnowledgeCondition.NONE)
+    assert r.final_status != "confirmed" or r.knowledge_procedure_required_blocked
+
+
+def test_secure_cache_no_fp():
+    from agent_core.orchestrator.closed_loop import secure_cache_lab_scenario
+
+    r = _run("cache_sec", secure_cache_lab_scenario(), KnowledgeCondition.CURATED)
+    assert r.referee_accepted is False
+    assert r.final_status != "confirmed"
+
+
+def test_candidate_security_property_follows_methodology():
+    from agent_core.orchestrator.closed_loop import hard_cache_lab_scenario
+
+    r = _run("cache_cand", hard_cache_lab_scenario(), KnowledgeCondition.CURATED)
+    props = [getattr(c, "security_property", "") for c in (r.knowledge_candidates or [])]
+    assert props, "expected at least one candidate"
+    assert all(p == "cache" for p in props), props
+
+
+def test_readiness_is_wired_not_executed_claim():
+    m = build_readiness_matrix(KROOT, skills_root=SKILLS)
+    assert m["cache"].readiness in ("LAB_WIRED", "BENCHMARK_WIRED")
+    assert m["cache"].readiness not in ("BENCHMARK_EXECUTED", "HELDOUT_VALIDATED", "LIVE_E2E_VALIDATED")

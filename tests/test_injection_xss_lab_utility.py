@@ -107,10 +107,10 @@ def test_readiness_matrix_injection_and_xss_have_labs():
     matrix = build_readiness_matrix(KROOT, skills_root=SKILLS)
     assert matrix["injection"].knowledge_procedures >= 1
     assert any("sqli" in x for x in matrix["injection"].lab_scenarios)
-    assert matrix["injection"].readiness in ("LAB_TESTED", "BENCHMARKED")
+    assert matrix["injection"].readiness in ("LAB_WIRED", "BENCHMARK_WIRED", "LAB_TESTED", "BENCHMARKED")
     assert matrix["xss"].knowledge_procedures >= 1
     assert any("xss" in x for x in matrix["xss"].lab_scenarios)
-    assert matrix["authorization"].readiness in ("LAB_TESTED", "BENCHMARKED")
+    assert matrix["authorization"].readiness in ("LAB_WIRED", "BENCHMARK_WIRED", "LAB_TESTED", "BENCHMARKED")
     assert matrix["authorization"].knowledge_cases >= 1
 
 
@@ -163,4 +163,4 @@ def test_authentication_domain_readiness():
     authn = matrix["authentication"]
     assert authn.knowledge_procedures >= 1
     assert len(authn.lab_scenarios) >= 2
-    assert authn.readiness in ("LAB_TESTED", "BENCHMARKED")
+    assert authn.readiness in ("LAB_WIRED", "BENCHMARK_WIRED", "LAB_TESTED", "BENCHMARKED")

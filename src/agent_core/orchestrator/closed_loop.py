@@ -81,7 +81,7 @@ class LabScenario:
     suggests_authz_issue: bool = False
     # Hard-scenario: confirm only if selected experiment is knowledge/procedure-driven
     requires_knowledge_procedure: bool = False
-    methodology: str = "authorization"
+    methodology: str = "unknown"
 
 
 @dataclass
@@ -115,6 +115,7 @@ class ClosedLoopResult:
     knowledge_candidates: list = field(default_factory=list)
     normalized_observations: list = field(default_factory=list)
     structured_case: object = None  # episode → case candidate (untrusted)
+    methodology: str = "unknown"
 
 
 def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
@@ -123,6 +124,7 @@ def default_idor_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
         name="lab_idor_order_cross_identity",
         expected_if_secure="Non-owner must receive 403/404; owner may receive 200 for own object",
         suggests_authz_issue=True,
+        methodology="authorization",
         observations=[
             LabObservation(
                 identity="user_a",
@@ -152,6 +154,7 @@ def secure_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
         name="lab_secure_ownership",
         expected_if_secure="Non-owner blocked",
         suggests_authz_issue=False,
+        methodology="authorization",
         observations=[
             LabObservation(
                 identity="user_a",
@@ -179,6 +182,7 @@ def public_resource_lab_scenario(host: str = "api.acme-demo.test") -> LabScenari
         name="lab_public_resource",
         expected_if_secure="Public catalog is readable by any authenticated user — not IDOR",
         suggests_authz_issue=False,
+        methodology="authorization",
         observations=[
             LabObservation(
                 identity="user_a",
@@ -208,6 +212,7 @@ def shared_object_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
         name="lab_shared_acl_object",
         expected_if_secure="Shared ACL grants both identities access — not horizontal IDOR",
         suggests_authz_issue=False,
+        methodology="authorization",
         observations=[
             LabObservation(
                 identity="user_a",
@@ -948,6 +953,110 @@ def heldout_secure_xss_lab_scenario(host: str = "api.acme-demo.test") -> LabScen
 
 
 
+
+def hard_cache_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """
+    Web cache deception: unauthenticated client receives authenticated body
+    under attacker-influenced cache key. Impact = private fields in second client.
+    """
+    return LabScenario(
+        name="lab_hard_cache_deception",
+        expected_if_secure="Unauthenticated fetch must not receive private body",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="cache",
+        observations=[
+            LabObservation(
+                identity="victim_auth",
+                method="GET",
+                path="/account/settings",
+                host=host,
+                status=200,
+                body='{"email":"victim@ex.com","ssn_last4":"1234","cache":"miss"}',
+                notes="baseline authenticated private body",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker_anon",
+                method="GET",
+                path="/account/settings/..css",
+                host=host,
+                status=200,
+                body='{"email":"victim@ex.com","ssn_last4":"1234","cache":"hit","via":"cdn"}',
+                notes="challenge unauth client receives private markers via cache key",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_cache_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Cache correctly separates personalized responses; anon gets no private fields."""
+    return LabScenario(
+        name="lab_secure_cache_no_private_leak",
+        expected_if_secure="Unauthenticated path returns no private markers",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="cache",
+        observations=[
+            LabObservation(
+                identity="victim_auth",
+                method="GET",
+                path="/account/settings",
+                host=host,
+                status=200,
+                body='{"email":"victim@ex.com","ssn_last4":"1234","cache-control":"private"}',
+                notes="baseline authenticated",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker_anon",
+                method="GET",
+                path="/account/settings/..css",
+                host=host,
+                status=403,
+                body='{"error":"login_required"}',
+                notes="challenge no private body",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def ambiguous_cache_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Cache-Control differs but no private field leakage — inconclusive for deception."""
+    return LabScenario(
+        name="lab_ambiguous_cache_headers_only",
+        expected_if_secure="Header difference alone is not private data exposure",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="cache",
+        observations=[
+            LabObservation(
+                identity="victim_auth",
+                method="GET",
+                path="/account/settings",
+                host=host,
+                status=200,
+                body='{"ok":true,"cache-control":"private"}',
+                notes="baseline",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker_anon",
+                method="GET",
+                path="/account/settings/static.css",
+                host=host,
+                status=200,
+                body='{"ok":true,"cache-control":"public","body":"/* css */}',
+                notes="challenge public static — no private fields",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+
 class ClosedLoopRunner:
     """
     Runs plan + lab observation + evidence + verification under ScopeGuard.
@@ -1129,6 +1238,19 @@ class ClosedLoopRunner:
                             polarity = EvidencePolarity.POSITIVE
                         elif "type_not_allowed" in body_l or obs.status in (401, 403, 404):
                             polarity = EvidencePolarity.NEGATIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    elif meth == "cache":
+                        body_l = (obs.body or "").lower()
+                        # Private field markers on anon client = positive impact.
+                        if "ssn_last4" in body_l or (
+                            "email" in body_l and "victim@" in body_l and "cache" in body_l and "hit" in body_l
+                        ):
+                            polarity = EvidencePolarity.POSITIVE
+                        elif "login_required" in body_l or obs.status in (401, 403, 404):
+                            polarity = EvidencePolarity.NEGATIVE
+                        elif "/* css" in body_l or "cache-control" in body_l:
+                            polarity = EvidencePolarity.NEUTRAL
                         else:
                             polarity = EvidencePolarity.NEUTRAL
                     elif meth == "deserialization":
@@ -1596,6 +1718,7 @@ class ClosedLoopRunner:
             )
             for i, lo in enumerate(out.observations or [])
         ]
+        out.methodology = getattr(scenario, "methodology", None) or "unknown"
         out.episode = EpisodeRecorder(self.engagement_id).from_closed_loop(out)
         out.knowledge_candidates = KnowledgeCandidateFactory(self.engagement_id).from_closed_loop(
             out, episode_id=getattr(out.episode, "episode_id", "")

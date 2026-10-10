@@ -1,23 +1,19 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS  
-**Focus:** Offline lab expansion (traversal / upload / deserialization + held-out)
+**Focus:** P0 knowledge integrity + cache offline slice
 
 ## Verified
-- HEAD after expansion commits
-- Tests: 489 passed / 8 skipped
-- Utility: none→incomplete/blocked; curated→confirmed on hard labs
-- Secure counterparts: no FP
-- Held-out SQLi/XSS attribute & sort-param variants pass under curated knowledge
-- requires_knowledge_procedure gates on knowledge-driven experiment flag, not oracle labels
-
-## BENCHMARKED meaning
-Offline lab + knowledge + harness row only — not live E2E, not broad held-out corpus.
-
-## READY next
-- cache lab slice
-- remaining `other` domain taxonomy
-- more held-out surfaces if needed
+- Methodology no longer defaults candidates/episodes to authorization
+- LabScenario default methodology=unknown; authz labs set explicitly
+- Readiness: LAB_WIRED / BENCHMARK_WIRED (not executed/held-out claims)
+- Cache hard/secure/ambiguous labs + utility behavior
+- Tests: 494 passed / 8 skipped
 
 ## BLOCKED
 - Gate 6B live authorization
+
+## READY next
+- BENCHMARK_EXECUTED evidence attachment for measured domains
+- residual other taxonomy
+- retrieval ranking quality tests

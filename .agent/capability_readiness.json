@@ -6,7 +6,7 @@
     ],
     "domain": "authentication",
     "evidence_notes": [
-      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
     ],
     "knowledge_cases": 7,
     "knowledge_negatives": 0,
@@ -18,8 +18,8 @@
       "hard_csrf_lab_scenario",
       "secure_csrf_lab_scenario"
     ],
-    "next_dependency": "held_out_or_authorized_e2e",
-    "readiness": "BENCHMARKED",
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
     "skills": []
   },
   "authorization": {
@@ -35,7 +35,7 @@
     ],
     "domain": "authorization",
     "evidence_notes": [
-      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
     ],
     "knowledge_cases": 15,
     "knowledge_negatives": 5,
@@ -54,8 +54,8 @@
       "role_authorized_lab_scenario",
       "cache_artifact_lab_scenario"
     ],
-    "next_dependency": "held_out_or_authorized_e2e",
-    "readiness": "BENCHMARKED",
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
     "skills": [
       "authz-idor-analysis",
       "authz-idor-analysis",
@@ -69,7 +69,7 @@
     ],
     "domain": "business_logic",
     "evidence_notes": [
-      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
     ],
     "knowledge_cases": 3,
     "knowledge_negatives": 0,
@@ -78,25 +78,31 @@
     "lab_scenarios": [
       "business_logic_coupon_lab_scenario"
     ],
-    "next_dependency": "held_out_or_authorized_e2e",
-    "readiness": "BENCHMARKED",
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
     "skills": [
       "authz-idor-analysis"
     ]
   },
   "cache": {
-    "benchmark_scenarios": [],
+    "benchmark_scenarios": [
+      "hard_cache"
+    ],
     "domain": "cache",
     "evidence_notes": [
-      "curated knowledge present; no lab factory"
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
     ],
     "knowledge_cases": 1,
     "knowledge_negatives": 1,
     "knowledge_patterns": 1,
     "knowledge_procedures": 1,
-    "lab_scenarios": [],
-    "next_dependency": "offline_lab_scenario",
-    "readiness": "KNOWLEDGE_ONLY",
+    "lab_scenarios": [
+      "hard_cache_lab_scenario",
+      "secure_cache_lab_scenario",
+      "ambiguous_cache_lab_scenario"
+    ],
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
     "skills": []
   },
   "cors": {
@@ -131,7 +137,7 @@
     ],
     "domain": "deserialization",
     "evidence_notes": [
-      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
     ],
     "knowledge_cases": 1,
     "knowledge_negatives": 0,
@@ -141,8 +147,8 @@
       "hard_deserialization_lab_scenario",
       "secure_deserialization_lab_scenario"
     ],
-    "next_dependency": "held_out_or_authorized_e2e",
-    "readiness": "BENCHMARKED",
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
     "skills": []
   },
   "graphql": {
@@ -178,7 +184,7 @@
     ],
     "domain": "injection",
     "evidence_notes": [
-      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
     ],
     "knowledge_cases": 4,
     "knowledge_negatives": 2,
@@ -189,8 +195,8 @@
       "secure_sqli_lab_scenario",
       "heldout_sqli_lab_scenario"
     ],
-    "next_dependency": "held_out_or_authorized_e2e",
-    "readiness": "BENCHMARKED",
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
     "skills": []
   },
   "jwt": {
@@ -281,7 +287,7 @@
     ],
     "domain": "ssrf",
     "evidence_notes": [
-      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
     ],
     "knowledge_cases": 1,
     "knowledge_negatives": 2,
@@ -290,8 +296,8 @@
     "lab_scenarios": [
       "hard_ssrf_lab_scenario"
     ],
-    "next_dependency": "held_out_or_authorized_e2e",
-    "readiness": "BENCHMARKED",
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
     "skills": []
   },
   "ssti": {
@@ -313,7 +319,7 @@
     ],
     "domain": "traversal",
     "evidence_notes": [
-      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
     ],
     "knowledge_cases": 1,
     "knowledge_negatives": 0,
@@ -323,8 +329,8 @@
       "hard_path_traversal_lab_scenario",
       "secure_path_traversal_lab_scenario"
     ],
-    "next_dependency": "held_out_or_authorized_e2e",
-    "readiness": "BENCHMARKED",
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
     "skills": []
   },
   "upload": {
@@ -333,7 +339,7 @@
     ],
     "domain": "upload",
     "evidence_notes": [
-      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
     ],
     "knowledge_cases": 1,
     "knowledge_negatives": 0,
@@ -343,8 +349,8 @@
       "hard_upload_lab_scenario",
       "secure_upload_lab_scenario"
     ],
-    "next_dependency": "held_out_or_authorized_e2e",
-    "readiness": "BENCHMARKED",
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
     "skills": []
   },
   "websocket": {
@@ -367,7 +373,7 @@
     ],
     "domain": "xss",
     "evidence_notes": [
-      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+      "lab+registry wired; require executed utility/held-out evidence before claiming BENCHMARK_EXECUTED or HELDOUT_VALIDATED"
     ],
     "knowledge_cases": 2,
     "knowledge_negatives": 2,
@@ -379,8 +385,8 @@
       "heldout_xss_lab_scenario",
       "heldout_secure_xss_lab_scenario"
     ],
-    "next_dependency": "held_out_or_authorized_e2e",
-    "readiness": "BENCHMARKED",
+    "next_dependency": "execute_utility_and_heldout",
+    "readiness": "BENCHMARK_WIRED",
     "skills": []
   },
   "xxe": {
