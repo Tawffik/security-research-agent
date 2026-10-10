@@ -195,6 +195,15 @@ class ResearchLoop:
         experiments = self.experiment_designer.design_portfolio(
             hypotheses, ctx, retrieval=retrieval
         )
+        # Attach skill evidence requirements onto experiments (policy only).
+        if (
+            self.enable_skills
+            and self.skill_advisor is not None
+            and self.last_skill_advice is not None
+        ):
+            self.skill_advisor.apply_to_experiments(
+                experiments, self.last_skill_advice
+            )
         self.last_knowledge_contract = contract_from_retrieval(
             retrieval, property_hint=self.preferred_methodology or ""
         )

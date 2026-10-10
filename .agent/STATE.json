@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
   "current_gate": "skill_decision_policy",
-  "current_task": "skill_research_loop_integration",
+  "current_task": "skill_evidence_requirement_decision_impact",
   "current_commit": "045d1d7845564cdbbdfd75569e9df5110725b213",
   "last_verified_commit": "045d1d7845564cdbbdfd75569e9df5110725b213",
   "last_test": {
-    "passed": 456,
+    "passed": 462,
     "failed": 0,
     "skipped": 8
   },
@@ -85,7 +85,9 @@
     "graphql_procedure_ranking_utility",
     "skill_decision_advisor",
     "skill_research_loop_opt_in",
-    "skill_ab_utility_benchmark"
+    "skill_ab_utility_benchmark",
+    "skill_evidence_req_on_experiments",
+    "skill_evidence_decision_benchmark"
   ],
   "in_progress": [],
   "deferred": [],

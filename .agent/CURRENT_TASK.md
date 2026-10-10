@@ -1,21 +1,19 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS  
-**Focus:** Skill → ResearchLoop decision-policy integration (measured)
+**Focus:** Evidence-requirement decision impact (skills)
 
-## Completed this cycle
-- Characterized skill lifecycle: Engagement path executes mock skill steps; ResearchLoop had no skill seam
-- Added SkillDecisionAdvisor (metadata + SKILL.md skeptic prompts → competing explanations)
-- Opt-in enable_skills on ResearchLoop / ClosedLoopRunner (never grants execution permission)
-- A/B: skills alone do NOT flip hard FN→TP; knowledge remains necessary for TP
-- Skills do NOT create FPs on secure/public; combined knowledge+skills preserves TP
-- Suite: 456 passed / 8 skipped
+## Result
+Skill evidence_requirements now attach to Experiment.required_evidence when enable_skills=True.
+Normalized identity-pair tokens participate in alignment checks.
 
-## Skill claim status
-- selected: yes | loaded: yes | influenced context: yes | improved TP vs knowledge: not shown | substitutes knowledge: no
+Benchmark (offline):
+- Skills change required_evidence set (measurable)
+- Skills do not flip incomplete→confirmed or secure→FP
+- Curated knowledge remains the TP driver
+- Skills alone leave hard authz incomplete/FN
+
+Suite: 462 passed / 8 skipped
 
 ## Blocked
-- Gate 6B live authorization; live browser UI
-
-## Next
-- Optional skill falsification budget metrics; live path when authorized
+Gate 6B live; live browser UI

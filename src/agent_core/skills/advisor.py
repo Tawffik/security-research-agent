@@ -184,3 +184,92 @@ class SkillDecisionAdvisor:
         if added:
             advice.influenced = True
         return added
+
+    @staticmethod
+    def normalize_evidence_requirements(texts: list[str]) -> list[str]:
+        """
+        Map free-text skill evidence requirements to alignment-friendly tokens.
+        Does not invent new security claims — only structures stated requirements.
+        """
+        out: list[str] = []
+        for t in texts or []:
+            low = (t or "").lower()
+            if not low:
+                continue
+            # Align with experiment_alignment keyword maps (identities a/b, ownership, …)
+            if any(
+                k in low
+                for k in (
+                    "two different",
+                    "two identities",
+                    "diffed response",
+                    "replayed under two",
+                )
+            ) or (
+                "identity" in low
+                and any(k in low for k in ("diff", "two", "pair", "both", "replay"))
+            ):
+                out.append("Identities A/B")
+                out.append("cross_identity_pair")
+            elif "ownership" in low or ("object" in low and "bound" in low):
+                out.append("ownership_proof")
+            else:
+                # keep a short hash of free text for traceability
+                token = "skill_req:" + "".join(
+                    ch if ch.isalnum() or ch in "_-" else "_" for ch in low
+                )[:48]
+                out.append(token)
+        # dedupe preserve order
+        seen: set[str] = set()
+        ordered: list[str] = []
+        for x in out:
+            if x not in seen:
+                seen.add(x)
+                ordered.append(x)
+        return ordered
+
+    def apply_to_experiments(
+        self,
+        experiments: list,
+        advice: Optional[SkillAdvice] = None,
+    ) -> int:
+        """
+        Merge normalized skill evidence requirements into Experiment.required_evidence.
+        Returns number of requirement tokens newly attached across experiments.
+        Only requirements from vulnerability-class skills are applied (recon packaging
+        requirements must not inflate authorization experiment evidence gates).
+        """
+        advice = advice or self.last_advice
+        if not experiments or advice is None:
+            return 0
+        # Prefer requirements from skills that declare vulnerability classes
+        vuln_reqs: list[str] = []
+        for p in advice.provenance or []:
+            name = p.get("skill") or ""
+            try:
+                sk = self.registry.get(name)
+            except KeyError:
+                continue
+            if sk.metadata.vulnerability_classes:
+                vuln_reqs.extend(sk.metadata.evidence_requirements or [])
+        texts = vuln_reqs or list(advice.evidence_requirements or [])
+        tokens = self.normalize_evidence_requirements(texts)
+        # Drop free-text skill_req noise from non-vuln skills when vuln_reqs present
+        if vuln_reqs:
+            tokens = [t for t in tokens if not t.startswith("skill_req:")]
+        if not tokens:
+            return 0
+        added = 0
+        for exp in experiments:
+            existing = list(getattr(exp, "required_evidence", None) or [])
+            for tok in tokens:
+                if tok not in existing:
+                    existing.append(tok)
+                    added += 1
+            try:
+                exp.required_evidence = existing[:12]
+            except Exception:
+                pass
+        if added:
+            advice.influenced = True
+        return added
