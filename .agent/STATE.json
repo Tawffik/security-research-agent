@@ -2,8 +2,8 @@
   "campaign_status": "IN_PROGRESS",
   "current_gate": "knowledge_integrity_and_cache",
   "current_task": "p0_integrity_cache_slice",
-  "current_commit": "5659ff356049d8ca26f7bbac819cf72236601651",
-  "last_verified_commit": "5659ff356049d8ca26f7bbac819cf72236601651",
+  "current_commit": "96285483e202ae3786ac33d816299a04cada686f",
+  "last_verified_commit": "96285483e202ae3786ac33d816299a04cada686f",
   "last_test": {
     "passed": 494,
     "failed": 0,
