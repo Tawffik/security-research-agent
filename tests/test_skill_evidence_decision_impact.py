@@ -137,3 +137,27 @@ def test_skills_change_required_evidence_vs_baseline():
     assert any(
         "Identities" in x or "cross_identity" in x for x in (with_skills - base)
     )
+
+
+def test_missing_identity_pair_marks_insufficient_when_skills_enabled():
+    """Skill identity-pair req missing on incomplete lab → experiment_sufficiency insufficient."""
+    ret = build_retriever(KnowledgeCondition.NONE, KROOT)
+    runner = ClosedLoopRunner(
+        scope_path=SCOPE,
+        engagement_id="skill_insuff_amb",
+        knowledge_retriever=ret,
+        enable_skills=True,
+    )
+    r = runner.run(FIXTURE, scenario=ambiguous_incomplete_lab_scenario())
+    align = r.experiment_alignment
+    ad = align.to_dict() if hasattr(align, "to_dict") else (align or {})
+    reqs = ad.get("required_evidence") or []
+    identity_missing = any(
+        (x.get("requirement") if isinstance(x, dict) else getattr(x, "requirement", ""))
+        in ("Identities A/B", "cross_identity_pair")
+        and (x.get("status") if isinstance(x, dict) else getattr(x, "status", "")) == "missing"
+        for x in reqs
+    )
+    assert identity_missing, f"expected missing identity-pair req, got {reqs}"
+    assert ad.get("experiment_sufficiency") == "insufficient"
+    assert r.referee_accepted is False

@@ -347,6 +347,35 @@ def align_experiment_to_scenario(
             notes.append(f"pair:{pair_note}")
 
     sufficiency = compute_experiment_sufficiency(experiment, coverage)
+    # Identity-pair requirements are decision-critical for authorization experiments.
+    # Other missing reqs (e.g. mutation side-effects on GET labs) must not blanket
+    # reclassify sufficiency — that regresses adaptive stop semantics.
+    _identity_critical = (
+        "identities a/b",
+        "cross_identity",
+        "cross-identity",
+        "both identities",
+        "two identities",
+        "identity_a",
+        "identity_b",
+    )
+
+    def _is_identity_req(req: str) -> bool:
+        k = (req or "").lower()
+        return any(t in k for t in _identity_critical)
+
+    if any(
+        r.status == "missing" and _is_identity_req(r.requirement) for r in req_status
+    ):
+        if sufficiency == "sufficient":
+            sufficiency = "insufficient"
+            notes.append("identity_pair_evidence_missing→insufficient")
+    elif any(
+        r.status == "ambiguous" and _is_identity_req(r.requirement) for r in req_status
+    ):
+        if sufficiency == "sufficient":
+            sufficiency = "ambiguous"
+            notes.append("identity_pair_evidence_ambiguous→ambiguous")
     gap = None
     if sufficiency != "sufficient":
         notes.append(f"experiment_sufficiency={sufficiency}")
