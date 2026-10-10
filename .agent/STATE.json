@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "phase_a_inventory_plus_injection_xss_slice",
-  "current_task": "authn_jwt_csrf_labs",
+  "current_gate": "phase_offline_capability_expansion",
+  "current_task": "offline_lab_expansion_traversal_upload_deser",
   "current_commit": "ad1b6700d78c674ef7bd67a2c0aff851686c4172",
   "last_verified_commit": "ad1b6700d78c674ef7bd67a2c0aff851686c4172",
   "last_test": {
-    "passed": 476,
+    "passed": 489,
     "failed": 0,
     "skipped": 8
   },
@@ -99,7 +99,13 @@
     "secure_injection_xss_polarity",
     "injection_xss_utility_tests",
     "hard_jwt_csrf_labs",
-    "authentication_domain_readiness"
+    "authentication_domain_readiness",
+    "path_traversal_offline_labs",
+    "upload_offline_labs",
+    "deserialization_offline_labs",
+    "heldout_injection_xss",
+    "taxonomy_traversal_alias",
+    "benchmark_leakage_audit_note"
   ],
   "in_progress": [],
   "deferred": [],

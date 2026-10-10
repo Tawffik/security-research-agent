@@ -739,6 +739,215 @@ def secure_csrf_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
 
 
 
+
+def hard_path_traversal_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Unauthorized file read via traversal; content identity proves boundary escape."""
+    return LabScenario(
+        name="lab_hard_path_traversal_file_read",
+        expected_if_secure="Traversal contained; no foreign file content",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="traversal",
+        observations=[
+            LabObservation(
+                identity="user_a", method="GET", path="/api/files?name=report.pdf", host=host,
+                status=200, body='{"name":"report.pdf","content":"INVOICE-OK"}',
+                notes="baseline allowed object", role="baseline",
+            ),
+            LabObservation(
+                identity="user_a", method="GET", path="/api/files?name=../../etc/passwd", host=host,
+                status=200, body='{"name":"../../etc/passwd","content":"root:x:0:0:root:/root:"}',
+                notes="challenge traversal returns foreign file content", role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_path_traversal_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Normalization/containment: traversal string does not yield foreign content."""
+    return LabScenario(
+        name="lab_secure_path_traversal_contained",
+        expected_if_secure="Traversal rejected or contained to allowed root",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="traversal",
+        observations=[
+            LabObservation(
+                identity="user_a", method="GET", path="/api/files?name=report.pdf", host=host,
+                status=200, body='{"name":"report.pdf","content":"INVOICE-OK"}',
+                notes="baseline allowed object", role="baseline",
+            ),
+            LabObservation(
+                identity="user_a", method="GET", path="/api/files?name=../../etc/passwd", host=host,
+                status=403, body='{"error":"path_outside_root"}',
+                notes="challenge traversal blocked", role="challenge",
+            ),
+        ],
+    )
+
+
+def hard_upload_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Upload accepted and stored under web-executable path (dangerous handling)."""
+    return LabScenario(
+        name="lab_hard_upload_executable_path",
+        expected_if_secure="Dangerous type/path rejected or stored non-executable",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="upload",
+        observations=[
+            LabObservation(
+                identity="user_a", method="POST", path="/api/upload", host=host,
+                status=200, body='{"stored":"/uploads/photo.png","exec":false}',
+                notes="baseline allowed image", role="baseline",
+            ),
+            LabObservation(
+                identity="user_a", method="POST", path="/api/upload", host=host,
+                status=200, body='{"stored":"/var/www/html/shell.php","exec":true,"retrieved":"<?php"}',
+                notes="challenge dangerous type stored executable", role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_upload_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Type/path validated; dangerous upload rejected."""
+    return LabScenario(
+        name="lab_secure_upload_type_rejected",
+        expected_if_secure="Dangerous extension/path rejected",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="upload",
+        observations=[
+            LabObservation(
+                identity="user_a", method="POST", path="/api/upload", host=host,
+                status=200, body='{"stored":"/uploads/photo.png","exec":false}',
+                notes="baseline allowed image", role="baseline",
+            ),
+            LabObservation(
+                identity="user_a", method="POST", path="/api/upload", host=host,
+                status=403, body='{"error":"type_not_allowed","exec":false}',
+                notes="challenge rejected", role="challenge",
+            ),
+        ],
+    )
+
+
+def hard_deserialization_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Unsafe reconstruction: malformed blob still applied (impact signal in body)."""
+    return LabScenario(
+        name="lab_hard_insecure_deserialization",
+        expected_if_secure="Malformed blob rejected fail-closed",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="deserialization",
+        observations=[
+            LabObservation(
+                identity="user_a", method="POST", path="/api/session", host=host,
+                status=200, body='{"session":"valid","role":"user"}',
+                notes="baseline valid blob", role="baseline",
+            ),
+            LabObservation(
+                identity="attacker", method="POST", path="/api/session", host=host,
+                status=200, body='{"session":"tampered","role":"admin","gadget":"applied"}',
+                notes="challenge bit-flip accepted with privilege impact", role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_deserialization_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Fail-closed on tampered blob; no privilege change."""
+    return LabScenario(
+        name="lab_secure_deserialization_reject",
+        expected_if_secure="Tampered blob rejected",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="deserialization",
+        observations=[
+            LabObservation(
+                identity="user_a", method="POST", path="/api/session", host=host,
+                status=200, body='{"session":"valid","role":"user"}',
+                notes="baseline valid blob", role="baseline",
+            ),
+            LabObservation(
+                identity="attacker", method="POST", path="/api/session", host=host,
+                status=400, body='{"error":"invalid_session_blob"}',
+                notes="challenge fail-closed", role="challenge",
+            ),
+        ],
+    )
+
+
+def heldout_sqli_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Held-out injection: different surface (sort param) with count differential."""
+    return LabScenario(
+        name="lab_heldout_sqli_sort_param",
+        expected_if_secure="No stable differential on sort predicate pair",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="injection",
+        observations=[
+            LabObservation(
+                identity="attacker", method="GET", path="/api/items?sort=name", host=host,
+                status=200, body='{"rows":2,"digest":"abc"}',
+                notes="baseline sort", role="baseline",
+            ),
+            LabObservation(
+                identity="attacker", method="GET", path="/api/items?sort=name);SELECT", host=host,
+                status=200, body='{"rows":99,"digest":"xyz"}',
+                notes="challenge structural break differential", role="challenge",
+            ),
+        ],
+    )
+
+
+def heldout_xss_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Held-out XSS: attribute context unencoded reflection (not HTML text)."""
+    return LabScenario(
+        name="lab_heldout_xss_attr_context",
+        expected_if_secure="Attribute values encoded",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="xss",
+        observations=[
+            LabObservation(
+                identity="victim", method="GET", path="/profile?title=hello", host=host,
+                status=200, body='<html><input value="hello"></html>',
+                notes="baseline", role="baseline",
+            ),
+            LabObservation(
+                identity="victim", method="GET", path='/profile?title=x" onfocus=alert(1)', host=host,
+                status=200, body='<html><input value="x" onfocus=alert(1)"></html>',
+                notes="challenge attribute breakout unencoded", role="challenge",
+            ),
+        ],
+    )
+
+
+def heldout_secure_xss_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Held-out secure XSS: attribute encoded."""
+    return LabScenario(
+        name="lab_heldout_secure_xss_attr_encoded",
+        expected_if_secure="Attribute values encoded",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="xss",
+        observations=[
+            LabObservation(
+                identity="victim", method="GET", path="/profile?title=hello", host=host,
+                status=200, body='<html><input value="hello"></html>',
+                notes="baseline", role="baseline",
+            ),
+            LabObservation(
+                identity="victim", method="GET", path='/profile?title=x" onfocus=alert(1)', host=host,
+                status=200, body='<html><input value="x&quot; onfocus=alert(1)"></html>',
+                notes="challenge encoded quotes", role="challenge",
+            ),
+        ],
+    )
+
+
+
 class ClosedLoopRunner:
     """
     Runs plan + lab observation + evidence + verification under ScopeGuard.
@@ -876,16 +1085,21 @@ class ClosedLoopRunner:
                     polarity = EvidencePolarity.NEGATIVE  # access denied on challenge
                 elif obs.status == 200:
                     if meth == "xss":
-                        # Encoded reflection is negative evidence; raw HTML/script markers are positive.
-                        body_l = (obs.body or "").lower()
-                        if "&lt;" in (obs.body or "") or "&#" in (obs.body or ""):
+                        # Encoded reflection is negative; raw script/event handlers are positive.
+                        body = obs.body or ""
+                        body_l = body.lower()
+                        if "&lt;" in body or "&#" in body or "&quot;" in body:
                             polarity = EvidencePolarity.NEGATIVE
-                        elif "<script" in body_l or "onerror=" in body_l or "javascript:" in body_l:
+                        elif (
+                            "<script" in body_l
+                            or "onerror=" in body_l
+                            or "onfocus=" in body_l
+                            or "javascript:" in body_l
+                        ):
                             polarity = EvidencePolarity.POSITIVE
                         else:
                             polarity = EvidencePolarity.NEUTRAL
                     elif meth == "injection":
-                        # Boolean/content differential vs baseline body — not status alone.
                         baseline_obs = next(
                             (
                                 o
@@ -898,6 +1112,31 @@ class ClosedLoopRunner:
                             polarity = EvidencePolarity.NEGATIVE
                         elif baseline_obs is not None and (obs.body or "") != (baseline_obs.body or ""):
                             polarity = EvidencePolarity.POSITIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    elif meth == "traversal":
+                        body_l = (obs.body or "").lower()
+                        # Foreign file content markers — not mere presence of ../ in the request path.
+                        if "root:x:" in body_l or "/etc/passwd" in body_l and "content" in body_l:
+                            polarity = EvidencePolarity.POSITIVE
+                        elif obs.status in (401, 403, 404) or "path_outside" in body_l:
+                            polarity = EvidencePolarity.NEGATIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    elif meth == "upload":
+                        body_l = (obs.body or "").lower()
+                        if '"exec":true' in body_l or "shell.php" in body_l or "<?php" in body_l:
+                            polarity = EvidencePolarity.POSITIVE
+                        elif "type_not_allowed" in body_l or obs.status in (401, 403, 404):
+                            polarity = EvidencePolarity.NEGATIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    elif meth == "deserialization":
+                        body_l = (obs.body or "").lower()
+                        if '"gadget":"applied"' in body_l or '"role":"admin"' in body_l:
+                            polarity = EvidencePolarity.POSITIVE
+                        elif "invalid_session" in body_l or obs.status in (400, 401, 403):
+                            polarity = EvidencePolarity.NEGATIVE
                         else:
                             polarity = EvidencePolarity.NEUTRAL
                     else:

@@ -25,6 +25,7 @@ METHODOLOGY_DOMAINS = [
     "csrf",
     "jwt",
     "path_traversal",
+    "traversal",
     "oauth",
     "graphql",
     "cors",
@@ -78,6 +79,10 @@ def _domain_of_record(rec: Any) -> str:
         "sql": "injection",
         "server-side-request-forgery": "ssrf",
         "business-logic": "business_logic",
+        "path_traversal": "traversal",
+        "path-traversal": "traversal",
+        "file-upload": "upload",
+        "insecure-deserialization": "deserialization",
     }
     return aliases.get(d, d)
 
@@ -105,7 +110,17 @@ LAB_REGISTRY: dict[str, str] = {
     "secure_jwt_lab_scenario": "authentication",
     "hard_csrf_lab_scenario": "authentication",
     "secure_csrf_lab_scenario": "authentication",
+    "hard_path_traversal_lab_scenario": "traversal",
+    "secure_path_traversal_lab_scenario": "traversal",
+    "hard_upload_lab_scenario": "upload",
+    "secure_upload_lab_scenario": "upload",
+    "hard_deserialization_lab_scenario": "deserialization",
+    "secure_deserialization_lab_scenario": "deserialization",
+    "heldout_sqli_lab_scenario": "injection",
+    "heldout_xss_lab_scenario": "xss",
+    "heldout_secure_xss_lab_scenario": "xss",
 }
+
 
 BENCHMARK_REGISTRY: dict[str, str] = {
     "pos_authz": "authorization",
@@ -122,7 +137,13 @@ BENCHMARK_REGISTRY: dict[str, str] = {
     "hard_xss": "xss",
     "hard_jwt": "authentication",
     "hard_csrf": "authentication",
+    "hard_path_traversal": "traversal",
+    "hard_upload": "upload",
+    "hard_deserialization": "deserialization",
+    "heldout_sqli": "injection",
+    "heldout_xss": "xss",
 }
+
 
 
 def build_readiness_matrix(

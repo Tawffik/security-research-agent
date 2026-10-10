@@ -126,18 +126,23 @@
     "skills": []
   },
   "deserialization": {
-    "benchmark_scenarios": [],
+    "benchmark_scenarios": [
+      "hard_deserialization"
+    ],
     "domain": "deserialization",
     "evidence_notes": [
-      "curated knowledge present; no lab factory"
+      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
     ],
     "knowledge_cases": 1,
     "knowledge_negatives": 0,
     "knowledge_patterns": 1,
     "knowledge_procedures": 1,
-    "lab_scenarios": [],
-    "next_dependency": "offline_lab_scenario",
-    "readiness": "KNOWLEDGE_ONLY",
+    "lab_scenarios": [
+      "hard_deserialization_lab_scenario",
+      "secure_deserialization_lab_scenario"
+    ],
+    "next_dependency": "held_out_or_authorized_e2e",
+    "readiness": "BENCHMARKED",
     "skills": []
   },
   "graphql": {
@@ -168,7 +173,8 @@
   },
   "injection": {
     "benchmark_scenarios": [
-      "hard_sqli"
+      "hard_sqli",
+      "heldout_sqli"
     ],
     "domain": "injection",
     "evidence_notes": [
@@ -180,7 +186,8 @@
     "knowledge_procedures": 4,
     "lab_scenarios": [
       "hard_sqli_lab_scenario",
-      "secure_sqli_lab_scenario"
+      "secure_sqli_lab_scenario",
+      "heldout_sqli_lab_scenario"
     ],
     "next_dependency": "held_out_or_authorized_e2e",
     "readiness": "BENCHMARKED",
@@ -218,10 +225,10 @@
     "evidence_notes": [
       "curated knowledge present; no lab factory"
     ],
-    "knowledge_cases": 3,
+    "knowledge_cases": 2,
     "knowledge_negatives": 0,
-    "knowledge_patterns": 3,
-    "knowledge_procedures": 3,
+    "knowledge_patterns": 2,
+    "knowledge_procedures": 2,
     "lab_scenarios": [],
     "next_dependency": "offline_lab_scenario",
     "readiness": "KNOWLEDGE_ONLY",
@@ -300,19 +307,44 @@
     "readiness": "NOT_IMPLEMENTED",
     "skills": []
   },
-  "upload": {
-    "benchmark_scenarios": [],
-    "domain": "upload",
+  "traversal": {
+    "benchmark_scenarios": [
+      "hard_path_traversal"
+    ],
+    "domain": "traversal",
     "evidence_notes": [
-      "curated knowledge present; no lab factory"
+      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
     ],
     "knowledge_cases": 1,
     "knowledge_negatives": 0,
     "knowledge_patterns": 1,
     "knowledge_procedures": 1,
-    "lab_scenarios": [],
-    "next_dependency": "offline_lab_scenario",
-    "readiness": "KNOWLEDGE_ONLY",
+    "lab_scenarios": [
+      "hard_path_traversal_lab_scenario",
+      "secure_path_traversal_lab_scenario"
+    ],
+    "next_dependency": "held_out_or_authorized_e2e",
+    "readiness": "BENCHMARKED",
+    "skills": []
+  },
+  "upload": {
+    "benchmark_scenarios": [
+      "hard_upload"
+    ],
+    "domain": "upload",
+    "evidence_notes": [
+      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+    ],
+    "knowledge_cases": 1,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "hard_upload_lab_scenario",
+      "secure_upload_lab_scenario"
+    ],
+    "next_dependency": "held_out_or_authorized_e2e",
+    "readiness": "BENCHMARKED",
     "skills": []
   },
   "websocket": {
@@ -330,7 +362,8 @@
   },
   "xss": {
     "benchmark_scenarios": [
-      "hard_xss"
+      "hard_xss",
+      "heldout_xss"
     ],
     "domain": "xss",
     "evidence_notes": [
@@ -342,7 +375,9 @@
     "knowledge_procedures": 1,
     "lab_scenarios": [
       "hard_xss_lab_scenario",
-      "secure_xss_lab_scenario"
+      "secure_xss_lab_scenario",
+      "heldout_xss_lab_scenario",
+      "heldout_secure_xss_lab_scenario"
     ],
     "next_dependency": "held_out_or_authorized_e2e",
     "readiness": "BENCHMARKED",

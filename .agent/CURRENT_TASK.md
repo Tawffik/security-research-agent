@@ -1,17 +1,23 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS  
-**Focus:** Multi-domain offline labs (authz, injection, XSS, authentication)
+**Focus:** Offline lab expansion (traversal / upload / deserialization + held-out)
 
 ## Verified
-- Capability readiness matrix
-- Labs: SQLi, XSS, JWT, CSRF (+ secure controls)
-- Tests: 476 passed / 8 skipped
-- Methodology-aware polarity for xss/injection
+- HEAD after expansion commits
+- Tests: 489 passed / 8 skipped
+- Utility: none→incomplete/blocked; curated→confirmed on hard labs
+- Secure counterparts: no FP
+- Held-out SQLi/XSS attribute & sort-param variants pass under curated knowledge
+- requires_knowledge_procedure gates on knowledge-driven experiment flag, not oracle labels
 
-## READY next offline
-- cache / deserialization / upload / path_traversal lab slices
-- held-out variants for injection/XSS
+## BENCHMARKED meaning
+Offline lab + knowledge + harness row only — not live E2E, not broad held-out corpus.
+
+## READY next
+- cache lab slice
+- remaining `other` domain taxonomy
+- more held-out surfaces if needed
 
 ## BLOCKED
 - Gate 6B live authorization
