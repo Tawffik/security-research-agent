@@ -26,6 +26,7 @@ from agent_core.recon.adapter import RawRecon, ReconResultAdapter
 from agent_core.schemas.research import Decision, Experiment, Hypothesis, Opportunity
 from agent_core.schemas.target import TargetContext, TargetGraph
 from agent_core.target.opportunity import OpportunityEngine
+from agent_core.skills.advisor import SkillDecisionAdvisor
 
 
 @dataclass
@@ -48,6 +49,8 @@ class ResearchLoop:
         self,
         engagement_id: str = "eng_offline_001",
         knowledge_retriever: Optional[KnowledgeRetriever] = None,
+        skill_advisor: Optional[SkillDecisionAdvisor] = None,
+        enable_skills: bool = False,
     ):
         self.engagement_id = engagement_id
         self.adapter = ReconResultAdapter(engagement_id)
@@ -67,6 +70,12 @@ class ResearchLoop:
         self.last_knowledge_contract = None
         self.last_discrimination_scores = []
         self.last_utility_scores = []
+        # Skills: opt-in decision-policy injection only (never execution permission).
+        self.enable_skills = bool(enable_skills)
+        self.skill_advisor = skill_advisor
+        if self.enable_skills and self.skill_advisor is None:
+            self.skill_advisor = SkillDecisionAdvisor()
+        self.last_skill_advice = None
 
     def run_from_recon_file(self, path: Union[str, Path]) -> ResearchLoopResult:
         recon = RawRecon.from_file(path)
@@ -164,6 +173,23 @@ class ResearchLoop:
                     note = f"negative:{neg.record_id}:{neg.title[:80]}"
                     if note not in retrieval.competing_explanations:
                         retrieval.competing_explanations.append(note)
+
+        # Optional skill policy injection (competing explanations / evidence hints).
+        self.last_skill_advice = None
+        if self.enable_skills and self.skill_advisor is not None:
+            techs = [str(t) for t in (getattr(ctx, "technologies", None) or [])]
+            advice = self.skill_advisor.advise(
+                methodology=meth or self.preferred_methodology,
+                technologies=techs,
+                vulnerability_hint=None,
+            )
+            added = self.skill_advisor.apply_to_retrieval(retrieval, advice)
+            self.last_skill_advice = advice
+            if added and retrieval is not None:
+                # Re-generate hypotheses so skill competitors are visible in portfolio
+                hypotheses = self.hypothesis_engine.generate_from_unknowns(
+                    unknowns, opportunities, ctx, retrieval=retrieval
+                )
 
         self.last_retrieval = retrieval
         experiments = self.experiment_designer.design_portfolio(

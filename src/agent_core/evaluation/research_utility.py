@@ -65,6 +65,10 @@ class InfluenceTrace:
     n_experiments_designed: int = 0
     knowledge_procedure_blocked: bool = False
     influence_class: str = ""  # useful_influence | influenced_no_utility_gain | retrieved_no_decision_effect | harmful_influence | none
+    skill_selected: list[str] = field(default_factory=list)
+    skill_loaded: list[str] = field(default_factory=list)
+    skill_influenced: bool = False
+    skill_competing_count: int = 0
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -215,13 +219,17 @@ def run_condition(
     scope_path: Path,
     knowledge_root: Path,
     engagement_suffix: str = "",
+    enable_skills: bool = False,
 ) -> tuple[InfluenceTrace, UtilityMetrics, ClosedLoopResult]:
     retriever = build_retriever(condition, knowledge_root)
     eng = f"util_{condition.value}_{scenario.scenario_id}{engagement_suffix}"
+    if enable_skills:
+        eng = eng + "_skills"
     runner = ClosedLoopRunner(
         scope_path=scope_path,
         engagement_id=eng,
         knowledge_retriever=retriever,
+        enable_skills=enable_skills,
     )
     result = runner.run(recon_path, scenario=_scenario(scenario.factory))
 
@@ -246,8 +254,14 @@ def run_condition(
         exp is not None and "procedure:" in (exp.discriminator or "")
     )
 
+    skill_advice = getattr(runner.research, "last_skill_advice", None)
+    skill_selected = list(getattr(skill_advice, "selected", None) or [])
+    skill_loaded = list(getattr(skill_advice, "loaded", None) or [])
+    skill_influenced = bool(getattr(skill_advice, "influenced", False))
+    skill_competing = len(getattr(skill_advice, "competing_explanations", None) or [])
+
     trace = InfluenceTrace(
-        condition=condition.value,
+        condition=condition.value + ("+skills" if enable_skills else ""),
         scenario_id=scenario.scenario_id,
         knowledge_ids_retrieved=kid,
         hyp_mode=getattr(hyp_engine, "last_mode", "") or "",
@@ -261,9 +275,14 @@ def run_condition(
         referee_accepted=bool(result.referee_accepted),
         evidence_count=len(result.evidence_ids or []),
         n_experiments_designed=len(result.plan.experiments or []),
+        skill_selected=skill_selected,
+        skill_loaded=skill_loaded,
+        skill_influenced=skill_influenced,
+        skill_competing_count=skill_competing,
         notes=[
             f"hyp_mode={getattr(hyp_engine, 'last_mode', '')}",
             f"retrieved={kid[:5]}",
+            f"skills={skill_selected}",
         ],
     )
 

@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
-  "current_gate": "knowledge_surface_aligned_retrieval",
-  "current_task": "graphql_surface_tech_ranking_fix",
+  "current_gate": "skill_decision_policy",
+  "current_task": "skill_research_loop_integration",
   "current_commit": "045d1d7845564cdbbdfd75569e9df5110725b213",
   "last_verified_commit": "045d1d7845564cdbbdfd75569e9df5110725b213",
   "last_test": {
-    "passed": 449,
+    "passed": 456,
     "failed": 0,
     "skipped": 8
   },
@@ -82,7 +82,10 @@
     "mcp_gateway_budget_guard",
     "tags_prefer_merge_score_order_fix",
     "lab_surface_tech_signals_for_retrieval",
-    "graphql_procedure_ranking_utility"
+    "graphql_procedure_ranking_utility",
+    "skill_decision_advisor",
+    "skill_research_loop_opt_in",
+    "skill_ab_utility_benchmark"
   ],
   "in_progress": [],
   "deferred": [],

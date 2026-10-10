@@ -484,6 +484,7 @@ class ClosedLoopRunner:
         data_dir: Optional[Path] = None,
         knowledge_retriever=None,
         max_experiments_budget: Optional[int] = None,
+        enable_skills: bool = False,
     ):
         self.engagement_id = engagement_id
         self.scope_path = Path(scope_path)
@@ -494,6 +495,7 @@ class ClosedLoopRunner:
         self.research = ResearchLoop(
             engagement_id=engagement_id,
             knowledge_retriever=knowledge_retriever,
+            enable_skills=enable_skills,
         )
         self.max_experiments_budget = max_experiments_budget
 

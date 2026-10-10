@@ -1,22 +1,21 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS  
-**Focus:** Knowledge surface-aligned retrieval (GraphQL lab ranking)
+**Focus:** Skill → ResearchLoop decision-policy integration (measured)
 
 ## Completed this cycle
-- Fixed `tags_prefer` merge that reversed procedure rank via repeated `insert(0)`
-- Lab observation paths (e.g. `/graphql`) inject ranking-only `extra_tech_signals`
-- Authz query builder path/tech surface signals for GraphQL/WebSocket
-- Surface-tech tag boost when signals include graphql/websocket
-- Regression: GraphQL-tagged procedures rank above generic function-level admin
-- Baseline research-utility: none→FN / curated→TP on hard scenarios; irrelevant→no FP
-- Full suite: **449 passed / 0 failed / 8 skipped**
+- Characterized skill lifecycle: Engagement path executes mock skill steps; ResearchLoop had no skill seam
+- Added SkillDecisionAdvisor (metadata + SKILL.md skeptic prompts → competing explanations)
+- Opt-in enable_skills on ResearchLoop / ClosedLoopRunner (never grants execution permission)
+- A/B: skills alone do NOT flip hard FN→TP; knowledge remains necessary for TP
+- Skills do NOT create FPs on secure/public; combined knowledge+skills preserves TP
+- Suite: 456 passed / 8 skipped
 
-## Still blocked (external/human)
-- Gate 6B live authorized target
-- Live browser network research
-- Public mobile HTTPS deploy
+## Skill claim status
+- selected: yes | loaded: yes | influenced context: yes | improved TP vs knowledge: not shown | substitutes knowledge: no
 
-## Next resume
-- Live authorization when available
-- Optional: measure whether progressive-disclosure skills (not just knowledge/) change ResearchLoop decisions
+## Blocked
+- Gate 6B live authorization; live browser UI
+
+## Next
+- Optional skill falsification budget metrics; live path when authorized
