@@ -2,8 +2,8 @@
   "campaign_status": "IN_PROGRESS",
   "current_gate": "skill_evidence_scoped_to_vuln_class",
   "current_task": "evidence_requirement_alignment_audit",
-  "current_commit": "PENDING",
-  "last_verified_commit": "PENDING",
+  "current_commit": "b6247c777e9ca55928c79e5ca8554e5db34d65af",
+  "last_verified_commit": "b6247c777e9ca55928c79e5ca8554e5db34d65af",
   "last_test": {
     "passed": 464,
     "failed": 0,
