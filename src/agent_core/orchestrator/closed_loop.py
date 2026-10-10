@@ -468,6 +468,144 @@ def cache_artifact_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario
     )
 
 
+def hard_sqli_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """
+    Injection boolean-pair lab: stable content differential under paired predicates.
+    Requires knowledge procedure (PROC-0018 family) for confirmation.
+    """
+    return LabScenario(
+        name="lab_hard_sqli_boolean_pair",
+        expected_if_secure="No stable differential between paired predicates",
+        suggests_authz_issue=True,  # issue path for lab referee (not literal authz)
+        requires_knowledge_procedure=True,
+        methodology="injection",
+        observations=[
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/search?q=widget",
+                host=host,
+                status=200,
+                body='{"count":3,"items":["a","b","c"],"hash":"baseline"}',
+                notes="baseline neutral filter",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/search?q=widget'+OR+'1'='1",
+                host=host,
+                status=200,
+                body='{"count":50,"items":["a","b","c","d","e"],"hash":"tautology"}',
+                notes="challenge true-like predicate differential",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_sqli_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Parameterized / whitelist search: paired probes do not change result set."""
+    return LabScenario(
+        name="lab_secure_sqli_parameterized",
+        expected_if_secure="Paired predicates yield identical result hashes",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="injection",
+        observations=[
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/search?q=widget",
+                host=host,
+                status=200,
+                body='{"count":3,"items":["a","b","c"],"hash":"same"}',
+                notes="baseline",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/search?q=widget'+OR+'1'='1",
+                host=host,
+                status=200,
+                body='{"count":3,"items":["a","b","c"],"hash":"same"}',
+                notes="challenge treated as literal string — no differential",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def hard_xss_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """
+    Reflected XSS context lab: unique marker reflected unencoded in HTML body.
+    Requires knowledge procedure (PROC-0013 family) for confirmation.
+    """
+    return LabScenario(
+        name="lab_hard_xss_reflection",
+        expected_if_secure="Marker encoded or not in executable HTML context",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="xss",
+        observations=[
+            LabObservation(
+                identity="victim",
+                method="GET",
+                path="/search?q=safe",
+                host=host,
+                status=200,
+                body="<html><body><p>Results for safe</p></body></html>",
+                notes="baseline safe query",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="victim",
+                method="GET",
+                path="/search?q=xssmark<script>",
+                host=host,
+                status=200,
+                body="<html><body><p>Results for xssmark<script></p></body></html>",
+                notes="challenge marker unencoded in HTML text context",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_xss_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """Encoded reflection: marker appears only entity-encoded."""
+    return LabScenario(
+        name="lab_secure_xss_encoded",
+        expected_if_secure="Special characters encoded in HTML context",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="xss",
+        observations=[
+            LabObservation(
+                identity="victim",
+                method="GET",
+                path="/search?q=safe",
+                host=host,
+                status=200,
+                body="<html><body><p>Results for safe</p></body></html>",
+                notes="baseline",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="victim",
+                method="GET",
+                path="/search?q=xssmark<script>",
+                host=host,
+                status=200,
+                body="<html><body><p>Results for xssmark&lt;script&gt;</p></body></html>",
+                notes="challenge fully encoded",
+                role="challenge",
+            ),
+        ],
+    )
+
+
 
 class ClosedLoopRunner:
     """
@@ -600,11 +738,38 @@ class ClosedLoopRunner:
             )
             # Polarity from observation statuses (role-aware), NOT from fixture oracle label.
             # suggests_authz_issue is lab metadata for scenario design only — not a polarity source.
+            meth = (getattr(scenario, "methodology", "") or "").lower()
             if is_challenge:
-                if obs.status == 200:
-                    polarity = EvidencePolarity.POSITIVE  # unexpected success on challenge identity
-                elif obs.status in (401, 403, 404):
+                if obs.status in (401, 403, 404):
                     polarity = EvidencePolarity.NEGATIVE  # access denied on challenge
+                elif obs.status == 200:
+                    if meth == "xss":
+                        # Encoded reflection is negative evidence; raw HTML/script markers are positive.
+                        body_l = (obs.body or "").lower()
+                        if "&lt;" in (obs.body or "") or "&#" in (obs.body or ""):
+                            polarity = EvidencePolarity.NEGATIVE
+                        elif "<script" in body_l or "onerror=" in body_l or "javascript:" in body_l:
+                            polarity = EvidencePolarity.POSITIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    elif meth == "injection":
+                        # Boolean/content differential vs baseline body — not status alone.
+                        baseline_obs = next(
+                            (
+                                o
+                                for o in scenario.observations
+                                if (getattr(o, "role", "") or "") == "baseline"
+                            ),
+                            None,
+                        )
+                        if baseline_obs is not None and (obs.body or "") == (baseline_obs.body or ""):
+                            polarity = EvidencePolarity.NEGATIVE
+                        elif baseline_obs is not None and (obs.body or "") != (baseline_obs.body or ""):
+                            polarity = EvidencePolarity.POSITIVE
+                        else:
+                            polarity = EvidencePolarity.NEUTRAL
+                    else:
+                        polarity = EvidencePolarity.POSITIVE  # unexpected success on challenge identity
             # Experiment-aware adjustment: incomplete required evidence → down-weight to NEUTRAL
             if alignment.required_evidence and not all(
                 r.status == "satisfied" for r in alignment.required_evidence

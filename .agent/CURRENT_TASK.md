@@ -1,17 +1,20 @@
 # Current Task
 
-**Campaign:** IN_PROGRESS
-**Focus:** Evidence-requirement alignment audit (post cabf065/dfa7f8e)
+**Campaign:** IN_PROGRESS  
+**Focus:** Capability inventory + injection/XSS offline vertical slices
 
 ## Verified
-- HEAD advanced past cabf065 → dfa7f8e then scoped recon reqs
-- Tests: 464 passed / 8 skipped (local)
-- Skills attach identity-pair only via vuln-class skills
-- Recon packaging requirements no longer attach to SSRF/BL experiments
-- 4-way matrix: skills do not change confirm/reject vs knowledge baseline
+- HEAD after inventory/labs (see git)
+- Tests: 471 passed / 8 skipped
+- Capability readiness matrix: `.agent/capability_readiness.json`
+- hard_sqli / hard_xss labs + secure controls
+- Methodology-aware polarity for xss/injection (no FP on encoded/parameterized)
+- HARD_SCENARIOS extended
 
-## Not demonstrated
-- Skills improve TP or reduce experiment count beyond curated knowledge
+## Not done
+- CSRF/JWT/path labs still knowledge-only or domain-parse gaps
+- Gate 6B live authorization
+- Held-out generalization for injection/XSS
 
 ## Blocked
-- Gate 6B live authorization
+- Gate 6B

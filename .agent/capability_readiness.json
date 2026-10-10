@@ -1,0 +1,341 @@
+{
+  "authorization": {
+    "benchmark_scenarios": [
+      "pos_authz",
+      "secure_authz",
+      "public_res",
+      "shared_res",
+      "hard_authz",
+      "action_level_bola",
+      "vertical_object",
+      "graphql_global_id"
+    ],
+    "domain": "authorization",
+    "evidence_notes": [
+      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+    ],
+    "knowledge_cases": 15,
+    "knowledge_negatives": 5,
+    "knowledge_patterns": 11,
+    "knowledge_procedures": 10,
+    "lab_scenarios": [
+      "default_idor_lab_scenario",
+      "secure_lab_scenario",
+      "public_resource_lab_scenario",
+      "shared_object_lab_scenario",
+      "hard_authz_lab_scenario",
+      "action_level_bola_lab_scenario",
+      "vertical_object_lab_scenario",
+      "graphql_global_id_lab_scenario",
+      "ambiguous_incomplete_lab_scenario",
+      "role_authorized_lab_scenario",
+      "cache_artifact_lab_scenario"
+    ],
+    "next_dependency": "held_out_or_authorized_e2e",
+    "readiness": "BENCHMARKED",
+    "skills": [
+      "authz-idor-analysis",
+      "authz-idor-analysis",
+      "recon-js-surface",
+      "report-generator"
+    ]
+  },
+  "business_logic": {
+    "benchmark_scenarios": [
+      "business_logic"
+    ],
+    "domain": "business_logic",
+    "evidence_notes": [
+      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+    ],
+    "knowledge_cases": 3,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 2,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "business_logic_coupon_lab_scenario"
+    ],
+    "next_dependency": "held_out_or_authorized_e2e",
+    "readiness": "BENCHMARKED",
+    "skills": [
+      "authz-idor-analysis"
+    ]
+  },
+  "cache": {
+    "benchmark_scenarios": [],
+    "domain": "cache",
+    "evidence_notes": [
+      "curated knowledge present; no lab factory"
+    ],
+    "knowledge_cases": 1,
+    "knowledge_negatives": 1,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [],
+    "next_dependency": "offline_lab_scenario",
+    "readiness": "KNOWLEDGE_ONLY",
+    "skills": []
+  },
+  "cors": {
+    "benchmark_scenarios": [],
+    "domain": "cors",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "csrf": {
+    "benchmark_scenarios": [],
+    "domain": "csrf",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "deserialization": {
+    "benchmark_scenarios": [],
+    "domain": "deserialization",
+    "evidence_notes": [
+      "curated knowledge present; no lab factory"
+    ],
+    "knowledge_cases": 1,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [],
+    "next_dependency": "offline_lab_scenario",
+    "readiness": "KNOWLEDGE_ONLY",
+    "skills": []
+  },
+  "graphql": {
+    "benchmark_scenarios": [],
+    "domain": "graphql",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "http_desync": {
+    "benchmark_scenarios": [],
+    "domain": "http_desync",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "injection": {
+    "benchmark_scenarios": [
+      "hard_sqli"
+    ],
+    "domain": "injection",
+    "evidence_notes": [
+      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+    ],
+    "knowledge_cases": 4,
+    "knowledge_negatives": 2,
+    "knowledge_patterns": 4,
+    "knowledge_procedures": 4,
+    "lab_scenarios": [
+      "hard_sqli_lab_scenario",
+      "secure_sqli_lab_scenario"
+    ],
+    "next_dependency": "held_out_or_authorized_e2e",
+    "readiness": "BENCHMARKED",
+    "skills": []
+  },
+  "jwt": {
+    "benchmark_scenarios": [],
+    "domain": "jwt",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "oauth": {
+    "benchmark_scenarios": [],
+    "domain": "oauth",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "other": {
+    "benchmark_scenarios": [],
+    "domain": "other",
+    "evidence_notes": [
+      "curated knowledge present; no lab factory"
+    ],
+    "knowledge_cases": 10,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 10,
+    "knowledge_procedures": 9,
+    "lab_scenarios": [],
+    "next_dependency": "offline_lab_scenario",
+    "readiness": "KNOWLEDGE_ONLY",
+    "skills": []
+  },
+  "path_traversal": {
+    "benchmark_scenarios": [],
+    "domain": "path_traversal",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "redirect": {
+    "benchmark_scenarios": [],
+    "domain": "redirect",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "session": {
+    "benchmark_scenarios": [],
+    "domain": "session",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": [
+      "recon-js-surface"
+    ]
+  },
+  "ssrf": {
+    "benchmark_scenarios": [
+      "hard_ssrf"
+    ],
+    "domain": "ssrf",
+    "evidence_notes": [
+      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+    ],
+    "knowledge_cases": 1,
+    "knowledge_negatives": 2,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "hard_ssrf_lab_scenario"
+    ],
+    "next_dependency": "held_out_or_authorized_e2e",
+    "readiness": "BENCHMARKED",
+    "skills": []
+  },
+  "ssti": {
+    "benchmark_scenarios": [],
+    "domain": "ssti",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "upload": {
+    "benchmark_scenarios": [],
+    "domain": "upload",
+    "evidence_notes": [
+      "curated knowledge present; no lab factory"
+    ],
+    "knowledge_cases": 1,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [],
+    "next_dependency": "offline_lab_scenario",
+    "readiness": "KNOWLEDGE_ONLY",
+    "skills": []
+  },
+  "websocket": {
+    "benchmark_scenarios": [],
+    "domain": "websocket",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  },
+  "xss": {
+    "benchmark_scenarios": [
+      "hard_xss"
+    ],
+    "domain": "xss",
+    "evidence_notes": [
+      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+    ],
+    "knowledge_cases": 2,
+    "knowledge_negatives": 2,
+    "knowledge_patterns": 1,
+    "knowledge_procedures": 1,
+    "lab_scenarios": [
+      "hard_xss_lab_scenario",
+      "secure_xss_lab_scenario"
+    ],
+    "next_dependency": "held_out_or_authorized_e2e",
+    "readiness": "BENCHMARKED",
+    "skills": []
+  },
+  "xxe": {
+    "benchmark_scenarios": [],
+    "domain": "xxe",
+    "evidence_notes": [],
+    "knowledge_cases": 0,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 0,
+    "knowledge_procedures": 0,
+    "lab_scenarios": [],
+    "next_dependency": "knowledge_or_lab_slice",
+    "readiness": "NOT_IMPLEMENTED",
+    "skills": []
+  }
+}
