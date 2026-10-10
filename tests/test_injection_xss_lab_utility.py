@@ -112,3 +112,55 @@ def test_readiness_matrix_injection_and_xss_have_labs():
     assert any("xss" in x for x in matrix["xss"].lab_scenarios)
     assert matrix["authorization"].readiness in ("LAB_TESTED", "BENCHMARKED")
     assert matrix["authorization"].knowledge_cases >= 1
+
+
+def test_hard_jwt_curated_confirms():
+    ret = build_retriever(KnowledgeCondition.CURATED, KROOT)
+    from agent_core.orchestrator.closed_loop import hard_jwt_lab_scenario
+
+    r = ClosedLoopRunner(
+        scope_path=SCOPE, engagement_id="jwt_curated", knowledge_retriever=ret
+    ).run(FIXTURE, scenario=hard_jwt_lab_scenario())
+    assert r.final_status == "confirmed"
+    assert r.referee_accepted is True
+
+
+def test_secure_jwt_no_fp():
+    ret = build_retriever(KnowledgeCondition.CURATED, KROOT)
+    from agent_core.orchestrator.closed_loop import secure_jwt_lab_scenario
+
+    r = ClosedLoopRunner(
+        scope_path=SCOPE, engagement_id="jwt_secure", knowledge_retriever=ret
+    ).run(FIXTURE, scenario=secure_jwt_lab_scenario())
+    assert r.referee_accepted is False
+    assert r.final_status != "confirmed"
+
+
+def test_hard_csrf_curated_confirms():
+    ret = build_retriever(KnowledgeCondition.CURATED, KROOT)
+    from agent_core.orchestrator.closed_loop import hard_csrf_lab_scenario
+
+    r = ClosedLoopRunner(
+        scope_path=SCOPE, engagement_id="csrf_curated", knowledge_retriever=ret
+    ).run(FIXTURE, scenario=hard_csrf_lab_scenario())
+    assert r.final_status == "confirmed"
+    assert r.referee_accepted is True
+
+
+def test_secure_csrf_no_fp():
+    ret = build_retriever(KnowledgeCondition.CURATED, KROOT)
+    from agent_core.orchestrator.closed_loop import secure_csrf_lab_scenario
+
+    r = ClosedLoopRunner(
+        scope_path=SCOPE, engagement_id="csrf_secure", knowledge_retriever=ret
+    ).run(FIXTURE, scenario=secure_csrf_lab_scenario())
+    assert r.referee_accepted is False
+    assert r.final_status != "confirmed"
+
+
+def test_authentication_domain_readiness():
+    matrix = build_readiness_matrix(KROOT, skills_root=SKILLS)
+    authn = matrix["authentication"]
+    assert authn.knowledge_procedures >= 1
+    assert len(authn.lab_scenarios) >= 2
+    assert authn.readiness in ("LAB_TESTED", "BENCHMARKED")

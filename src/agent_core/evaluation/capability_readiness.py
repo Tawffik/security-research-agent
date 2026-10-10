@@ -17,6 +17,7 @@ from typing import Any, Optional
 # Canonical methodology domains (aligned with knowledge/*.md Domain frontmatter)
 METHODOLOGY_DOMAINS = [
     "authorization",
+    "authentication",
     "business_logic",
     "ssrf",
     "injection",
@@ -100,6 +101,10 @@ LAB_REGISTRY: dict[str, str] = {
     "secure_sqli_lab_scenario": "injection",
     "hard_xss_lab_scenario": "xss",
     "secure_xss_lab_scenario": "xss",
+    "hard_jwt_lab_scenario": "authentication",
+    "secure_jwt_lab_scenario": "authentication",
+    "hard_csrf_lab_scenario": "authentication",
+    "secure_csrf_lab_scenario": "authentication",
 }
 
 BENCHMARK_REGISTRY: dict[str, str] = {
@@ -115,6 +120,8 @@ BENCHMARK_REGISTRY: dict[str, str] = {
     "hard_ssrf": "ssrf",
     "hard_sqli": "injection",
     "hard_xss": "xss",
+    "hard_jwt": "authentication",
+    "hard_csrf": "authentication",
 }
 
 

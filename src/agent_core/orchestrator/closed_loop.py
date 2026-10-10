@@ -606,6 +606,138 @@ def secure_xss_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
     )
 
 
+def hard_jwt_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """JWT verification gap: challenge with broken signature still accepted."""
+    return LabScenario(
+        name="lab_hard_jwt_alg_confusion",
+        expected_if_secure="Invalid signature rejected",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="authentication",
+        observations=[
+            LabObservation(
+                identity="user_a",
+                method="GET",
+                path="/api/me",
+                host=host,
+                status=200,
+                body='{"sub":"user_a","ok":true,"sig":"valid"}',
+                notes="baseline valid token",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/me",
+                host=host,
+                status=200,
+                body='{"sub":"admin","ok":true,"sig":"none_or_confused"}',
+                notes="challenge weakened verification accepted",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_jwt_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """JWT verification: invalid signature denied."""
+    return LabScenario(
+        name="lab_secure_jwt_signature_checked",
+        expected_if_secure="Invalid signature rejected",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="authentication",
+        observations=[
+            LabObservation(
+                identity="user_a",
+                method="GET",
+                path="/api/me",
+                host=host,
+                status=200,
+                body='{"sub":"user_a","ok":true,"sig":"valid"}',
+                notes="baseline valid token",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="attacker",
+                method="GET",
+                path="/api/me",
+                host=host,
+                status=401,
+                body='{"error":"invalid_token"}',
+                notes="challenge broken signature denied",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def hard_csrf_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """CSRF: state-changing POST without binding token still mutates resource."""
+    return LabScenario(
+        name="lab_hard_csrf_state_change",
+        expected_if_secure="Cross-site/state change without CSRF binding rejected",
+        suggests_authz_issue=True,
+        requires_knowledge_procedure=True,
+        methodology="authentication",
+        observations=[
+            LabObservation(
+                identity="victim",
+                method="POST",
+                path="/api/email",
+                host=host,
+                status=200,
+                body='{"email":"old@ex.com","csrf":"present","changed":false}',
+                notes="baseline with binding",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="victim",
+                method="POST",
+                path="/api/email",
+                host=host,
+                status=200,
+                body='{"email":"evil@ex.com","csrf":"absent","changed":true}',
+                notes="challenge without CSRF token still changes state",
+                role="challenge",
+            ),
+        ],
+    )
+
+
+def secure_csrf_lab_scenario(host: str = "api.acme-demo.test") -> LabScenario:
+    """CSRF control: missing token rejected; state unchanged."""
+    return LabScenario(
+        name="lab_secure_csrf_token_required",
+        expected_if_secure="Missing CSRF token rejected",
+        suggests_authz_issue=False,
+        requires_knowledge_procedure=False,
+        methodology="authentication",
+        observations=[
+            LabObservation(
+                identity="victim",
+                method="POST",
+                path="/api/email",
+                host=host,
+                status=200,
+                body='{"email":"old@ex.com","csrf":"present","changed":false}',
+                notes="baseline with binding",
+                role="baseline",
+            ),
+            LabObservation(
+                identity="victim",
+                method="POST",
+                path="/api/email",
+                host=host,
+                status=403,
+                body='{"error":"csrf_required","changed":false}',
+                notes="challenge missing token denied",
+                role="challenge",
+            ),
+        ],
+    )
+
+
 
 class ClosedLoopRunner:
     """

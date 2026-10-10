@@ -1,11 +1,11 @@
 {
   "campaign_status": "IN_PROGRESS",
   "current_gate": "phase_a_inventory_plus_injection_xss_slice",
-  "current_task": "capability_inventory_injection_xss_labs",
+  "current_task": "authn_jwt_csrf_labs",
   "current_commit": "5e07e3eb472a9534cbf6cacd42cf6bf6fb66b8c3",
   "last_verified_commit": "5e07e3eb472a9534cbf6cacd42cf6bf6fb66b8c3",
   "last_test": {
-    "passed": 471,
+    "passed": 476,
     "failed": 0,
     "skipped": 8
   },
@@ -97,7 +97,9 @@
     "hard_sqli_lab",
     "hard_xss_lab",
     "secure_injection_xss_polarity",
-    "injection_xss_utility_tests"
+    "injection_xss_utility_tests",
+    "hard_jwt_csrf_labs",
+    "authentication_domain_readiness"
   ],
   "in_progress": [],
   "deferred": [],

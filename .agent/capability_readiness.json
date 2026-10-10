@@ -1,4 +1,27 @@
 {
+  "authentication": {
+    "benchmark_scenarios": [
+      "hard_jwt",
+      "hard_csrf"
+    ],
+    "domain": "authentication",
+    "evidence_notes": [
+      "offline labs + HARD_SCENARIOS/DEFAULT wiring; measure before promoting"
+    ],
+    "knowledge_cases": 7,
+    "knowledge_negatives": 0,
+    "knowledge_patterns": 7,
+    "knowledge_procedures": 6,
+    "lab_scenarios": [
+      "hard_jwt_lab_scenario",
+      "secure_jwt_lab_scenario",
+      "hard_csrf_lab_scenario",
+      "secure_csrf_lab_scenario"
+    ],
+    "next_dependency": "held_out_or_authorized_e2e",
+    "readiness": "BENCHMARKED",
+    "skills": []
+  },
   "authorization": {
     "benchmark_scenarios": [
       "pos_authz",
@@ -195,10 +218,10 @@
     "evidence_notes": [
       "curated knowledge present; no lab factory"
     ],
-    "knowledge_cases": 10,
+    "knowledge_cases": 3,
     "knowledge_negatives": 0,
-    "knowledge_patterns": 10,
-    "knowledge_procedures": 9,
+    "knowledge_patterns": 3,
+    "knowledge_procedures": 3,
     "lab_scenarios": [],
     "next_dependency": "offline_lab_scenario",
     "readiness": "KNOWLEDGE_ONLY",

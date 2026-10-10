@@ -31,6 +31,10 @@ from agent_core.orchestrator.closed_loop import (
     secure_sqli_lab_scenario,
     hard_xss_lab_scenario,
     secure_xss_lab_scenario,
+    hard_jwt_lab_scenario,
+    secure_jwt_lab_scenario,
+    hard_csrf_lab_scenario,
+    secure_csrf_lab_scenario,
 )
 
 
@@ -136,6 +140,14 @@ def _scenario(name: str) -> LabScenario:
         return hard_xss_lab_scenario()
     if name == "secure_xss":
         return secure_xss_lab_scenario()
+    if name == "hard_jwt":
+        return hard_jwt_lab_scenario()
+    if name == "secure_jwt":
+        return secure_jwt_lab_scenario()
+    if name == "hard_csrf":
+        return hard_csrf_lab_scenario()
+    if name == "secure_csrf":
+        return secure_csrf_lab_scenario()
     raise ValueError(name)
 
 
@@ -148,6 +160,8 @@ HARD_SCENARIOS = [
     ScenarioSpec("graphql_global_id", "graphql_global_id", "vulnerable", "confirmed"),
     ScenarioSpec("hard_sqli", "hard_sqli", "vulnerable", "confirmed"),
     ScenarioSpec("hard_xss", "hard_xss", "vulnerable", "confirmed"),
+    ScenarioSpec("hard_jwt", "hard_jwt", "vulnerable", "confirmed"),
+    ScenarioSpec("hard_csrf", "hard_csrf", "vulnerable", "confirmed"),
 ]
 
 

@@ -1,20 +1,17 @@
 # Current Task
 
 **Campaign:** IN_PROGRESS  
-**Focus:** Capability inventory + injection/XSS offline vertical slices
+**Focus:** Multi-domain offline labs (authz, injection, XSS, authentication)
 
 ## Verified
-- HEAD after inventory/labs (see git)
-- Tests: 471 passed / 8 skipped
-- Capability readiness matrix: `.agent/capability_readiness.json`
-- hard_sqli / hard_xss labs + secure controls
-- Methodology-aware polarity for xss/injection (no FP on encoded/parameterized)
-- HARD_SCENARIOS extended
+- Capability readiness matrix
+- Labs: SQLi, XSS, JWT, CSRF (+ secure controls)
+- Tests: 476 passed / 8 skipped
+- Methodology-aware polarity for xss/injection
 
-## Not done
-- CSRF/JWT/path labs still knowledge-only or domain-parse gaps
+## READY next offline
+- cache / deserialization / upload / path_traversal lab slices
+- held-out variants for injection/XSS
+
+## BLOCKED
 - Gate 6B live authorization
-- Held-out generalization for injection/XSS
-
-## Blocked
-- Gate 6B
